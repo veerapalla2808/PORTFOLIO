@@ -17,7 +17,6 @@ export default function Skills() {
     <section id="skills" className="section-bg-primary">
       <div className="container-wide">
         <SectionTransition
-          number="002"
           eyebrow="SKILLS"
           title={<>Tech <span className="text-grad">Stack</span></>}
         >

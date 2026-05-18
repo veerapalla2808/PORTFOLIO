@@ -88,7 +88,6 @@ export default function Experience() {
     <section id="experience" className="section-bg-secondary">
       <div className="container-wide">
         <SectionTransition
-          number="003"
           eyebrow="EXPERIENCE"
           title={
             <>11 years ·{' '}

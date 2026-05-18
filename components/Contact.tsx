@@ -143,7 +143,6 @@ export default function Contact() {
     <section id="contact" className="section-bg-primary">
       <div className="container-wide">
         <SectionTransition
-          number="006"
           eyebrow="CONTACT"
           title={<>Let&apos;s <span className="text-grad">work together.</span></>}
         >

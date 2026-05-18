@@ -33,7 +33,6 @@ export default function About() {
     <section id="about" className="section-bg-secondary">
       <div className="container-wide">
         <SectionTransition
-          number="001"
           eyebrow="ABOUT"
           title={
             <>

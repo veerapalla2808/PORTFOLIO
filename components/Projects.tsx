@@ -11,7 +11,6 @@ export default function Projects() {
     <section id="projects" className="section-bg-primary">
       <div className="container-wide">
         <SectionTransition
-          number="004"
           eyebrow="PROJECTS"
           title={<>Featured <span className="text-grad">Work</span></>}
         >

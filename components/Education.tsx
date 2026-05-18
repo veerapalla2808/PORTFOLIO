@@ -9,7 +9,6 @@ export default function Education() {
     <section id="education" className="section-bg-secondary">
       <div className="container-wide">
         <SectionTransition
-          number="005"
           eyebrow="EDUCATION"
           title={<>Academic <span className="text-grad">Foundation</span></>}
         >
