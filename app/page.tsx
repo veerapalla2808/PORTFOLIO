@@ -1,3 +1,4 @@
+// app/page.tsx
 import Navbar from "@/components/Navbar";
 import Hero from "@/components/Hero";
 import About from "@/components/About";
@@ -10,16 +11,18 @@ import Footer from "@/components/Footer";
 
 export default function Home() {
   return (
-    <main className="relative">
+    <>
       <Navbar />
-      <Hero />
-      <About />
-      <Skills />
-      <Experience />
-      <Projects />
-      <Education />
-      <Contact />
+      <main id="main-content" tabIndex={-1}>
+        <Hero />
+        <About />
+        <Skills />
+        <Experience />
+        <Projects />
+        <Education />
+        <Contact />
+      </main>
       <Footer />
-    </main>
+    </>
   );
 }
