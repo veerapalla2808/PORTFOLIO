@@ -154,6 +154,7 @@ section { padding: 8rem 0; }
 
 /* ─── Gradient text ──────────────────────────────────────────────────────── */
 .text-grad {
+  color: var(--accent);
   background: linear-gradient(135deg, var(--accent), var(--accent-2));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -240,7 +241,8 @@ section { padding: 8rem 0; }
   border-color: var(--accent);
 }
 
-/* ─── Custom cursor (hide default on pointer devices) ────────────────────── */
+/* ─── Custom cursor — hides OS cursor so CustomCursor.tsx renders instead ── */
+/* The custom cursor component provides the visual dot + ring on pointer devices */
 @media (pointer: fine) { * { cursor: none !important; } }
 
 /* ─── Reduced-motion overrides ───────────────────────────────────────────── */
