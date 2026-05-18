@@ -39,3 +39,13 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# IDE / tooling
+.claude/
+hooks/
+
+# design docs & plans (not needed to run the app)
+docs/
+
+# source assets (PDF resume — only public/resume.pdf is needed)
+VeeraVDP-ReactNode.pdf
