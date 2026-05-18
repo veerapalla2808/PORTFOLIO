@@ -1,3 +1,4 @@
+'use client';
 // components/Footer.tsx
 import { personal } from "@/lib/data";
 import { Mail, BookOpen, Phone } from "lucide-react";
