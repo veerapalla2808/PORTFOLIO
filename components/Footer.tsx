@@ -216,9 +216,9 @@ export default function Footer() {
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      width: 36,
-                      height: 36,
-                      borderRadius: 8,
+                      width: 40,
+                      height: 40,
+                      borderRadius: 10,
                       border: '1px solid var(--border)',
                       background: 'var(--bg-primary)',
                       color: 'var(--text-muted)',
@@ -230,15 +230,17 @@ export default function Footer() {
                       el.style.borderColor = 'var(--border-accent)';
                       el.style.color = 'var(--accent)';
                       el.style.background = 'var(--accent-lite)';
+                      el.style.transform = 'translateY(-2px)';
                     }}
                     onMouseLeave={e => {
                       const el = e.currentTarget as HTMLAnchorElement;
                       el.style.borderColor = 'var(--border)';
                       el.style.color = 'var(--text-muted)';
                       el.style.background = 'var(--bg-primary)';
+                      el.style.transform = 'translateY(0)';
                     }}
                   >
-                    <s.Icon size={15} aria-hidden="true" />
+                    <s.Icon size={17} aria-hidden="true" />
                   </a>
                 ))}
               </div>
