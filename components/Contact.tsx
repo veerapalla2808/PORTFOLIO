@@ -113,7 +113,7 @@ export default function Contact() {
       await emailjs.send(
         process.env.NEXT_PUBLIC_EMAILJS_SERVICE_ID!,
         process.env.NEXT_PUBLIC_EMAILJS_TEMPLATE_ID!,
-        { from_name: form.name, from_email: form.email, message: form.message },
+        { name: form.name, email: form.email, message: form.message, title: `Portfolio inquiry from ${form.name}` },
         process.env.NEXT_PUBLIC_EMAILJS_PUBLIC_KEY!
       );
       setStatus("success");
