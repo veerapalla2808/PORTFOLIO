@@ -1,195 +1,264 @@
 // components/Hero.tsx
-"use client";
+'use client';
+import { useRef, useEffect, useState } from 'react';
+import { motion, useScroll, useTransform } from 'framer-motion';
+import MagneticButton from './ui/MagneticButton';
+import { personal } from '@/lib/data';
 
-import { useEffect, useRef, useState } from "react";
-import { motion, useScroll, useTransform } from "framer-motion";
-import Typewriter from "typewriter-effect";
-import dynamic from "next/dynamic";
-import { personal, roles } from "@/lib/data";
-import MagneticButton from "./ui/MagneticButton";
+const STATS = [
+  { value: 11, suffix: '+', label: 'Yrs Exp' },
+  { value: 40, suffix: '+', label: 'Projects' },
+  { value: 5,  suffix: '',  label: 'Companies' },
+  { value: 2,  suffix: '',  label: 'Certs' },
+];
 
-const CodeRain = dynamic(() => import("./three/CodeRain"), { ssr: false, loading: () => null });
-const HeroGeometry = dynamic(() => import("./three/HeroCanvas"), { ssr: false, loading: () => null });
+function useCountUp(target: number, inView: boolean, duration = 1500) {
+  const [count, setCount] = useState(0);
+  useEffect(() => {
+    if (!inView) return;
+    const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (prefersReduced) { setCount(target); return; }
+    let start = 0;
+    const startTime = performance.now();
+    const step = (now: number) => {
+      const elapsed = now - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      setCount(Math.floor(eased * target));
+      if (progress < 1) requestAnimationFrame(step);
+      else setCount(target);
+    };
+    requestAnimationFrame(step);
+  }, [inView, target, duration]);
+  return count;
+}
+
+function StatItem({ value, suffix, label, inView }: typeof STATS[0] & { inView: boolean }) {
+  const count = useCountUp(value, inView, 1500);
+  return (
+    <div style={{ textAlign: 'center' }}>
+      <div style={{
+        fontSize: 'clamp(1.5rem, 4vw, 2rem)',
+        fontWeight: 900,
+        background: 'linear-gradient(135deg, var(--accent), var(--accent-2))',
+        WebkitBackgroundClip: 'text',
+        WebkitTextFillColor: 'transparent',
+        backgroundClip: 'text',
+        lineHeight: 1,
+      }}>
+        {count}{suffix}
+      </div>
+      <div style={{ fontSize: '0.62rem', color: 'var(--text-muted)', letterSpacing: '0.2em', textTransform: 'uppercase', marginTop: '0.25rem' }}>
+        {label}
+      </div>
+    </div>
+  );
+}
+
+const HERO_VARIANTS = {
+  hidden:  {},
+  visible: { transition: { staggerChildren: 0.1 } },
+};
+const ITEM_VARIANT = {
+  hidden:  { opacity: 0, y: 30 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.33, 1, 0.68, 1] as const } },
+};
 
 export default function Hero() {
-  const containerRef = useRef<HTMLElement>(null);
-  const [mouse, setMouse] = useState({ x: 0, y: 0 });
-  const [reducedMotion, setReducedMotion] = useState(false);
+  const ref         = useRef<HTMLElement>(null);
+  const glowRef     = useRef<HTMLDivElement>(null);
+  const [statsInView, setStatsInView] = useState(false);
 
-  const { scrollYProgress } = useScroll({
-    target: containerRef,
-    offset: ["start start", "end start"],
-  });
-  const y = useTransform(scrollYProgress, [0, 1], [0, 150]);
-  const opacity = useTransform(scrollYProgress, [0, 0.6], [1, 0]);
-  const scale = useTransform(scrollYProgress, [0, 0.6], [1, 0.92]);
+  const { scrollYProgress } = useScroll({ target: ref, offset: ['start start', 'end start'] });
+  const glowY    = useTransform(scrollYProgress, [0, 1], ['0%', '-30%']);
+  const contentY = useTransform(scrollYProgress, [0, 1], ['0px', '-60px']);
+  const opacity  = useTransform(scrollYProgress, [0, 0.6], [1, 0]);
 
+  // Trigger stat counters once hero enters view
   useEffect(() => {
-    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
-    setReducedMotion(mq.matches);
-
-    const onMouse = (e: MouseEvent) => {
-      setMouse({
-        x: (e.clientX / window.innerWidth - 0.5) * 2,
-        y: (e.clientY / window.innerHeight - 0.5) * 2,
-      });
-    };
-    window.addEventListener("mousemove", onMouse, { passive: true });
-    return () => window.removeEventListener("mousemove", onMouse);
+    const timer = setTimeout(() => setStatsInView(true), 700);
+    return () => clearTimeout(timer);
   }, []);
 
   return (
     <section
-      ref={containerRef}
       id="hero"
-      aria-label="Hero — introduction"
-      className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden"
+      ref={ref}
+      className="section-bg-primary"
+      style={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        position: 'relative',
+        overflow: 'hidden',
+        paddingTop: 'var(--header-height)',
+      }}
     >
-      {/* Layer 1 — Matrix Rain */}
-      <div className="absolute inset-0 z-0" aria-hidden="true">
-        <CodeRain />
-      </div>
-
-      {/* Layer 2 — 3D Geometry */}
-      <div className="absolute inset-0 z-[1]" aria-hidden="true" style={{ pointerEvents: "none" }}>
-        <HeroGeometry mouseX={mouse.x} mouseY={mouse.y} reducedMotion={reducedMotion} />
-      </div>
-
-      {/* Vignette */}
-      <div
-        className="absolute inset-0 z-[2] pointer-events-none"
+      {/* Parallax background glow */}
+      <motion.div
+        ref={glowRef}
         aria-hidden="true"
         style={{
-          background:
-            "radial-gradient(ellipse at center, transparent 30%, rgba(3,3,3,0.6) 70%, rgba(3,3,3,0.95) 100%)",
+          position: 'absolute',
+          top: '-10%',
+          right: '-5%',
+          width: 'clamp(300px, 50vw, 600px)',
+          height: 'clamp(300px, 50vw, 600px)',
+          borderRadius: '50%',
+          background: 'radial-gradient(circle, color-mix(in srgb, var(--accent) 20%, transparent) 0%, transparent 70%)',
+          pointerEvents: 'none',
+          y: glowY,
         }}
       />
 
-      {/* Layer 3 — Typography */}
+      {/* Subtle grid overlay */}
+      <div
+        aria-hidden="true"
+        style={{
+          position: 'absolute',
+          inset: 0,
+          backgroundImage: 'linear-gradient(var(--border) 1px, transparent 1px), linear-gradient(90deg, var(--border) 1px, transparent 1px)',
+          backgroundSize: '64px 64px',
+          opacity: 0.4,
+          pointerEvents: 'none',
+        }}
+      />
+
+      {/* Hero content */}
       <motion.div
-        style={reducedMotion ? {} : { y, opacity, scale }}
-        className="container-wide relative z-10 flex flex-col items-center text-center pt-20 md:pt-0"
+        className="container-wide"
+        style={{ y: contentY, opacity, position: 'relative', zIndex: 1 }}
       >
-        {/* Availability badge */}
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, ease: [0.2, 0, 0, 1], delay: 0 }}
-          className="mb-6 md:mb-8 px-4 py-1.5 rounded-full flex items-center gap-2"
-          style={{
-            border: "1px solid rgba(255,255,255,0.08)",
-            background: "rgba(255,255,255,0.04)",
-            backdropFilter: "blur(8px)",
-          }}
+          variants={HERO_VARIANTS}
+          initial="hidden"
+          animate="visible"
+          style={{ maxWidth: 800 }}
         >
-          <span
-            className="w-1.5 h-1.5 rounded-full bg-green-500"
-            style={{ boxShadow: "0 0 8px rgba(34,197,94,0.7)" }}
-            aria-hidden="true"
-          />
-          <span className="text-[10px] md:text-xs font-mono tracking-widest text-white/60 uppercase">
-            Available for Senior opportunities
-          </span>
-        </motion.div>
-
-        {/* Name — single h1 with two spans for WCAG compliance */}
-        <div className="mb-6 md:mb-8">
-          <motion.h1
-            initial={{ opacity: 0, y: 40 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.9, ease: [0.2, 0, 0, 1], delay: 0.2 }}
-            className="font-black leading-[0.88] tracking-tighter"
-            style={{ fontSize: "clamp(3.5rem, 12vw, 9rem)" }}
-          >
-            <span className="block text-white">VEERA</span>
-            <span
-              className="block"
-              style={{
-                color: "#00f2ff",
-                textShadow: "0 0 40px rgba(0,242,255,0.4)",
-              }}
-            >
-              PALLA.
+          {/* Availability badge */}
+          <motion.div variants={ITEM_VARIANT} style={{ marginBottom: '1.25rem' }}>
+            <span style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              background: 'var(--accent-lite)',
+              border: '1px solid var(--border-accent)',
+              color: 'var(--accent-text)',
+              padding: '0.3rem 0.9rem',
+              borderRadius: 999,
+              fontSize: '0.75rem',
+              fontWeight: 600,
+            }}>
+              <motion.span
+                style={{ width: 7, height: 7, borderRadius: '50%', background: 'var(--accent)', display: 'inline-block' }}
+                animate={{ scale: [1, 1.4, 1], opacity: [1, 0.5, 1] }}
+                transition={{ repeat: Infinity, duration: 2 }}
+              />
+              Available for opportunities
             </span>
+          </motion.div>
+
+          {/* Eyebrow */}
+          <motion.p variants={ITEM_VARIANT} className="section-eyebrow">
+            // Senior Software Engineer · 11 Years
+          </motion.p>
+
+          {/* Display title */}
+          <motion.h1
+            variants={ITEM_VARIANT}
+            style={{
+              fontSize: 'clamp(3rem, 8vw, 6rem)',
+              fontWeight: 900,
+              lineHeight: 0.92,
+              letterSpacing: '-0.05em',
+              color: 'var(--text-primary)',
+              marginBottom: '1.25rem',
+            }}
+          >
+            I build systems
+            <br />
+            <span style={{
+              color: 'transparent',
+              WebkitTextStroke: '2px var(--text-muted)',
+            }}>
+              that handle
+            </span>
+            <br />
+            <span className="text-grad">millions.</span>
           </motion.h1>
-        </div>
 
-        {/* Typewriter role */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.8, delay: 0.6 }}
-          className="mb-6 h-8 font-mono text-base md:text-lg tracking-wide"
-          style={{ color: "#00f2ff" }}
-          aria-label={`Role: ${roles[0]}`}
-        >
-          {reducedMotion ? (
-            <span>{roles[0]}</span>
-          ) : (
-            <Typewriter
-              options={{
-                strings: roles,
-                autoStart: true,
-                loop: true,
-                delay: 75,
-                deleteSpeed: 40,
-              }}
-            />
-          )}
-        </motion.div>
-
-        {/* Tagline */}
-        <motion.p
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 1, delay: 0.9 }}
-          className="max-w-xs md:max-w-md text-sm md:text-base text-white/50 leading-relaxed mb-10 md:mb-12 px-4"
-        >
-          {personal.tagline}
-        </motion.p>
-
-        {/* CTAs */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 1.1 }}
-          className="flex flex-col sm:flex-row items-center gap-4"
-        >
-          <MagneticButton
-            href="#projects"
-            aria-label="View my work"
-            className="px-7 py-3.5 rounded-full text-sm font-bold text-black bg-[#00f2ff] min-h-[44px] flex items-center hover:opacity-90 transition-opacity"
+          {/* Subtitle */}
+          <motion.p
+            variants={ITEM_VARIANT}
+            style={{
+              fontSize: '1rem',
+              color: 'var(--text-secondary)',
+              lineHeight: 1.75,
+              maxWidth: 520,
+              marginBottom: '2rem',
+            }}
           >
-            View My Work ↓
-          </MagneticButton>
-          <MagneticButton
-            href={personal.resumeUrl}
-            download
-            aria-label="Download resume"
-            className="px-7 py-3.5 rounded-full text-sm font-bold text-[#00f2ff] min-h-[44px] flex items-center"
-            style={{ border: "1px solid rgba(0,242,255,0.4)" } as React.CSSProperties}
+            Fintech · Healthcare · Retail · AI — across{' '}
+            <strong style={{ color: 'var(--text-primary)', fontWeight: 600 }}>5 companies</strong>,{' '}
+            <strong style={{ color: 'var(--text-primary)', fontWeight: 600 }}>40+ projects</strong>, and{' '}
+            <strong style={{ color: 'var(--text-primary)', fontWeight: 600 }}>11+ years</strong> of production-grade software.
+          </motion.p>
+
+          {/* CTAs */}
+          <motion.div variants={ITEM_VARIANT} style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', marginBottom: '3rem' }}>
+            <MagneticButton href="#projects" className="btn-primary">
+              See My Work
+            </MagneticButton>
+            <MagneticButton href={personal.resumeUrl} className="btn-secondary">
+              Resume ↓
+            </MagneticButton>
+          </motion.div>
+
+          {/* Stats bar */}
+          <motion.div
+            variants={ITEM_VARIANT}
+            style={{
+              display: 'flex',
+              gap: '2rem',
+              flexWrap: 'wrap',
+              paddingTop: '1.5rem',
+              borderTop: '1px solid var(--border)',
+            }}
           >
-            Download Resume
-          </MagneticButton>
+            {STATS.map(stat => (
+              <StatItem key={stat.label} {...stat} inView={statsInView} />
+            ))}
+          </motion.div>
         </motion.div>
       </motion.div>
 
       {/* Scroll indicator */}
       <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 1, delay: 1.4 }}
-        className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10 flex flex-col items-center gap-2"
         aria-hidden="true"
+        style={{
+          position: 'absolute',
+          bottom: '2rem',
+          left: '50%',
+          translateX: '-50%',
+        }}
+        animate={{ y: [0, 8, 0] }}
+        transition={{ repeat: Infinity, duration: 2, ease: 'easeInOut' }}
       >
-        <span className="text-[9px] uppercase tracking-[0.3em] text-white/20 font-bold">
-          Scroll to explore
-        </span>
-        <motion.div
-          animate={{ y: [0, 8, 0] }}
-          transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
-          className="w-px h-10 bg-gradient-to-b from-[#00f2ff]/30 to-transparent"
-        />
+        <div style={{
+          width: 24,
+          height: 36,
+          border: '2px solid var(--border-accent)',
+          borderRadius: 12,
+          display: 'flex',
+          justifyContent: 'center',
+          paddingTop: 4,
+        }}>
+          <motion.div
+            style={{ width: 4, height: 8, background: 'var(--accent)', borderRadius: 2 }}
+            animate={{ y: [0, 10, 0], opacity: [1, 0, 1] }}
+            transition={{ repeat: Infinity, duration: 2 }}
+          />
+        </div>
       </motion.div>
     </section>
   );
