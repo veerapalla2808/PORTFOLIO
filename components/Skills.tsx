@@ -1,160 +1,119 @@
 // components/Skills.tsx
-"use client";
-
-import { useState, useRef, useLayoutEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { skillCategories } from "@/lib/data";
-import { gsap } from "@/lib/gsap";
+'use client';
+import { motion } from 'framer-motion';
 import {
-  Monitor, Server, Sparkles, Cloud, Database, TestTube2, Zap,
-} from "lucide-react";
+  Monitor, Server, Sparkles, Cloud, Database, TestTube2, Zap, type LucideIcon,
+} from 'lucide-react';
+import SectionTransition, { fadeUpVariant } from './ui/SectionTransition';
+import SkillTooltip from './ui/SkillTooltip';
+import { skillCategories } from '@/lib/data';
 
-const ICON_MAP: Record<string, React.ReactNode> = {
-  Monitor: <Monitor size={18} aria-hidden="true" />,
-  Server: <Server size={18} aria-hidden="true" />,
-  Sparkles: <Sparkles size={18} aria-hidden="true" />,
-  Cloud: <Cloud size={18} aria-hidden="true" />,
-  Database: <Database size={18} aria-hidden="true" />,
-  TestTube2: <TestTube2 size={18} aria-hidden="true" />,
-  Zap: <Zap size={18} aria-hidden="true" />,
+const ICON_MAP: Record<string, LucideIcon> = {
+  Monitor, Server, Sparkles, Cloud, Database, TestTube2, Zap,
 };
 
-// AI & GenAI is the featured card (spans 2 cols on desktop)
-const FEATURED_LABEL = "AI & GenAI";
-
 export default function Skills() {
-  const sectionRef = useRef<HTMLElement>(null);
-  const gridRef = useRef<HTMLDivElement>(null);
-  const [openCategory, setOpenCategory] = useState<string | null>(null);
-
-  useLayoutEffect(() => {
-    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if (prefersReducedMotion) return;
-
-    const ctx = gsap.context(() => {
-      gsap.fromTo(
-        gridRef.current!.children,
-        { y: 30, opacity: 0 },
-        {
-          y: 0,
-          opacity: 1,
-          stagger: 0.08,
-          duration: 0.7,
-          ease: "power3.out",
-          scrollTrigger: {
-            trigger: gridRef.current,
-            start: "top 80%",
-          },
-        }
-      );
-    }, sectionRef);
-
-    return () => ctx.revert();
-  }, []);
-
   return (
-    <section
-      ref={sectionRef}
-      id="skills"
-      aria-label="Skills and tech stack"
-      className="container-wide"
-    >
-      <div className="section-label">02 // Skills & Tech Stack</div>
-      <h2 className="section-title">
-        What I{" "}
-        <span
-          style={{
-            borderBottom: "2px solid #00f2ff",
-            paddingBottom: "2px",
-          }}
+    <section id="skills" className="section-bg-primary">
+      <div className="container-wide">
+        <SectionTransition
+          number="002"
+          eyebrow="SKILLS"
+          title={<>Tech <span className="text-grad">Stack</span></>}
         >
-          Build
-        </span>{" "}
-        With
-      </h2>
-
-      {/* Mobile: accordion */}
-      <div className="md:hidden flex flex-col gap-3" role="list" aria-label="Skill categories">
-        {skillCategories.map((cat) => {
-          const isOpen = openCategory === cat.label;
-          return (
-            <div key={cat.label} className="glass-card overflow-hidden" role="listitem">
-              <button
-                onClick={() => setOpenCategory(isOpen ? null : cat.label)}
-                className="w-full flex items-center justify-between p-5 text-left min-h-[44px]"
-                aria-expanded={isOpen}
-                aria-controls={`skills-${cat.label}`}
-              >
-                <div className="flex items-center gap-3">
-                  <span style={{ color: "#00f2ff" }}>{ICON_MAP[cat.icon]}</span>
-                  <span className="font-bold text-white text-sm">{cat.label}</span>
-                </div>
-                <motion.span
-                  animate={{ rotate: isOpen ? 180 : 0 }}
-                  className="text-white/40 text-xs"
-                  aria-hidden="true"
-                >
-                  ▼
-                </motion.span>
-              </button>
-              <AnimatePresence>
-                {isOpen && (
-                  <motion.div
-                    id={`skills-${cat.label}`}
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: "auto", opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
-                    transition={{ duration: 0.3 }}
-                    className="overflow-hidden"
-                  >
-                    <div className="px-5 pb-5 flex flex-wrap gap-2">
-                      {cat.skills.map((skill) => (
-                        <span key={skill} className="skill-pill">{skill}</span>
-                      ))}
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Tablet+ : bento grid */}
-      <div
-        ref={gridRef}
-        className="hidden md:grid gap-4"
-        style={{
-          gridTemplateColumns: "repeat(3, 1fr)",
-        }}
-        role="list"
-        aria-label="Skill categories"
-      >
-        {skillCategories.map((cat) => (
-          <article
-            key={cat.label}
-            className="glass-card p-6 lg:p-8"
+          {/* Bento grid — 4 cols desktop, 2 tablet, 1 mobile */}
+          <div
             style={{
-              gridColumn: cat.label === FEATURED_LABEL ? "span 2" : "span 1",
+              display: 'grid',
+              gridTemplateColumns: 'repeat(4, 1fr)',
+              gap: '1rem',
             }}
-            role="listitem"
+            className="grid-cols-1 sm:grid-cols-2 lg:grid-cols-4"
           >
-            <div
-              className="flex items-center gap-3 mb-5"
-              style={{ color: "#00f2ff" }}
-            >
-              {ICON_MAP[cat.icon]}
-              <h3 className="font-bold text-white text-sm uppercase tracking-widest">
-                {cat.label}
-              </h3>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {cat.skills.map((skill) => (
-                <span key={skill} className="skill-pill">{skill}</span>
-              ))}
-            </div>
-          </article>
-        ))}
+            {skillCategories.map((cat, i) => {
+              const Icon = ICON_MAP[cat.icon] ?? Monitor;
+              const isFeatured = cat.label === 'AI & GenAI';
+
+              return (
+                <motion.div
+                  key={cat.label}
+                  variants={fadeUpVariant}
+                  style={{
+                    gridColumn: isFeatured ? 'span 2' : 'span 1',
+                    background: isFeatured
+                      ? 'linear-gradient(135deg, var(--accent-lite), var(--accent-lite-2))'
+                      : 'var(--bg-card)',
+                    border: '1px solid var(--border-accent)',
+                    borderRadius: 12,
+                    padding: '1.25rem',
+                    boxShadow: 'var(--shadow)',
+                    transition: 'box-shadow 0.2s ease, transform 0.2s ease',
+                  }}
+                  whileHover={{ y: -3, boxShadow: 'var(--shadow-hover)' }}
+                >
+                  {/* Category header */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.9rem' }}>
+                    <div
+                      style={{
+                        width: 32,
+                        height: 32,
+                        borderRadius: 8,
+                        background: 'var(--accent-lite)',
+                        border: '1px solid var(--border-accent)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: 'var(--accent)',
+                        flexShrink: 0,
+                      }}
+                    >
+                      <Icon size={16} />
+                    </div>
+                    <span
+                      style={{
+                        fontSize: '0.7rem',
+                        fontWeight: 700,
+                        color: 'var(--accent)',
+                        letterSpacing: '0.15em',
+                        textTransform: 'uppercase',
+                        fontFamily: 'var(--font-mono)',
+                      }}
+                    >
+                      {cat.label}
+                    </span>
+                    {isFeatured && (
+                      <span
+                        style={{
+                          marginLeft: 'auto',
+                          fontSize: '0.6rem',
+                          background: 'var(--accent-lite)',
+                          border: '1px solid var(--border-accent)',
+                          color: 'var(--accent-text)',
+                          padding: '0.1rem 0.5rem',
+                          borderRadius: 999,
+                          fontWeight: 700,
+                        }}
+                      >
+                        ✦ Featured
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Pills */}
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
+                    {cat.skills.map((skill, j) => (
+                      <SkillTooltip
+                        key={skill.name}
+                        skill={skill}
+                        variant={j % 2 === 0 ? 'primary' : 'secondary'}
+                      />
+                    ))}
+                  </div>
+                </motion.div>
+              );
+            })}
+          </div>
+        </SectionTransition>
       </div>
     </section>
   );
