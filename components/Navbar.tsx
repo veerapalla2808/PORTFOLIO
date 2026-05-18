@@ -175,6 +175,7 @@ export default function Navbar() {
                   <a
                     href={personal.resumeUrl}
                     download
+                    aria-label="Download resume"
                     className="mt-4 px-8 py-3 rounded-full border border-[#00f2ff] text-[#00f2ff] font-bold text-lg min-h-[44px] flex items-center"
                   >
                     Resume ↓

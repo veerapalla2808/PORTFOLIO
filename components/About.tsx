@@ -112,6 +112,7 @@ export default function About() {
       className="container-wide"
     >
       <div className="section-label">01 // About</div>
+      <h2 className="section-title">About Me</h2>
 
       {/* Two-column: bio left, stats right */}
       <div className="flex flex-col lg:flex-row gap-12 lg:gap-20 mb-16 md:mb-20">
