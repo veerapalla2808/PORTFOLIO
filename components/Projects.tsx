@@ -1,109 +1,115 @@
 // components/Projects.tsx
-"use client";
-
-import { useRef, useLayoutEffect } from "react";
-import { gsap } from "@/lib/gsap";
-import { projects } from "@/lib/data";
-import TiltCard from "./ui/TiltCard";
-import { ExternalLink } from "lucide-react";
+'use client';
+import { motion } from 'framer-motion';
+import { GitFork, ExternalLink } from 'lucide-react';
+import SectionTransition, { fadeUpVariant } from './ui/SectionTransition';
+import TiltCard from './ui/TiltCard';
+import { projects } from '@/lib/data';
 
 export default function Projects() {
-  const sectionRef = useRef<HTMLElement>(null);
-
-  useLayoutEffect(() => {
-    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if (prefersReducedMotion) return;
-
-    const ctx = gsap.context(() => {
-      gsap.utils.toArray<HTMLElement>(".project-card").forEach((card, i) => {
-        gsap.fromTo(
-          card,
-          { y: 50, opacity: 0 },
-          {
-            y: 0,
-            opacity: 1,
-            duration: 0.9,
-            ease: "power3.out",
-            delay: i * 0.1,
-            scrollTrigger: {
-              trigger: card,
-              start: "top 85%",
-            },
-          }
-        );
-      });
-    }, sectionRef);
-
-    return () => ctx.revert();
-  }, []);
-
   return (
-    <section
-      ref={sectionRef}
-      id="projects"
-      aria-label="Featured projects"
-      className="container-wide"
-    >
-      <div className="section-label">04 // Projects</div>
-      <h2 className="section-title">Featured Work</h2>
-
-      <div className="flex flex-col gap-6 md:gap-8">
-        {projects.map((project, i) => (
-          <TiltCard key={project.name} className="project-card">
-            <article
-              className="glass-card p-6 md:p-10 relative overflow-hidden"
-            >
-              {/* Background project number */}
-              <span
-                className="absolute -right-4 -top-4 text-[8rem] md:text-[12rem] font-black leading-none select-none pointer-events-none"
-                style={{ color: "rgba(0,242,255,0.04)" }}
-                aria-hidden="true"
-              >
-                {String(i + 1).padStart(2, "0")}
-              </span>
-
-              {/* Header */}
-              <div className="flex items-start justify-between gap-4 mb-4 relative z-10">
-                <h3 className="text-xl md:text-2xl font-black text-white tracking-tight">
-                  {project.name}
-                </h3>
-                {project.github && (
-                  <a
-                    href={project.github}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    aria-label={`View ${project.name} on GitHub (opens in new tab)`}
-                    className="flex-shrink-0 w-11 h-11 flex items-center justify-center rounded-full border border-white/10 text-white/50 hover:text-[#00f2ff] hover:border-[#00f2ff]/40 transition-all min-w-[44px] min-h-[44px]"
+    <section id="projects" className="section-bg-primary">
+      <div className="container-wide">
+        <SectionTransition
+          number="004"
+          eyebrow="PROJECTS"
+          title={<>Featured <span className="text-grad">Work</span></>}
+        >
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1.5rem' }}
+               className="grid-cols-1 lg:grid-cols-2">
+            {projects.map((project, i) => (
+              <motion.div key={project.name} variants={fadeUpVariant}>
+                <TiltCard>
+                  <div
+                    style={{
+                      background: 'var(--bg-card)',
+                      border: '1px solid var(--border-accent)',
+                      borderRadius: 14,
+                      padding: '2rem',
+                      position: 'relative',
+                      overflow: 'hidden',
+                      height: '100%',
+                      transition: 'border-color 0.2s ease, box-shadow 0.2s ease',
+                    }}
+                    className="card-base"
                   >
-                    <ExternalLink size={16} className="group-hover:rotate-45 transition-transform" />
-                  </a>
-                )}
-              </div>
+                    {/* Ghost project number */}
+                    <div
+                      aria-hidden="true"
+                      style={{
+                        position: 'absolute',
+                        top: '-0.5rem',
+                        right: '1rem',
+                        fontSize: 'clamp(5rem, 10vw, 8rem)',
+                        fontWeight: 900,
+                        color: 'var(--accent-lite)',
+                        lineHeight: 1,
+                        pointerEvents: 'none',
+                        userSelect: 'none',
+                        transition: 'color 0.2s ease',
+                      }}
+                    >
+                      {String(i + 1).padStart(2, '0')}
+                    </div>
 
-              {/* Description */}
-              <p className="text-sm md:text-base text-white/50 leading-relaxed mb-6 relative z-10 max-w-3xl">
-                {project.description}
-              </p>
+                    {/* Header */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem', position: 'relative', zIndex: 1 }}>
+                      <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.02em', maxWidth: '75%' }}>
+                        {project.name}
+                      </h3>
+                      <div style={{ display: 'flex', gap: '0.5rem' }}>
+                        {project.github && (
+                          <a
+                            href={project.github}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            aria-label={`${project.name} GitHub`}
+                            style={{ color: 'var(--text-muted)', transition: 'color 0.2s' }}
+                          >
+                            <GitFork size={18} />
+                          </a>
+                        )}
+                        {project.live && (
+                          <a
+                            href={project.live}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            aria-label={`${project.name} live site`}
+                            style={{ color: 'var(--text-muted)', transition: 'color 0.2s' }}
+                          >
+                            <ExternalLink size={18} />
+                          </a>
+                        )}
+                      </div>
+                    </div>
 
-              {/* Highlights */}
-              <ul className="space-y-2 mb-6 relative z-10 list-none" role="list">
-                {project.highlights.map((h) => (
-                  <li key={h} className="flex gap-2 text-sm text-white/40 leading-relaxed">
-                    <span className="text-[#00f2ff] mt-1 flex-shrink-0" aria-hidden="true">›</span>
-                    {h}
-                  </li>
-                ))}
-              </ul>
+                    {/* Description */}
+                    <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', lineHeight: 1.7, marginBottom: '1rem', position: 'relative', zIndex: 1 }}>
+                      {project.description}
+                    </p>
 
-              {/* Tech */}
-              <div className="flex flex-wrap gap-2 relative z-10" aria-label="Technologies used">
-                {project.tech.map((t) => (
-                  <span key={t} className="skill-pill">{t}</span>
-                ))}
-              </div>
-            </article>
-          </TiltCard>
-        ))}
+                    {/* Highlights */}
+                    <ul role="list" style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', marginBottom: '1.25rem', listStyle: 'none', position: 'relative', zIndex: 1 }}>
+                      {project.highlights.map(h => (
+                        <li key={h} style={{ display: 'flex', gap: '0.5rem', fontSize: '0.78rem', color: 'var(--text-secondary)', lineHeight: 1.55 }}>
+                          <span style={{ color: 'var(--accent)', flexShrink: 0, fontSize: '0.65rem', marginTop: '0.15rem' }}>▸</span>
+                          {h}
+                        </li>
+                      ))}
+                    </ul>
+
+                    {/* Tech pills */}
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem', position: 'relative', zIndex: 1 }}>
+                      {project.tech.map((t, j) => (
+                        <span key={t} className={j % 2 === 0 ? 'skill-pill' : 'skill-pill skill-pill-2'}>{t}</span>
+                      ))}
+                    </div>
+                  </div>
+                </TiltCard>
+              </motion.div>
+            ))}
+          </div>
+        </SectionTransition>
       </div>
     </section>
   );
