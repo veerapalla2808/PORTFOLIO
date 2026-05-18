@@ -1,164 +1,129 @@
 // components/About.tsx
-"use client";
-
-import { useRef, useLayoutEffect } from "react";
-import { motion, useScroll, useTransform } from "framer-motion";
-import { gsap } from "@/lib/gsap";
-
-function WordReveal({
-  text,
-  progress,
-  range,
-}: {
-  text: string;
-  progress: ReturnType<typeof useScroll>["scrollYProgress"];
-  range: [number, number];
-}) {
-  const opacity = useTransform(progress, range, [0.1, 1]);
-  return (
-    <motion.span style={{ opacity }} className="inline-block mr-[0.25em]">
-      {text}
-    </motion.span>
-  );
-}
-
-const STATS = [
-  { value: "11+", label: "Years Experience" },
-  { value: "40+", label: "Projects Delivered" },
-  { value: "5", label: "Companies" },
-  { value: "3", label: "Cloud Platforms" },
-];
+'use client';
+import { motion } from 'framer-motion';
+import SectionTransition, { fadeUpVariant } from './ui/SectionTransition';
 
 const HIGHLIGHTS = [
   {
-    label: "Architectural Depth",
-    value: "Kafka · RAG · K8s",
-    desc: "Building resilient distributed systems that scale beyond 50k+ daily users.",
+    title: 'Architectural Depth',
+    desc: 'Microservices, distributed systems, and event-driven architecture at enterprise scale.',
+    color: 'var(--accent)',
   },
   {
-    label: "Product Mindset",
-    value: "UX-First Engineering",
-    desc: "Bridging the gap between complex backend logic and intuitive design.",
+    title: 'Product Mindset',
+    desc: 'Ships end-to-end — system design, API layer, infra, observability, and developer tooling.',
+    color: 'var(--accent-2)',
   },
   {
-    label: "Senior Leadership",
-    value: "11+ Years Excellence",
-    desc: "Driving technical strategy and mentoring high-performance teams.",
+    title: 'Team Leadership',
+    desc: 'Led cross-functional teams, mentored engineers, and drove cross-org technical alignment.',
+    color: 'var(--accent)',
   },
 ];
 
-const BIO =
-  "I am a Senior Full-Stack Engineer with 11+ years of experience building high-performance applications. My expertise spans the entire lifecycle of software development, from designing scalable microservices to crafting immersive user experiences. I specialize in React, Node.js, and Cloud architectures, with a focus on integrating generative AI and real-time event streaming into enterprise systems.";
+const STATS = [
+  { value: '11+', label: 'Years Experience' },
+  { value: '40+', label: 'Projects Shipped' },
+  { value: '5',   label: 'Companies' },
+  { value: '2',   label: 'Certifications' },
+];
 
 export default function About() {
-  const sectionRef = useRef<HTMLElement>(null);
-  const statsRef = useRef<HTMLDivElement>(null);
-  const highlightsRef = useRef<HTMLDivElement>(null);
-
-  const { scrollYProgress } = useScroll({
-    target: sectionRef,
-    offset: ["start end", "center center"],
-  });
-
-  useLayoutEffect(() => {
-    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if (prefersReducedMotion) return;
-
-    const ctx = gsap.context(() => {
-      // Stats slide in from right
-      gsap.fromTo(
-        statsRef.current!.children,
-        { x: 40, opacity: 0 },
-        {
-          x: 0,
-          opacity: 1,
-          stagger: 0.1,
-          duration: 0.8,
-          ease: "power3.out",
-          scrollTrigger: {
-            trigger: statsRef.current,
-            start: "top 80%",
-          },
-        }
-      );
-      // Highlights stagger up
-      gsap.fromTo(
-        highlightsRef.current!.children,
-        { y: 30, opacity: 0 },
-        {
-          y: 0,
-          opacity: 1,
-          stagger: 0.15,
-          duration: 0.8,
-          ease: "power3.out",
-          scrollTrigger: {
-            trigger: highlightsRef.current,
-            start: "top 85%",
-          },
-        }
-      );
-    }, sectionRef);
-
-    return () => ctx.revert();
-  }, []);
-
-  const words = BIO.split(" ");
-
   return (
-    <section
-      ref={sectionRef}
-      id="about"
-      aria-label="About Veera Palla"
-      className="container-wide"
-    >
-      <div className="section-label">01 // About</div>
-      <h2 className="section-title">About Me</h2>
+    <section id="about" className="section-bg-secondary">
+      <div className="container-wide">
+        <SectionTransition
+          number="001"
+          eyebrow="ABOUT"
+          title={
+            <>
+              Architecting at{' '}
+              <span className="text-grad">enterprise scale.</span>
+            </>
+          }
+        >
+          {/* Two-column: bio + highlights */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '2rem' }}
+               className="md:grid-cols-[2fr_1fr]">
 
-      {/* Two-column: bio left, stats right */}
-      <div className="flex flex-col lg:flex-row gap-12 lg:gap-20 mb-16 md:mb-20">
-        {/* Bio word reveal */}
-        <div className="lg:w-[60%]">
-          <p className="text-2xl md:text-3xl lg:text-4xl font-bold leading-[1.2] tracking-tight text-white">
-            {words.map((word, i) => (
-              <WordReveal
-                key={i}
-                text={word}
-                progress={scrollYProgress}
-                range={[i / words.length, (i + 1) / words.length]}
-              />
-            ))}
-          </p>
-        </div>
+            {/* Bio */}
+            <motion.div variants={fadeUpVariant} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <p style={{ fontSize: '1.05rem', fontWeight: 500, color: 'var(--text-primary)', lineHeight: 1.75 }}>
+                I&apos;m a Senior Software Engineer with 11+ years building systems
+                that run at enterprise scale — from financial platforms processing millions of transactions daily
+                to HIPAA-compliant healthcare applications serving thousands of clinical staff.
+              </p>
+              <p style={{ fontSize: '0.95rem', color: 'var(--text-secondary)', lineHeight: 1.75 }}>
+                My work sits at the intersection of system design, cloud infrastructure, and applied AI.
+                I don&apos;t just build features — I build the platforms other engineers build features on.
+                Whether it&apos;s RAG pipelines on AWS Bedrock, event-driven microservices on Kafka,
+                or FHIR-compliant API layers, I bring the same level of rigour to the architecture as to the code.
+              </p>
+            </motion.div>
 
-        {/* Stats */}
-        <div ref={statsRef} className="lg:w-[40%] grid grid-cols-2 gap-4" aria-label="Key statistics">
-          {STATS.map((stat) => (
-            <article
-              key={stat.label}
-              className="glass-card p-6 flex flex-col"
-            >
-              <span className="text-3xl md:text-4xl font-black text-[#00f2ff] mb-1" aria-label={stat.value}>
-                {stat.value}
-              </span>
-              <span className="text-xs uppercase tracking-widest text-white/40 font-bold">
-                {stat.label}
-              </span>
-            </article>
-          ))}
-        </div>
-      </div>
-
-      {/* Highlights */}
-      <div ref={highlightsRef} className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
-        {HIGHLIGHTS.map((item) => (
-          <article key={item.label} className="glass-card p-8 md:p-10">
-            <div className="text-[10px] uppercase tracking-[0.2em] text-white/20 font-black mb-4">
-              {item.label}
+            {/* Highlight cards */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+              {HIGHLIGHTS.map(h => (
+                <motion.div
+                  key={h.title}
+                  variants={fadeUpVariant}
+                  style={{
+                    background: 'var(--bg-primary)',
+                    border: '1px solid var(--border)',
+                    borderLeft: `3px solid ${h.color}`,
+                    borderRadius: 10,
+                    padding: '0.85rem 1rem',
+                    boxShadow: 'var(--shadow)',
+                    transition: 'box-shadow 0.2s ease, transform 0.2s ease',
+                  }}
+                  whileHover={{ y: -2, boxShadow: 'var(--shadow-hover)' }}
+                >
+                  <p style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.25rem' }}>{h.title}</p>
+                  <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', lineHeight: 1.55 }}>{h.desc}</p>
+                </motion.div>
+              ))}
             </div>
-            <div className="text-xl font-bold text-white mb-2 tracking-tight">{item.value}</div>
-            <p className="text-sm text-white/40 leading-relaxed">{item.desc}</p>
-          </article>
-        ))}
+          </div>
+
+          {/* Stats row */}
+          <motion.div
+            variants={fadeUpVariant}
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(4, 1fr)',
+              gap: '1rem',
+              marginTop: '2.5rem',
+            }}
+          >
+            {STATS.map(s => (
+              <div
+                key={s.label}
+                style={{
+                  background: 'var(--bg-primary)',
+                  border: '1px solid var(--border-accent)',
+                  borderRadius: 12,
+                  padding: '1.25rem 1rem',
+                  textAlign: 'center',
+                  boxShadow: 'var(--shadow)',
+                }}
+              >
+                <div style={{
+                  fontSize: 'clamp(1.5rem, 4vw, 2rem)',
+                  fontWeight: 900,
+                  background: 'linear-gradient(135deg, var(--accent), var(--accent-2))',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  backgroundClip: 'text',
+                }}>
+                  {s.value}
+                </div>
+                <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', letterSpacing: '0.15em', textTransform: 'uppercase', marginTop: '0.3rem' }}>
+                  {s.label}
+                </div>
+              </div>
+            ))}
+          </motion.div>
+        </SectionTransition>
       </div>
     </section>
   );

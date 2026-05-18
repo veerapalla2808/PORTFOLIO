@@ -1,6 +1,6 @@
 'use client';
 import { useRef } from 'react';
-import { motion, useInView } from 'framer-motion';
+import { motion, useInView, type Variants } from 'framer-motion';
 
 interface SectionTransitionProps {
   number: string;
@@ -72,7 +72,7 @@ export default function SectionTransition({
   );
 }
 
-export const fadeUpVariant = {
+export const fadeUpVariant: Variants = {
   hidden: { opacity: 0, y: 24 },
   visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: [0.33, 1, 0.68, 1] } },
 };
