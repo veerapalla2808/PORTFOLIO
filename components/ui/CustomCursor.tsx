@@ -17,6 +17,8 @@ export default function CustomCursor() {
       if (!isVisible.current) isVisible.current = true;
     };
 
+    const observed = new WeakSet<HTMLElement>();
+
     const onEnterInteractive = () => scale.set(2);
     const onLeaveInteractive = () => scale.set(1);
 
@@ -25,6 +27,8 @@ export default function CustomCursor() {
 
     const attachListeners = () => {
       document.querySelectorAll<HTMLElement>(interactiveSelectors).forEach(el => {
+        if (observed.has(el)) return;
+        observed.add(el);
         el.addEventListener('mouseenter', onEnterInteractive);
         el.addEventListener('mouseleave', onLeaveInteractive);
       });
