@@ -1,131 +1,261 @@
 // components/Experience.tsx
-"use client";
+'use client';
+import { useState, useRef, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import SectionTransition, { fadeUpVariant } from './ui/SectionTransition';
+import { experiences } from '@/lib/data';
+import { gsap, ScrollTrigger } from '@/lib/gsap';
 
-import { useRef, useLayoutEffect } from "react";
-import { gsap, ScrollTrigger } from "@/lib/gsap";
-import { experiences } from "@/lib/data";
+// Map company → key impact metrics
+const METRICS: Record<string, Array<{ value: string; label: string }>> = {
+  'Comerica Bank': [
+    { value: '2M+',  label: 'Daily Txns' },
+    { value: '40%',  label: 'MTTR Reduction' },
+    { value: 'AI',   label: 'RAG Assistant' },
+    { value: '6',    label: 'Team Size' },
+  ],
+  'UCLA Health': [
+    { value: '50%',  label: 'Query Perf ↑' },
+    { value: '90%+', label: 'E2E Coverage' },
+    { value: 'HIPAA',label: 'Compliant' },
+    { value: '3+',   label: 'Yrs Tenure' },
+  ],
+  "Dillard's": [
+    { value: 'MERN', label: 'Full-Stack' },
+    { value: 'Peak', label: 'Traffic Scaled' },
+    { value: 'JWT',  label: 'Auth Layer' },
+    { value: '3',    label: 'Yrs Tenure' },
+  ],
+  'KeyBank': [
+    { value: 'GraphQL', label: 'APIs Built' },
+    { value: 'OWASP',   label: 'Compliant' },
+    { value: 'AWS',     label: 'Infra' },
+    { value: '2',       label: 'Yrs Tenure' },
+  ],
+  'Foxconn': [
+    { value: 'D3.js', label: 'Dashboards' },
+    { value: 'WCAG',  label: 'Accessible' },
+    { value: 'UI/UX', label: 'Design Led' },
+    { value: '3+',    label: 'Yrs Tenure' },
+  ],
+};
+
+const YEARS = ['2013', '2016', '2018', '2021', '2024', 'Now'];
 
 export default function Experience() {
-  const sectionRef = useRef<HTMLElement>(null);
-  const lineRef = useRef<HTMLDivElement>(null);
+  const [activeIdx, setActiveIdx] = useState(0);
+  const [direction, setDirection] = useState<1 | -1>(1);
+  const trackRef = useRef<HTMLDivElement>(null);
+  const fillRef  = useRef<HTMLDivElement>(null);
 
-  useLayoutEffect(() => {
-    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if (prefersReducedMotion) return;
+  const handleSelect = (i: number) => {
+    setDirection(i > activeIdx ? 1 : -1);
+    setActiveIdx(i);
+  };
+
+  // Animate timeline bar on scroll
+  useEffect(() => {
+    if (!fillRef.current) return;
+    const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
     const ctx = gsap.context(() => {
-      // Draw the timeline line on scroll
+      if (prefersReduced) {
+        gsap.set(fillRef.current, { scaleX: 1 });
+        return;
+      }
       gsap.fromTo(
-        lineRef.current,
-        { scaleY: 0 },
+        fillRef.current,
+        { scaleX: 0 },
         {
-          scaleY: 1,
-          transformOrigin: "top center",
-          ease: "none",
+          scaleX: 1,
+          ease: 'none',
           scrollTrigger: {
-            trigger: sectionRef.current,
-            start: "top 70%",
-            end: "bottom 30%",
+            trigger: trackRef.current,
+            start: 'top 80%',
+            end: 'top 40%',
             scrub: 1,
           },
         }
       );
-
-      // Cards fade in as they enter viewport
-      gsap.utils.toArray<HTMLElement>(".exp-card").forEach((card) => {
-        gsap.fromTo(
-          card,
-          { x: 40, opacity: 0 },
-          {
-            x: 0,
-            opacity: 1,
-            duration: 0.8,
-            ease: "power3.out",
-            scrollTrigger: {
-              trigger: card,
-              start: "top 85%",
-            },
-          }
-        );
-      });
-    }, sectionRef);
+    });
 
     return () => ctx.revert();
   }, []);
 
+  const exp = experiences[activeIdx];
+
   return (
-    <section
-      ref={sectionRef}
-      id="experience"
-      aria-label="Work experience"
-      className="container-wide"
-    >
-      <div className="section-label">03 // Experience</div>
-      <h2 className="section-title">Where I&apos;ve Built</h2>
+    <section id="experience" className="section-bg-secondary">
+      <div className="container-wide">
+        <SectionTransition
+          number="003"
+          eyebrow="EXPERIENCE"
+          title={
+            <>11 years ·{' '}
+              <span className="text-grad">5 companies</span>
+            </>
+          }
+        >
+          {/* ── Career Timeline ── */}
+          <motion.div variants={fadeUpVariant} style={{ marginBottom: '2rem' }}>
+            {/* Year labels */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+              {YEARS.map(y => (
+                <span key={y} style={{ fontSize: '0.6rem', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
+                  {y}
+                </span>
+              ))}
+            </div>
 
-      <div className="relative flex gap-6 md:gap-12">
-        {/* Timeline line */}
-        <div className="relative flex-shrink-0 flex justify-center" style={{ width: "2px" }}>
-          <div
-            ref={lineRef}
-            className="absolute top-0 bottom-0 w-px origin-top"
-            style={{ background: "linear-gradient(to bottom, #00f2ff, rgba(0,242,255,0.1))" }}
-            aria-hidden="true"
-          />
-        </div>
-
-        {/* Cards */}
-        <div className="flex flex-col gap-10 flex-1 pb-4">
-          {experiences.map((exp, i) => (
-            <article
-              key={exp.company}
-              className="exp-card glass-card p-6 md:p-8 relative"
-              style={{ borderLeft: "2px solid rgba(0,242,255,0.15)" }}
+            {/* Progress bar */}
+            <div
+              ref={trackRef}
+              style={{
+                position: 'relative',
+                height: 4,
+                background: 'var(--border)',
+                borderRadius: 2,
+                marginBottom: '0.85rem',
+                overflow: 'hidden',
+              }}
             >
-              {/* Timeline node */}
               <div
-                className="absolute -left-[calc(1.5rem+2px)] md:-left-[calc(3rem+2px)] top-8 w-3 h-3 rounded-full border-2 border-[#00f2ff] bg-[#030303]"
-                aria-hidden="true"
+                ref={fillRef}
+                style={{
+                  position: 'absolute',
+                  inset: 0,
+                  background: 'linear-gradient(90deg, var(--accent), var(--accent-2))',
+                  borderRadius: 2,
+                  transformOrigin: '0%',
+                }}
               />
+            </div>
 
+            {/* Company buttons */}
+            <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+              {experiences.map((e, i) => (
+                <button
+                  key={e.company}
+                  onClick={() => handleSelect(i)}
+                  aria-pressed={i === activeIdx}
+                  style={{
+                    flex: '1 1 auto',
+                    minWidth: 100,
+                    padding: '0.6rem 0.85rem',
+                    border: i === activeIdx ? '1px solid var(--border-accent)' : '1px solid var(--border)',
+                    borderRadius: 8,
+                    background: i === activeIdx ? 'var(--accent-lite)' : 'var(--bg-primary)',
+                    color: i === activeIdx ? 'var(--accent-text)' : 'var(--text-secondary)',
+                    fontWeight: i === activeIdx ? 700 : 500,
+                    fontSize: '0.78rem',
+                    transition: 'all 0.2s ease',
+                    textAlign: 'left',
+                    cursor: 'pointer',
+                  }}
+                >
+                  <div style={{ fontWeight: 700, color: i === activeIdx ? 'var(--accent-text)' : 'var(--text-primary)', marginBottom: 2 }}>
+                    {e.company}
+                  </div>
+                  <div style={{ fontSize: '0.62rem', color: 'var(--text-muted)' }}>{e.period}</div>
+                </button>
+              ))}
+            </div>
+          </motion.div>
+
+          {/* ── Detail Panel ── */}
+          <AnimatePresence mode="wait" custom={direction}>
+            <motion.div
+              key={activeIdx}
+              custom={direction}
+              variants={{
+                enter: (d: number) => ({ opacity: 0, x: d * 40 }),
+                center: { opacity: 1, x: 0 },
+                exit: (d: number) => ({ opacity: 0, x: d * -40 }),
+              }}
+              initial="enter"
+              animate="center"
+              exit="exit"
+              transition={{ duration: 0.25, ease: 'easeInOut' }}
+              style={{
+                background: 'var(--bg-primary)',
+                border: '1px solid var(--border-accent)',
+                borderRadius: 14,
+                padding: '1.75rem',
+                boxShadow: 'var(--shadow)',
+              }}
+            >
               {/* Header */}
-              <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 mb-4">
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '0.75rem', marginBottom: '1.25rem' }}>
                 <div>
-                  <h3 className="text-lg md:text-xl font-black text-white hover:text-[#00f2ff] transition-colors">
-                    {exp.company}
-                  </h3>
-                  <p className="text-sm font-semibold text-white/60">{exp.role}</p>
+                  <h3 style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '0.2rem' }}>{exp.role}</h3>
+                  <p style={{ fontSize: '0.75rem', color: 'var(--accent)', fontFamily: 'var(--font-mono)', letterSpacing: '0.1em' }}>
+                    {exp.company.toUpperCase()} · {exp.location}
+                  </p>
                 </div>
-                <div className="text-right flex-shrink-0">
-                  <time
-                    dateTime={exp.period.replace(" – ", "/")}
-                    className="text-xs font-mono text-[#00f2ff] block"
+                <span style={{
+                  background: 'var(--accent-lite)',
+                  border: '1px solid var(--border-accent)',
+                  color: 'var(--accent-text)',
+                  padding: '0.2rem 0.75rem',
+                  borderRadius: 999,
+                  fontSize: '0.7rem',
+                  fontWeight: 600,
+                  whiteSpace: 'nowrap',
+                }}>
+                  {exp.period}
+                </span>
+              </div>
+
+              {/* Impact metrics */}
+              <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap', marginBottom: '1.25rem' }}>
+                {(METRICS[exp.company] ?? []).map(m => (
+                  <div
+                    key={m.label}
+                    style={{
+                      flex: '1 1 80px',
+                      background: 'var(--bg-secondary)',
+                      border: '1px solid var(--border)',
+                      borderRadius: 8,
+                      padding: '0.6rem 0.75rem',
+                      textAlign: 'center',
+                    }}
                   >
-                    {exp.period}
-                  </time>
-                  <span className="text-xs text-white/40">{exp.location}</span>
-                </div>
+                    <div style={{
+                      fontSize: '1rem',
+                      fontWeight: 900,
+                      background: 'linear-gradient(135deg, var(--accent), var(--accent-2))',
+                      WebkitBackgroundClip: 'text',
+                      WebkitTextFillColor: 'transparent',
+                      backgroundClip: 'text',
+                    }}>
+                      {m.value}
+                    </div>
+                    <div style={{ fontSize: '0.58rem', color: 'var(--text-muted)', letterSpacing: '0.1em', textTransform: 'uppercase', marginTop: 2 }}>
+                      {m.label}
+                    </div>
+                  </div>
+                ))}
               </div>
 
               {/* Bullets */}
-              <ul className="space-y-2 mb-6 list-none" role="list">
-                {exp.bullets.map((bullet) => (
-                  <li key={bullet} className="flex gap-2 text-sm text-white/50 leading-relaxed">
-                    <span className="text-[#00f2ff] mt-1 flex-shrink-0" aria-hidden="true">›</span>
-                    {bullet}
+              <ul role="list" style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '1.25rem', listStyle: 'none' }}>
+                {exp.bullets.map(b => (
+                  <li key={b} style={{ display: 'flex', gap: '0.6rem', alignItems: 'flex-start', fontSize: '0.85rem', color: 'var(--text-secondary)', lineHeight: 1.65 }}>
+                    <span style={{ color: 'var(--accent)', flexShrink: 0, marginTop: '0.2rem', fontSize: '0.65rem' }}>▸</span>
+                    {b}
                   </li>
                 ))}
               </ul>
 
               {/* Tech pills */}
-              <div className="flex flex-wrap gap-2" aria-label="Technologies used">
-                {exp.tech.map((t) => (
-                  <span key={t} className="skill-pill">{t}</span>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
+                {exp.tech.map((t, i) => (
+                  <span key={t} className={i % 2 === 0 ? 'skill-pill' : 'skill-pill skill-pill-2'}>{t}</span>
                 ))}
               </div>
-            </article>
-          ))}
-        </div>
+            </motion.div>
+          </AnimatePresence>
+        </SectionTransition>
       </div>
     </section>
   );
