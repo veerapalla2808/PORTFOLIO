@@ -48,7 +48,7 @@ export default function Footer() {
       {/* ── Background layer ── */}
       <div
         style={{
-          background: 'color-mix(in srgb, var(--bg-secondary) 80%, transparent)',
+          background: 'color-mix(in srgb, var(--bg-secondary) 65%, transparent)',
           position: 'relative',
         }}
       >
