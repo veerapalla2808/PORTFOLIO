@@ -128,8 +128,12 @@ h1, h2, h3, h4, h5, h6 {
 section { padding: 8rem 0; }
 @media (max-width: 768px) { section { padding: 5rem 0; } }
 
-.section-bg-primary   { background-color: var(--bg-primary); }
-.section-bg-secondary { background-color: var(--bg-secondary); }
+/* Semi-transparent so the fixed particle canvas bleeds through */
+.section-bg-primary   { background-color: color-mix(in srgb, var(--bg-primary) 80%, transparent); }
+.section-bg-secondary { background-color: color-mix(in srgb, var(--bg-secondary) 80%, transparent); }
+
+/* Ensure all page content renders above the z-index:0 particle canvas */
+section, main, footer { position: relative; z-index: 1; }
 
 /* ─── Section label (monospace eyebrow) ──────────────────────────────────── */
 .section-eyebrow {
