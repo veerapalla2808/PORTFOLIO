@@ -1,188 +1,234 @@
 // components/Navbar.tsx
-"use client";
-
-import { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { personal } from "@/lib/data";
-import MagneticButton from "./ui/MagneticButton";
+'use client';
+import { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Menu, X, Download } from 'lucide-react';
+import ThemeToggle from './ThemeToggle';
+import ScrollProgressBar from './ui/ScrollProgressBar';
+import MagneticButton from './ui/MagneticButton';
+import { personal } from '@/lib/data';
 
 const NAV_LINKS = [
-  { label: "About", href: "#about" },
-  { label: "Skills", href: "#skills" },
-  { label: "Experience", href: "#experience" },
-  { label: "Projects", href: "#projects" },
-  { label: "Contact", href: "#contact" },
+  { label: 'About',      href: '#about' },
+  { label: 'Skills',     href: '#skills' },
+  { label: 'Experience', href: '#experience' },
+  { label: 'Projects',   href: '#projects' },
+  { label: 'Contact',    href: '#contact' },
 ];
 
-const SECTIONS = ["hero", "about", "skills", "experience", "projects", "contact"];
-
 export default function Navbar() {
-  const [scrolled, setScrolled] = useState(false);
-  const [activeSection, setActiveSection] = useState("hero");
-  const [menuOpen, setMenuOpen] = useState(false);
+  const [menuOpen, setMenuOpen]    = useState(false);
+  const [scrolled, setScrolled]    = useState(false);
+  const [activeSection, setActive] = useState('');
 
+  // Shrink nav background after scrolling 60px
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 100);
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
+    const onScroll = () => setScrolled(window.scrollY > 60);
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
+  // Highlight active section via IntersectionObserver
   useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) setActiveSection(entry.target.id);
-        });
-      },
-      { threshold: 0.4 }
-    );
-    SECTIONS.forEach((id) => {
+    const ids = NAV_LINKS.map(l => l.href.slice(1));
+    const observers = ids.map(id => {
       const el = document.getElementById(id);
-      if (el) observer.observe(el);
+      if (!el) return null;
+      const obs = new IntersectionObserver(
+        ([entry]) => { if (entry.isIntersecting) setActive(id); },
+        { threshold: 0.3 }
+      );
+      obs.observe(el);
+      return obs;
     });
-    return () => observer.disconnect();
+    return () => observers.forEach(o => o?.disconnect());
   }, []);
 
-  // Lock body scroll when menu is open
+  // Lock body scroll when mobile menu is open
   useEffect(() => {
-    document.body.style.overflow = menuOpen ? "hidden" : "";
-    return () => { document.body.style.overflow = ""; };
+    document.body.style.overflow = menuOpen ? 'hidden' : '';
+    return () => { document.body.style.overflow = ''; };
   }, [menuOpen]);
 
   return (
     <>
-      <AnimatePresence>
-        {scrolled && (
-          <motion.nav
-            role="navigation"
-            aria-label="Main navigation"
-            initial={{ y: -80, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: -80, opacity: 0 }}
-            transition={{ type: "spring", damping: 20, stiffness: 200 }}
-            className="fixed top-6 left-1/2 -translate-x-1/2 z-50"
+      <ScrollProgressBar />
+
+      <header
+        style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          zIndex: 100,
+          height: 'var(--header-height)',
+          backdropFilter: scrolled ? 'blur(16px)' : 'none',
+          WebkitBackdropFilter: scrolled ? 'blur(16px)' : 'none',
+          background: scrolled
+            ? 'color-mix(in srgb, var(--bg-primary) 92%, transparent)'
+            : 'transparent',
+          borderBottom: scrolled ? '1px solid var(--border)' : '1px solid transparent',
+          transition: 'background 0.3s ease, border-color 0.3s ease',
+        }}
+      >
+        <div
+          className="container-wide"
+          style={{
+            height: '100%',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: '1rem',
+          }}
+        >
+          {/* Logo */}
+          <a
+            href="#hero"
+            aria-label="Back to top"
+            style={{
+              fontFamily: 'var(--font-mono)',
+              fontSize: '1rem',
+              fontWeight: 900,
+              color: 'var(--accent)',
+              letterSpacing: '0.1em',
+              textDecoration: 'none',
+            }}
           >
-            <div
-              className="flex items-center gap-1 md:gap-2 px-3 md:px-5 py-2.5 rounded-full"
-              style={{
-                background: "rgba(3, 3, 3, 0.75)",
-                backdropFilter: "blur(20px)",
-                WebkitBackdropFilter: "blur(20px)",
-                border: "1px solid rgba(0, 242, 255, 0.08)",
-              }}
-            >
-              {/* Logo */}
+            VP
+          </a>
+
+          {/* Desktop nav */}
+          <nav
+            aria-label="Main navigation"
+            style={{
+              display: 'flex',
+              gap: '0.25rem',
+              alignItems: 'center',
+            }}
+            className="hidden md:flex"
+          >
+            {NAV_LINKS.map(link => (
               <a
-                href="#hero"
-                className="text-[#00f2ff] font-black font-mono text-sm mr-2 md:mr-4 min-w-[44px] min-h-[44px] flex items-center"
-                aria-label="Veera Palla — back to top"
+                key={link.href}
+                href={link.href}
+                style={{
+                  position: 'relative',
+                  padding: '0.4rem 0.75rem',
+                  fontSize: '0.85rem',
+                  fontWeight: activeSection === link.href.slice(1) ? 700 : 500,
+                  color: activeSection === link.href.slice(1)
+                    ? 'var(--accent)'
+                    : 'var(--text-secondary)',
+                  textDecoration: 'none',
+                  borderRadius: 6,
+                  transition: 'color 0.2s ease',
+                }}
               >
-                VP
+                {link.label}
+                {activeSection === link.href.slice(1) && (
+                  <motion.span
+                    layoutId="nav-indicator"
+                    style={{
+                      position: 'absolute',
+                      bottom: 2,
+                      left: '50%',
+                      translateX: '-50%',
+                      width: 4,
+                      height: 4,
+                      borderRadius: '50%',
+                      background: 'var(--accent)',
+                    }}
+                    transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                  />
+                )}
               </a>
+            ))}
+          </nav>
 
-              {/* Desktop links */}
-              <div className="hidden md:flex items-center gap-1">
-                {NAV_LINKS.map((link) => {
-                  const sectionId = link.href.replace("#", "");
-                  const isActive = activeSection === sectionId;
-                  return (
-                    <div key={link.href} className="relative">
-                      <a
-                        href={link.href}
-                        className="relative px-3 py-1.5 text-xs font-semibold tracking-wide transition-colors min-h-[44px] flex items-center"
-                        style={{ color: isActive ? "#00f2ff" : "#a1a1aa" }}
-                        aria-current={isActive ? "page" : undefined}
-                      >
-                        {link.label}
-                        {isActive && (
-                          <motion.span
-                            layoutId="nav-active-dot"
-                            className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-[#00f2ff]"
-                            transition={{ type: "spring", damping: 20, stiffness: 300 }}
-                          />
-                        )}
-                      </a>
-                    </div>
-                  );
-                })}
-              </div>
+          {/* Right controls */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+            <ThemeToggle />
 
-              {/* Resume button */}
-              <div className="hidden md:block ml-2">
-                <MagneticButton
-                  href={personal.resumeUrl}
-                  download
-                  aria-label="Download resume"
-                  className="px-4 py-1.5 rounded-full text-xs font-bold text-[#00f2ff] min-h-[44px] flex items-center"
-                  style={{
-                    border: "1px solid rgba(0, 242, 255, 0.4)",
-                  } as React.CSSProperties}
-                >
-                  Resume ↓
-                </MagneticButton>
-              </div>
+            <MagneticButton href={personal.resumeUrl} className="hidden md:flex btn-primary" style={{ fontSize: '0.8rem', padding: '0.5rem 1rem' }}>
+              <Download size={14} />
+              Resume
+            </MagneticButton>
 
-              {/* Mobile hamburger */}
-              <button
-                className="md:hidden ml-2 min-w-[44px] min-h-[44px] flex items-center justify-center text-white"
-                onClick={() => setMenuOpen((v) => !v)}
-                aria-label={menuOpen ? "Close menu" : "Open menu"}
-                aria-expanded={menuOpen}
-              >
-                <span className="text-lg">{menuOpen ? "✕" : "☰"}</span>
-              </button>
-            </div>
-          </motion.nav>
-        )}
-      </AnimatePresence>
+            {/* Mobile hamburger */}
+            <button
+              onClick={() => setMenuOpen(o => !o)}
+              aria-label={menuOpen ? 'Close menu' : 'Open menu'}
+              aria-expanded={menuOpen}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: 36,
+                height: 36,
+                borderRadius: 8,
+                border: '1px solid var(--border)',
+                background: 'var(--bg-card)',
+                color: 'var(--text-primary)',
+              }}
+              className="flex md:hidden"
+            >
+              {menuOpen ? <X size={18} /> : <Menu size={18} />}
+            </button>
+          </div>
+        </div>
+      </header>
 
-      {/* Mobile fullscreen overlay */}
+      {/* Mobile overlay */}
       <AnimatePresence>
         {menuOpen && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-40 flex flex-col items-center justify-center md:hidden"
-            style={{ background: "rgba(3,3,3,0.97)", backdropFilter: "blur(20px)" }}
-            role="dialog"
-            aria-modal="true"
-            aria-label="Mobile navigation"
+            transition={{ duration: 0.2 }}
+            style={{
+              position: 'fixed',
+              inset: 0,
+              zIndex: 99,
+              background: 'var(--bg-primary)',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '2rem',
+            }}
           >
-            <nav>
-              <ul className="flex flex-col items-center gap-8 list-none" role="list">
-                {NAV_LINKS.map((link, i) => (
-                  <motion.li
-                    key={link.href}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: i * 0.07 }}
-                  >
-                    <a
-                      href={link.href}
-                      onClick={() => setMenuOpen(false)}
-                      className="text-3xl font-black tracking-tight text-white hover:text-[#00f2ff] transition-colors min-h-[44px] flex items-center"
-                    >
-                      {link.label}
-                    </a>
-                  </motion.li>
-                ))}
-                <motion.li
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: NAV_LINKS.length * 0.07 }}
-                >
-                  <a
-                    href={personal.resumeUrl}
-                    download
-                    aria-label="Download resume"
-                    className="mt-4 px-8 py-3 rounded-full border border-[#00f2ff] text-[#00f2ff] font-bold text-lg min-h-[44px] flex items-center"
-                  >
-                    Resume ↓
-                  </a>
-                </motion.li>
-              </ul>
-            </nav>
+            {NAV_LINKS.map((link, i) => (
+              <motion.a
+                key={link.href}
+                href={link.href}
+                onClick={() => setMenuOpen(false)}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.06, duration: 0.3 }}
+                style={{
+                  fontSize: '2rem',
+                  fontWeight: 800,
+                  color: activeSection === link.href.slice(1)
+                    ? 'var(--accent)'
+                    : 'var(--text-primary)',
+                  textDecoration: 'none',
+                  letterSpacing: '-0.03em',
+                }}
+              >
+                {link.label}
+              </motion.a>
+            ))}
+            <motion.a
+              href={personal.resumeUrl}
+              download
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: NAV_LINKS.length * 0.06 }}
+              className="btn-primary"
+            >
+              <Download size={16} /> Resume
+            </motion.a>
           </motion.div>
         )}
       </AnimatePresence>
