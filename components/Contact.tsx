@@ -1,291 +1,247 @@
 // components/Contact.tsx
-"use client";
+'use client';
+import { useState, FormEvent } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import SectionTransition, { fadeUpVariant } from './ui/SectionTransition';
+import emailjs from '@emailjs/browser';
+import { personal } from '@/lib/data';
 
-import { useState, useRef, useLayoutEffect } from "react";
-import emailjs from "@emailjs/browser";
-import { personal } from "@/lib/data";
-import { gsap } from "@/lib/gsap";
-import MagneticButton from "./ui/MagneticButton";
-import { Mail, BookOpen, Phone } from "lucide-react";
-import { FaLinkedin as Linkedin } from "react-icons/fa6";
+import { Mail, Send, CheckCircle, AlertCircle } from 'lucide-react';
+import { Link2, FileText, PhoneCall } from 'lucide-react';
 
-interface FormState {
-  name: string;
-  email: string;
-  message: string;
+type FormStatus = 'idle' | 'sending' | 'success' | 'error';
+
+interface FloatFieldProps {
+  id: string;
+  label: string;
+  type?: string;
+  value: string;
+  onChange: (v: string) => void;
+  error?: string;
+  multiline?: boolean;
+  required?: boolean;
 }
 
-interface FormErrors {
-  name?: string;
-  email?: string;
-  message?: string;
-}
+function FloatField({ id, label, type = 'text', value, onChange, error, multiline, required }: FloatFieldProps) {
+  const [focused, setFocused] = useState(false);
+  const lifted = focused || value.length > 0;
 
-type SubmitStatus = "idle" | "sending" | "success" | "error";
+  const sharedStyle: React.CSSProperties = {
+    width: '100%',
+    padding: '1.5rem 0.9rem 0.5rem',
+    background: 'var(--bg-card)',
+    border: `1px solid ${error ? '#ef4444' : focused ? 'var(--border-accent)' : 'var(--border)'}`,
+    borderRadius: 8,
+    fontSize: '0.9rem',
+    color: 'var(--text-primary)',
+    outline: 'none',
+    transition: 'border-color 0.2s ease',
+    resize: multiline ? 'vertical' : undefined,
+    minHeight: multiline ? 120 : undefined,
+    fontFamily: 'var(--font-sans)',
+  };
 
-const CONTACT_LINKS = [
-  {
-    icon: <Mail size={20} aria-hidden="true" />,
-    label: "Email",
-    value: personal.email,
-    href: `mailto:${personal.email}`,
-    display: personal.email,
-  },
-  {
-    icon: <Linkedin size={20} aria-hidden="true" />,
-    label: "LinkedIn",
-    value: "Veera Palla",
-    href: personal.linkedin,
-    display: "linkedin.com/in/veera-palla",
-  },
-  {
-    icon: <BookOpen size={20} aria-hidden="true" />,
-    label: "Medium",
-    value: "@veera.palla919",
-    href: personal.medium,
-    display: "medium.com/@veera.palla919",
-  },
-  {
-    icon: <Phone size={20} aria-hidden="true" />,
-    label: "Phone",
-    value: personal.phone,
-    href: `tel:${personal.phone.replace(/\D/g, "")}`,
-    display: personal.phone,
-  },
-];
+  return (
+    <div style={{ position: 'relative', marginBottom: '1rem' }}>
+      <label
+        htmlFor={id}
+        style={{
+          position: 'absolute',
+          left: '0.9rem',
+          top: lifted ? '0.4rem' : '0.9rem',
+          fontSize: lifted ? '0.65rem' : '0.9rem',
+          color: error ? '#ef4444' : focused ? 'var(--accent)' : 'var(--text-muted)',
+          fontWeight: lifted ? 600 : 400,
+          letterSpacing: lifted ? '0.05em' : 0,
+          textTransform: lifted ? 'uppercase' : 'none',
+          transition: 'all 0.15s ease',
+          pointerEvents: 'none',
+          zIndex: 1,
+        }}
+      >
+        {label}{required && ' *'}
+      </label>
 
-function validate(form: FormState): FormErrors {
-  const errors: FormErrors = {};
-  if (!form.name.trim()) errors.name = "Name is required.";
-  if (!form.email.trim()) errors.email = "Email is required.";
-  else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email))
-    errors.email = "Please enter a valid email address.";
-  if (!form.message.trim()) errors.message = "Message is required.";
-  else if (form.message.trim().length < 10)
-    errors.message = "Message must be at least 10 characters.";
-  return errors;
+      {multiline ? (
+        <textarea
+          id={id}
+          value={value}
+          onChange={e => onChange(e.target.value)}
+          onFocus={() => setFocused(true)}
+          onBlur={() => setFocused(false)}
+          aria-invalid={!!error}
+          aria-describedby={error ? `${id}-error` : undefined}
+          aria-required={required}
+          style={sharedStyle}
+        />
+      ) : (
+        <input
+          id={id}
+          type={type}
+          value={value}
+          onChange={e => onChange(e.target.value)}
+          onFocus={() => setFocused(true)}
+          onBlur={() => setFocused(false)}
+          aria-invalid={!!error}
+          aria-describedby={error ? `${id}-error` : undefined}
+          aria-required={required}
+          style={sharedStyle}
+        />
+      )}
+
+      {error && (
+        <p id={`${id}-error`} role="alert" style={{ fontSize: '0.7rem', color: '#ef4444', marginTop: '0.25rem' }}>
+          {error}
+        </p>
+      )}
+    </div>
+  );
 }
 
 export default function Contact() {
-  const sectionRef = useRef<HTMLElement>(null);
-  const [form, setForm] = useState<FormState>({ name: "", email: "", message: "" });
-  const [errors, setErrors] = useState<FormErrors>({});
-  const [status, setStatus] = useState<SubmitStatus>("idle");
+  const [name,    setName]    = useState('');
+  const [email,   setEmail]   = useState('');
+  const [message, setMessage] = useState('');
+  const [errors,  setErrors]  = useState<Record<string, string>>({});
+  const [status,  setStatus]  = useState<FormStatus>('idle');
 
-  useLayoutEffect(() => {
-    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if (prefersReducedMotion) return;
+  const CONTACT_LINKS = [
+    { Icon: Mail,      label: 'Email',    value: personal.email,    href: `mailto:${personal.email}` },
+    { Icon: Link2,     label: 'LinkedIn', value: 'veera-palla',     href: personal.linkedin },
+    ...(personal.medium ? [{ Icon: FileText, label: 'Medium', value: '@veera.palla919', href: personal.medium }] : []),
+    ...(personal.phone  ? [{ Icon: PhoneCall, label: 'Phone', value: personal.phone, href: `tel:${personal.phone}` }] : []),
+  ];
 
-    const ctx = gsap.context(() => {
-      gsap.fromTo(
-        ".contact-card",
-        { x: -30, opacity: 0 },
-        {
-          x: 0,
-          opacity: 1,
-          stagger: 0.1,
-          duration: 0.7,
-          ease: "power3.out",
-          scrollTrigger: { trigger: sectionRef.current, start: "top 80%" },
-        }
-      );
-    }, sectionRef);
-
-    return () => ctx.revert();
-  }, []);
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
-    if (errors[e.target.name as keyof FormErrors]) {
-      setErrors((prev) => ({ ...prev, [e.target.name]: undefined }));
-    }
+  const validate = () => {
+    const e: Record<string, string> = {};
+    if (!name.trim())    e.name    = 'Name is required';
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) e.email = 'Valid email required';
+    if (message.trim().length < 10) e.message = 'Message must be at least 10 characters';
+    setErrors(e);
+    return Object.keys(e).length === 0;
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    const validationErrors = validate(form);
-    if (Object.keys(validationErrors).length > 0) {
-      setErrors(validationErrors);
-      return;
-    }
-    setStatus("sending");
+    if (!validate()) return;
+    setStatus('sending');
     try {
       await emailjs.send(
         process.env.NEXT_PUBLIC_EMAILJS_SERVICE_ID!,
         process.env.NEXT_PUBLIC_EMAILJS_TEMPLATE_ID!,
-        { name: form.name, email: form.email, message: form.message, title: `Portfolio inquiry from ${form.name}` },
+        { from_name: name, from_email: email, message },
         process.env.NEXT_PUBLIC_EMAILJS_PUBLIC_KEY!
       );
-      setStatus("success");
-      setForm({ name: "", email: "", message: "" });
+      setStatus('success');
+      setName(''); setEmail(''); setMessage('');
     } catch {
-      setStatus("error");
+      setStatus('error');
     }
   };
 
-  const inputClass = (field: keyof FormErrors) =>
-    `w-full bg-white/[0.04] border rounded-xl px-4 py-3 text-white text-sm placeholder-white/20 transition-all focus:outline-none focus:ring-2 focus:ring-[#00f2ff] focus:border-transparent ${
-      errors[field] ? "border-red-500/60" : "border-white/10"
-    }`;
-
   return (
-    <section
-      ref={sectionRef}
-      id="contact"
-      aria-label="Contact Veera Palla"
-      className="container-wide"
-    >
-      <div className="section-label">06 // Contact</div>
-      <h2 className="section-title">Let&apos;s Build Something.</h2>
-
-      <div className="flex flex-col lg:flex-row gap-8 lg:gap-16">
-        {/* Contact links */}
-        <div className="lg:w-[42%] flex flex-col gap-4">
-          {CONTACT_LINKS.map((link) => (
-            <MagneticButton
-              key={link.label}
-              href={link.href}
-              aria-label={`Contact via ${link.label}: ${link.display}`}
-              className="contact-card glass-card flex items-center gap-5 p-5 min-h-[44px] w-full text-left"
-            >
-              <div
-                className="w-11 h-11 flex-shrink-0 flex items-center justify-center rounded-xl"
-                style={{ background: "rgba(0,242,255,0.08)", color: "#00f2ff" }}
-              >
-                {link.icon}
-              </div>
-              <div>
-                <div className="text-xs text-white/40 uppercase tracking-widest mb-0.5 font-bold">
-                  {link.label}
-                </div>
-                <div className="text-sm text-white font-medium">{link.display}</div>
-              </div>
-            </MagneticButton>
-          ))}
-        </div>
-
-        {/* EmailJS form */}
-        <form
-          onSubmit={handleSubmit}
-          className="lg:flex-1 flex flex-col gap-5"
-          noValidate
-          aria-label="Send a message"
+    <section id="contact" className="section-bg-primary">
+      <div className="container-wide">
+        <SectionTransition
+          number="006"
+          eyebrow="CONTACT"
+          title={<>Let&apos;s <span className="text-grad">work together.</span></>}
         >
-          {/* Name */}
-          <div>
-            <label htmlFor="contact-name" className="block text-xs font-bold text-white/50 uppercase tracking-widest mb-2">
-              Name <span aria-hidden="true">*</span>
-            </label>
-            <input
-              id="contact-name"
-              name="name"
-              type="text"
-              autoComplete="name"
-              value={form.name}
-              onChange={handleChange}
-              placeholder="Your full name"
-              required
-              aria-required="true"
-              aria-describedby={errors.name ? "name-error" : undefined}
-              aria-invalid={!!errors.name}
-              className={inputClass("name")}
-            />
-            {errors.name && (
-              <p id="name-error" role="alert" className="mt-1.5 text-xs text-red-400">
-                {errors.name}
-              </p>
-            )}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem', alignItems: 'start' }}
+               className="grid-cols-1 md:grid-cols-2">
+
+            {/* Contact links */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+              {CONTACT_LINKS.map(link => (
+                <motion.a
+                  key={link.label}
+                  href={link.href}
+                  target={link.href.startsWith('http') ? '_blank' : undefined}
+                  rel={link.href.startsWith('http') ? 'noopener noreferrer' : undefined}
+                  variants={fadeUpVariant}
+                  className="card-base"
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '1rem',
+                    padding: '1rem 1.25rem',
+                    textDecoration: 'none',
+                  }}
+                  whileHover={{ y: -2, borderColor: 'var(--border-accent)', boxShadow: 'var(--shadow-hover)' }}
+                >
+                  <div style={{
+                    width: 40, height: 40,
+                    borderRadius: 10,
+                    background: 'var(--accent-lite)',
+                    border: '1px solid var(--border-accent)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    color: 'var(--accent)',
+                    flexShrink: 0,
+                  }}>
+                    <link.Icon size={18} />
+                  </div>
+                  <div>
+                    <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '0.1rem' }}>{link.label}</p>
+                    <p style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-primary)' }}>{link.value}</p>
+                  </div>
+                </motion.a>
+              ))}
+            </div>
+
+            {/* Form */}
+            <motion.form
+              variants={fadeUpVariant}
+              onSubmit={handleSubmit}
+              noValidate
+              aria-label="Contact form"
+            >
+              <FloatField id="cf-name"    label="Your Name"     value={name}    onChange={setName}    error={errors.name}    required />
+              <FloatField id="cf-email"   label="Email Address" type="email" value={email}   onChange={setEmail}   error={errors.email}   required />
+              <FloatField id="cf-message" label="Message"       value={message} onChange={setMessage} error={errors.message} required multiline />
+
+              <button
+                type="submit"
+                disabled={status === 'sending'}
+                className="btn-primary"
+                style={{ width: '100%', justifyContent: 'center', marginTop: '0.5rem' }}
+              >
+                {status === 'sending' ? (
+                  <>
+                    <motion.span
+                      animate={{ rotate: 360 }}
+                      transition={{ repeat: Infinity, duration: 1, ease: 'linear' }}
+                      style={{ display: 'inline-block', width: 16, height: 16, border: '2px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', borderRadius: '50%' }}
+                    />
+                    Sending...
+                  </>
+                ) : (
+                  <><Send size={16} /> Send Message</>
+                )}
+              </button>
+
+              <AnimatePresence>
+                {status === 'success' && (
+                  <motion.p
+                    initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+                    role="status" aria-live="polite"
+                    style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.75rem', fontSize: '0.82rem', color: 'var(--accent)', fontWeight: 600 }}
+                  >
+                    <CheckCircle size={16} /> Message sent! I&apos;ll be in touch soon.
+                  </motion.p>
+                )}
+                {status === 'error' && (
+                  <motion.p
+                    initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+                    role="alert"
+                    style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.75rem', fontSize: '0.82rem', color: '#ef4444', fontWeight: 600 }}
+                  >
+                    <AlertCircle size={16} /> Something went wrong. Please try again.
+                  </motion.p>
+                )}
+              </AnimatePresence>
+            </motion.form>
           </div>
-
-          {/* Email */}
-          <div>
-            <label htmlFor="contact-email" className="block text-xs font-bold text-white/50 uppercase tracking-widest mb-2">
-              Email <span aria-hidden="true">*</span>
-            </label>
-            <input
-              id="contact-email"
-              name="email"
-              type="email"
-              autoComplete="email"
-              value={form.email}
-              onChange={handleChange}
-              placeholder="your@email.com"
-              required
-              aria-required="true"
-              aria-describedby={errors.email ? "email-error" : undefined}
-              aria-invalid={!!errors.email}
-              className={inputClass("email")}
-            />
-            {errors.email && (
-              <p id="email-error" role="alert" className="mt-1.5 text-xs text-red-400">
-                {errors.email}
-              </p>
-            )}
-          </div>
-
-          {/* Message */}
-          <div>
-            <label htmlFor="contact-message" className="block text-xs font-bold text-white/50 uppercase tracking-widest mb-2">
-              Message <span aria-hidden="true">*</span>
-            </label>
-            <textarea
-              id="contact-message"
-              name="message"
-              rows={5}
-              value={form.message}
-              onChange={handleChange}
-              placeholder="What would you like to build together?"
-              required
-              aria-required="true"
-              aria-describedby={errors.message ? "message-error" : undefined}
-              aria-invalid={!!errors.message}
-              className={`${inputClass("message")} resize-none`}
-            />
-            {errors.message && (
-              <p id="message-error" role="alert" className="mt-1.5 text-xs text-red-400">
-                {errors.message}
-              </p>
-            )}
-          </div>
-
-          {/* Status announcement */}
-          <div aria-live="polite" aria-atomic="true" className="sr-only">
-            {status === "success" && "Message sent successfully. Thank you!"}
-            {status === "error" && "Failed to send message. Please try again or email directly."}
-          </div>
-
-          {/* Submit */}
-          <button
-            type="submit"
-            disabled={status === "sending"}
-            className="w-full py-4 rounded-full text-sm font-bold text-[#00f2ff] border border-[#00f2ff]/40 hover:bg-[#00f2ff]/10 transition-all min-h-[44px] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-          >
-            {status === "sending" && (
-              <span
-                className="w-4 h-4 border-2 border-[#00f2ff]/30 border-t-[#00f2ff] rounded-full animate-spin"
-                aria-hidden="true"
-              />
-            )}
-            {status === "idle" && "Send Message →"}
-            {status === "sending" && "Sending…"}
-            {status === "success" && "✓ Message Sent!"}
-            {status === "error" && "Failed — try again"}
-          </button>
-
-          {status === "success" && (
-            <p className="text-xs text-green-400 text-center" role="status">
-              Thanks! I&apos;ll get back to you within 24 hours.
-            </p>
-          )}
-          {status === "error" && (
-            <p className="text-xs text-red-400 text-center" role="alert">
-              Something went wrong. Email me directly at{" "}
-              <a href={`mailto:${personal.email}`} className="underline text-[#00f2ff]">
-                {personal.email}
-              </a>
-            </p>
-          )}
-        </form>
+        </SectionTransition>
       </div>
     </section>
   );

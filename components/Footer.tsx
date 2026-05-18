@@ -26,7 +26,7 @@ export default function Footer() {
     <footer
       aria-label="Site footer"
       className="border-t"
-      style={{ borderColor: "rgba(255,255,255,0.04)" }}
+      style={{ borderColor: "var(--border)" }}
     >
       <div className="container-wide py-12 md:py-16">
         {/* Three-column desktop / single-column mobile */}
@@ -36,13 +36,13 @@ export default function Footer() {
             <a
               href="#hero"
               className="inline-block text-3xl font-black font-mono mb-3"
-              style={{ color: "#00f2ff" }}
+              style={{ color: "var(--accent)" }}
               aria-label="Veera Palla — back to top"
             >
               VP
             </a>
-            <p className="text-sm font-bold text-white/80 mb-1">{personal.name}</p>
-            <p className="text-xs text-white/40">{personal.title}</p>
+            <p className="text-sm font-bold mb-1" style={{ color: "var(--text-primary)" }}>{personal.name}</p>
+            <p className="text-xs" style={{ color: "var(--text-muted)" }}>{personal.title}</p>
           </div>
 
           {/* Navigation */}
@@ -52,8 +52,8 @@ export default function Footer() {
                 <li key={link.href}>
                   <a
                     href={link.href}
-                    className="text-sm text-white/50 hover:text-[#00f2ff] transition-colors"
-                    style={{ textDecoration: "none" }}
+                    className="text-sm transition-colors"
+                    style={{ color: "var(--text-secondary)", textDecoration: "none" }}
                   >
                     {link.label}
                   </a>
@@ -64,7 +64,7 @@ export default function Footer() {
 
           {/* Socials */}
           <div>
-            <p className="text-xs text-white/30 uppercase tracking-widest font-bold mb-4">Connect</p>
+            <p className="text-xs uppercase tracking-widest font-bold mb-4" style={{ color: "var(--text-muted)" }}>Connect</p>
             <div className="flex gap-3 flex-wrap">
               {SOCIAL_LINKS.map((s) => (
                 <a
@@ -73,8 +73,10 @@ export default function Footer() {
                   aria-label={s.label}
                   target={s.href.startsWith("http") ? "_blank" : undefined}
                   rel={s.href.startsWith("http") ? "noopener noreferrer" : undefined}
-                  className="w-11 h-11 flex items-center justify-center rounded-full border text-white/40 hover:text-[#00f2ff] transition-all min-w-[44px] min-h-[44px]"
-                  style={{ borderColor: "rgba(255,255,255,0.08)" }}
+                  className="w-11 h-11 flex items-center justify-center rounded-full border transition-all min-w-[44px] min-h-[44px]"
+                  style={{ borderColor: "var(--border)", color: "var(--text-secondary)" }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.color = "var(--accent)"; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.color = "var(--text-secondary)"; }}
                 >
                   {s.icon}
                 </a>
@@ -86,12 +88,12 @@ export default function Footer() {
         {/* Divider */}
         <div
           className="h-px mb-8"
-          style={{ background: "rgba(0,242,255,0.12)" }}
+          style={{ background: "var(--border-accent)" }}
           aria-hidden="true"
         />
 
         {/* Copyright */}
-        <p className="text-xs text-white/25 text-center">
+        <p className="text-xs text-center" style={{ color: "var(--text-muted)" }}>
           © {year} {personal.name} · Built with Next.js &amp; React
         </p>
       </div>
