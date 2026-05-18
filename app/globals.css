@@ -1,36 +1,62 @@
+/* app/globals.css */
 @import "tailwindcss";
 
-/* ─── Design Tokens ─────────────────────────────────────────────────────────── */
+/* ─── Light Theme (default) ─────────────────────────────────────────────── */
 :root {
-  --bg-primary:    #030303;
-  --bg-card:       rgba(255, 255, 255, 0.03);
-  --bg-card-hover: rgba(255, 255, 255, 0.05);
+  --bg-primary:    #ffffff;
+  --bg-secondary:  #f0fdf9;
+  --bg-card:       #f0fdf9;
 
-  --accent:        #00f2ff;
-  --accent-dim:    rgba(0, 242, 255, 0.06);
-  --accent-border: rgba(0, 242, 255, 0.12);
-  --accent-glow:   0 0 20px rgba(0, 242, 255, 0.3);
+  --accent:        #10b981;
+  --accent-2:      #0891b2;
+  --accent-lite:   #d1fae5;
+  --accent-lite-2: #cffafe;
+  --accent-text:   #065f46;
 
-  --text-primary:  #ffffff;
-  --text-secondary:#a1a1aa;
-  --text-muted:    #52525b;
+  --text-primary:   #0f172a;
+  --text-secondary: #475569;
+  --text-muted:     #94a3b8;
 
-  --border:        rgba(255, 255, 255, 0.06);
-  --border-hover:  rgba(255, 255, 255, 0.12);
+  --border:        #e5e7eb;
+  --border-accent: #d1fae5;
+
+  --shadow:        0 4px 24px rgba(16, 185, 129, 0.10);
+  --shadow-hover:  0 8px 32px rgba(16, 185, 129, 0.18);
 
   --font-sans:     var(--font-inter), system-ui, sans-serif;
   --font-mono:     var(--font-jetbrains), monospace;
-
-  --radius-card:   2rem;
-  --header-height: 80px;
+  --header-height: 72px;
 }
 
-/* ─── Reset ─────────────────────────────────────────────────────────────────── */
+/* ─── Dark Theme ─────────────────────────────────────────────────────────── */
+[data-theme="dark"] {
+  --bg-primary:    #060f0f;
+  --bg-secondary:  #081414;
+  --bg-card:       rgba(34, 211, 238, 0.06);
+
+  --accent:        #22d3ee;
+  --accent-2:      #818cf8;
+  --accent-lite:   rgba(34, 211, 238, 0.12);
+  --accent-lite-2: rgba(129, 140, 248, 0.10);
+  --accent-text:   #67e8f9;
+
+  --text-primary:   #f1f5f9;
+  --text-secondary: #94a3b8;
+  --text-muted:     #475569;
+
+  --border:        rgba(255, 255, 255, 0.07);
+  --border-accent: rgba(34, 211, 238, 0.20);
+
+  --shadow:        none;
+  --shadow-hover:  0 0 24px rgba(34, 211, 238, 0.12);
+}
+
+/* ─── Reset ──────────────────────────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 html {
   scroll-behavior: smooth;
-  color-scheme: dark;
+  color-scheme: light dark;
 }
 
 body {
@@ -40,41 +66,32 @@ body {
   line-height: 1.5;
   overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
-  position: relative;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
-/* ─── Grain Texture ──────────────────────────────────────────────────────────── */
-body::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  z-index: 1;
-  pointer-events: none;
-  opacity: 0.04;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
-  background-size: 200px 200px;
-}
-
-/* ─── Scrollbar ──────────────────────────────────────────────────────────────── */
+/* ─── Scrollbar ───────────────────────────────────────────────────────────── */
 ::-webkit-scrollbar { width: 4px; }
 ::-webkit-scrollbar-track { background: var(--bg-primary); }
-::-webkit-scrollbar-thumb { background: rgba(0, 242, 255, 0.2); border-radius: 10px; }
+::-webkit-scrollbar-thumb {
+  background: var(--accent-lite);
+  border-radius: 10px;
+}
 
-/* ─── Typography ─────────────────────────────────────────────────────────────── */
+/* ─── Typography ─────────────────────────────────────────────────────────── */
 h1, h2, h3, h4, h5, h6 {
   font-weight: 800;
   letter-spacing: -0.03em;
   color: var(--text-primary);
 }
 
-/* ─── Focus Rings (WCAG AA) ──────────────────────────────────────────────────── */
+/* ─── Focus Rings (WCAG AA) ──────────────────────────────────────────────── */
 :focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 4px;
   border-radius: 4px;
 }
 
-/* ─── Screen-reader Only ─────────────────────────────────────────────────────── */
+/* ─── Screen-reader only ─────────────────────────────────────────────────── */
 .sr-only {
   position: absolute;
   width: 1px;
@@ -86,7 +103,6 @@ h1, h2, h3, h4, h5, h6 {
   white-space: nowrap;
   border: 0;
 }
-
 .focus\:not-sr-only:focus {
   position: fixed;
   width: auto;
@@ -98,99 +114,136 @@ h1, h2, h3, h4, h5, h6 {
   white-space: normal;
 }
 
-/* ─── Layout ─────────────────────────────────────────────────────────────────── */
+/* ─── Layout ─────────────────────────────────────────────────────────────── */
 .container-wide {
   max-width: 1400px;
   margin: 0 auto;
-  padding: 0 1.5rem;
+  padding: 0 2rem;
 }
-
 @media (max-width: 640px) {
   .container-wide { padding: 0 1rem; }
 }
 
-/* ─── Section ────────────────────────────────────────────────────────────────── */
-section {
-  padding: 8rem 0;
-}
+/* ─── Sections ───────────────────────────────────────────────────────────── */
+section { padding: 8rem 0; }
+@media (max-width: 768px) { section { padding: 5rem 0; } }
 
-@media (max-width: 768px) {
-  section { padding: 5rem 0; }
-}
+.section-bg-primary   { background-color: var(--bg-primary); }
+.section-bg-secondary { background-color: var(--bg-secondary); }
 
-.section-label {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
+/* ─── Section label (monospace eyebrow) ──────────────────────────────────── */
+.section-eyebrow {
   font-family: var(--font-mono);
   font-size: 0.7rem;
-  font-weight: 700;
-  color: var(--text-muted);
-  letter-spacing: 0.25em;
+  font-weight: 600;
+  color: var(--accent);
+  letter-spacing: 0.3em;
   text-transform: uppercase;
-  margin-bottom: 1.5rem;
+  margin-bottom: 0.75rem;
 }
 
-.section-label::before {
-  content: "";
-  display: block;
-  width: 2rem;
-  height: 1px;
-  background: var(--accent-border);
-  flex-shrink: 0;
-}
-
+/* ─── Section title ──────────────────────────────────────────────────────── */
 .section-title {
-  font-size: clamp(1.75rem, 5vw, 3.5rem);
+  font-size: clamp(2rem, 5vw, 3.5rem);
   font-weight: 800;
-  line-height: 1.1;
+  line-height: 1.05;
   letter-spacing: -0.04em;
+  color: var(--text-primary);
   margin-bottom: 3rem;
 }
 
-/* ─── Glassmorphism Card ─────────────────────────────────────────────────────── */
-.glass-card {
+/* ─── Gradient text ──────────────────────────────────────────────────────── */
+.text-grad {
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ─── Cards ──────────────────────────────────────────────────────────────── */
+.card-base {
   background: var(--bg-card);
   border: 1px solid var(--border);
-  border-radius: var(--radius-card);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  transition: background 0.4s ease, border-color 0.4s ease, box-shadow 0.4s ease;
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+.card-base:hover {
+  border-color: var(--border-accent);
+  box-shadow: var(--shadow-hover);
+  transform: translateY(-3px);
+}
+.card-accent {
+  background: var(--accent-lite);
+  border: 1px solid var(--border-accent);
+  border-radius: 12px;
 }
 
-.glass-card:hover {
-  background: var(--bg-card-hover);
-  border-color: var(--accent-border);
-  box-shadow: var(--accent-glow);
-}
-
-/* ─── Skill Pill ─────────────────────────────────────────────────────────────── */
+/* ─── Skill pills ────────────────────────────────────────────────────────── */
 .skill-pill {
   display: inline-flex;
   align-items: center;
-  padding: 0.25rem 0.75rem;
-  background: var(--accent-dim);
-  border: 1px solid var(--accent-border);
+  padding: 0.2rem 0.65rem;
+  background: var(--accent-lite);
+  border: 1px solid var(--border-accent);
   border-radius: 999px;
-  font-family: var(--font-mono);
   font-size: 0.7rem;
-  color: var(--text-secondary);
-  transition: color 0.2s, box-shadow 0.2s, transform 0.2s;
+  font-weight: 500;
+  color: var(--accent-text);
   white-space: nowrap;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.skill-pill:hover { transform: scale(1.05); box-shadow: var(--shadow); }
+.skill-pill-2 {
+  background: var(--accent-lite-2);
+  border-color: rgba(8, 145, 178, 0.2);
+  color: var(--accent-2);
+}
+[data-theme="dark"] .skill-pill-2 {
+  border-color: rgba(129, 140, 248, 0.25);
 }
 
-.skill-pill:hover {
+/* ─── Buttons ────────────────────────────────────────────────────────────── */
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.65rem 1.5rem;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 0.875rem;
+  letter-spacing: 0.02em;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+.btn-primary:hover { opacity: 0.9; transform: translateY(-1px); }
+
+.btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.65rem 1.4rem;
+  background: transparent;
   color: var(--accent);
-  box-shadow: 0 0 8px rgba(0, 242, 255, 0.2);
-  transform: scale(1.05);
+  font-weight: 600;
+  font-size: 0.875rem;
+  border: 1.5px solid var(--border-accent);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+.btn-secondary:hover {
+  background: var(--accent-lite);
+  border-color: var(--accent);
 }
 
-/* ─── Cursor: hide default on pointer devices ────────────────────────────────── */
-@media (pointer: fine) {
-  * { cursor: none !important; }
-}
+/* ─── Custom cursor (hide default on pointer devices) ────────────────────── */
+@media (pointer: fine) { * { cursor: none !important; } }
 
-/* ─── Reduced Motion Overrides ───────────────────────────────────────────────── */
+/* ─── Reduced-motion overrides ───────────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
