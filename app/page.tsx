@@ -16,12 +16,12 @@ export default function Home() {
       <Navbar />
       <main id="main-content" tabIndex={-1}>
         <Hero />
-        <SectionReveal><About /></SectionReveal>
-        <SectionReveal><Skills /></SectionReveal>
-        <SectionReveal><Experience /></SectionReveal>
-        <SectionReveal><Projects /></SectionReveal>
-        <SectionReveal><Education /></SectionReveal>
-        <SectionReveal><Contact /></SectionReveal>
+        <SectionReveal variant="fold"        ><About      /></SectionReveal>
+        <SectionReveal variant="sweep-left"  ><Skills     /></SectionReveal>
+        <SectionReveal variant="curtain"     ><Experience /></SectionReveal>
+        <SectionReveal variant="zoom"        ><Projects   /></SectionReveal>
+        <SectionReveal variant="sweep-right" ><Education  /></SectionReveal>
+        <SectionReveal variant="blur-in"     ><Contact    /></SectionReveal>
       </main>
       <Footer />
     </>
