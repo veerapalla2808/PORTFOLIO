@@ -3,52 +3,53 @@
 
 /* ─── Light Theme (default) ─────────────────────────────────────────────── */
 :root {
-  --bg-primary:    #ffffff;
-  --bg-secondary:  #f0fdf9;
-  --bg-card:       #f0fdf9;
+  --bg-primary:    #fafafe;
+  --bg-secondary:  #f0f0ff;
+  --bg-card:       #f5f5ff;
 
-  --accent:        #10b981;
-  --accent-2:      #0891b2;
-  --accent-lite:   #d1fae5;
-  --accent-lite-2: #cffafe;
-  --accent-text:   #065f46;
+  --accent:        #6366f1;
+  --accent-2:      #a855f7;
+  --accent-lite:   #e0e7ff;
+  --accent-lite-2: #f3e8ff;
+  --accent-text:   #3730a3;
 
   --text-primary:   #0f172a;
   --text-secondary: #475569;
   --text-muted:     #94a3b8;
 
-  --border:        #e5e7eb;
-  --border-accent: #d1fae5;
+  --border:        #e0e7ff;
+  --border-accent: #c7d2fe;
 
-  --shadow:        0 4px 24px rgba(16, 185, 129, 0.10);
-  --shadow-hover:  0 8px 32px rgba(16, 185, 129, 0.18);
+  --shadow:        0 4px 24px rgba(99, 102, 241, 0.10);
+  --shadow-hover:  0 8px 32px rgba(99, 102, 241, 0.18);
 
   --font-sans:     var(--font-inter), system-ui, sans-serif;
   --font-mono:     var(--font-jetbrains), monospace;
   --header-height: 72px;
+  --strip-width:   220px;
 }
 
 /* ─── Dark Theme ─────────────────────────────────────────────────────────── */
 [data-theme="dark"] {
-  --bg-primary:    #060f0f;
-  --bg-secondary:  #081414;
-  --bg-card:       rgba(34, 211, 238, 0.06);
+  --bg-primary:    #0d0d1a;
+  --bg-secondary:  #12122a;
+  --bg-card:       rgba(99, 102, 241, 0.07);
 
-  --accent:        #22d3ee;
-  --accent-2:      #818cf8;
-  --accent-lite:   rgba(34, 211, 238, 0.12);
-  --accent-lite-2: rgba(129, 140, 248, 0.10);
-  --accent-text:   #67e8f9;
+  --accent:        #818cf8;
+  --accent-2:      #c084fc;
+  --accent-lite:   rgba(129, 140, 248, 0.15);
+  --accent-lite-2: rgba(192, 132, 252, 0.12);
+  --accent-text:   #a5b4fc;
 
   --text-primary:   #f1f5f9;
   --text-secondary: #94a3b8;
   --text-muted:     #475569;
 
-  --border:        rgba(255, 255, 255, 0.07);
-  --border-accent: rgba(34, 211, 238, 0.20);
+  --border:        rgba(129, 140, 248, 0.10);
+  --border-accent: rgba(129, 140, 248, 0.25);
 
   --shadow:        none;
-  --shadow-hover:  0 0 24px rgba(34, 211, 238, 0.12);
+  --shadow-hover:  0 0 28px rgba(129, 140, 248, 0.20);
 }
 
 /* ─── Reset ──────────────────────────────────────────────────────────────── */
@@ -124,6 +125,11 @@ h1, h2, h3, h4, h5, h6 {
   .container-wide { padding: 0 1rem; }
 }
 
+/* ─── Side-strip layout offset ───────────────────────────────────────────── */
+@media (min-width: 1024px) {
+  .page-shell { padding-left: var(--strip-width); }
+}
+
 /* ─── Sections ───────────────────────────────────────────────────────────── */
 section { padding: 8rem 0; }
 @media (max-width: 768px) { section { padding: 5rem 0; } }
@@ -169,12 +175,12 @@ section, main, footer { position: relative; z-index: 1; }
 .card-base {
   background: var(--bg-card);
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: 16px;
   box-shadow: var(--shadow);
   transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
 }
 .card-base:hover {
-  border-color: var(--border-accent);
+  border-color: var(--accent);
   box-shadow: var(--shadow-hover);
   transform: translateY(-3px);
 }
