@@ -187,7 +187,7 @@ section, main, footer { position: relative; z-index: 1; }
 .card-accent {
   background: var(--accent-lite);
   border: 1px solid var(--border-accent);
-  border-radius: 12px;
+  border-radius: 16px;
 }
 
 /* ─── Skill pills ────────────────────────────────────────────────────────── */
@@ -207,7 +207,7 @@ section, main, footer { position: relative; z-index: 1; }
 .skill-pill:hover { transform: scale(1.05); box-shadow: var(--shadow); }
 .skill-pill-2 {
   background: var(--accent-lite-2);
-  border-color: rgba(8, 145, 178, 0.2);
+  border-color: var(--border-accent);
   color: var(--accent-2);
 }
 [data-theme="dark"] .skill-pill-2 {

@@ -51,13 +51,13 @@ export default function ParticleBackground() {
 
     let W = 0, H = 0, dpr = 1, t = 0, raf = 0;
     let mx = 0, my = 0, tmx = 0, tmy = 0;
-    let a1: [number, number, number] = [16, 185, 129];
-    let a2: [number, number, number] = [8, 145, 178];
+    let a1: [number, number, number] = [99, 102, 241];   // #6366f1 indigo-500
+    let a2: [number, number, number] = [168, 85, 247];   // #a855f7 violet-500
 
     function readColors() {
       const cs = getComputedStyle(document.documentElement);
-      a1 = hexToRgb(cs.getPropertyValue('--accent') || '#10b981');
-      a2 = hexToRgb(cs.getPropertyValue('--accent-2') || '#0891b2');
+      a1 = hexToRgb(cs.getPropertyValue('--accent') || '#6366f1');
+      a2 = hexToRgb(cs.getPropertyValue('--accent-2') || '#a855f7');
     }
 
     let stars: Star[] = [];
