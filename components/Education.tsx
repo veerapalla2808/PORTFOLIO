@@ -10,7 +10,7 @@ export default function Education() {
       <div className="container-wide">
         <SectionTransition
           eyebrow="EDUCATION"
-          title={<>Academic <span className="text-grad">Foundation</span></>}
+          title={<>How I <span className="text-grad">Learned</span></>}
         >
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}
                className="grid-cols-1 md:grid-cols-2">

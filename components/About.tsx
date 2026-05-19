@@ -34,12 +34,7 @@ export default function About() {
       <div className="container-wide">
         <SectionTransition
           eyebrow="ABOUT"
-          title={
-            <>
-              Architecting at{' '}
-              <span className="text-grad">enterprise scale.</span>
-            </>
-          }
+          title={<>Engineering With <span className="text-grad">Purpose</span></>}
         >
           {/* Two-column: bio + highlights */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '2rem' }}

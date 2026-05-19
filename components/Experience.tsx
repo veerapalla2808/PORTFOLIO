@@ -89,11 +89,7 @@ export default function Experience() {
       <div className="container-wide">
         <SectionTransition
           eyebrow="EXPERIENCE"
-          title={
-            <>11 years ·{' '}
-              <span className="text-grad">5 companies</span>
-            </>
-          }
+          title={<>Where I&apos;ve <span className="text-grad">Worked</span></>}
         >
           {/* ── Career Timeline ── */}
           <motion.div variants={fadeUpVariant} style={{ marginBottom: '2rem' }}>

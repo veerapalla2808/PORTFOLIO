@@ -144,7 +144,7 @@ export default function Contact() {
       <div className="container-wide">
         <SectionTransition
           eyebrow="CONTACT"
-          title={<>Let&apos;s <span className="text-grad">work together.</span></>}
+          title={<>Let&apos;s Work <span className="text-grad">Together</span></>}
         >
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem', alignItems: 'start' }}
                className="grid-cols-1 md:grid-cols-2">

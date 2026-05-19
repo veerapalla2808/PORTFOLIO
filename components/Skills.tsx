@@ -18,7 +18,7 @@ export default function Skills() {
       <div className="container-wide">
         <SectionTransition
           eyebrow="SKILLS"
-          title={<>Tech <span className="text-grad">Stack</span></>}
+          title={<>Tools I <span className="text-grad">Master</span></>}
         >
           {/* Bento grid — 4 cols desktop, 2 tablet, 1 mobile */}
           <div
