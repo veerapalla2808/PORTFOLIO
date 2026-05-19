@@ -37,8 +37,8 @@ export default function About() {
           title={<>Engineering With <span className="text-grad">Purpose</span></>}
         >
           {/* Two-column: bio + highlights */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '2rem' }}
-               className="md:grid-cols-[2fr_1fr]">
+          <div style={{ display: 'grid', gap: '2rem' }}
+               className="r-grid-bio">
 
             {/* Bio */}
             <motion.div variants={fadeUpVariant} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
@@ -82,9 +82,9 @@ export default function About() {
           {/* Stats row */}
           <motion.div
             variants={fadeUpVariant}
+            className="r-grid-4col"
             style={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(4, 1fr)',
               gap: '1rem',
               marginTop: '2.5rem',
             }}

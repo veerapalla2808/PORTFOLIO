@@ -91,7 +91,6 @@ export default function Hero() {
         alignItems: 'center',
         position: 'relative',
         overflow: 'hidden',
-        paddingTop: 'var(--header-height)',
       }}
     >
       {/* Parallax background glow */}

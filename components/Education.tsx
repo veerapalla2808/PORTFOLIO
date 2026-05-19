@@ -12,8 +12,8 @@ export default function Education() {
           eyebrow="EDUCATION"
           title={<>Education &amp; <span className="text-grad">Credentials</span></>}
         >
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}
-               className="grid-cols-1 md:grid-cols-2">
+          <div style={{ display: 'grid', gap: '1.5rem' }}
+               className="r-grid-2col">
 
             {/* Degree card */}
             <motion.div

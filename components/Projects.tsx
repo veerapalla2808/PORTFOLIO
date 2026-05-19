@@ -14,8 +14,8 @@ export default function Projects() {
           eyebrow="PROJECTS"
           title={<>Things I&apos;ve <span className="text-grad">Built</span></>}
         >
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1.5rem' }}
-               className="grid-cols-1 lg:grid-cols-2">
+          <div style={{ display: 'grid', gap: '1.5rem' }}
+               className="r-grid-2col">
             {projects.map((project, i) => (
               <motion.div key={project.name} variants={fadeUpVariant}>
                 <TiltCard>

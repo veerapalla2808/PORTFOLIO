@@ -26,7 +26,7 @@
   --font-sans:     var(--font-inter), system-ui, sans-serif;
   --font-mono:     var(--font-jetbrains), monospace;
   --header-height: 72px;
-  --strip-width:   220px;
+  --strip-width:   260px;
 }
 
 /* ─── Dark Theme ─────────────────────────────────────────────────────────── */
@@ -263,4 +263,45 @@ section, main, footer { position: relative; z-index: 1; }
     transition-duration: 0.01ms !important;
   }
   html { scroll-behavior: auto; }
+}
+
+/* ─── Responsive grid helpers (mobile-first) ─────────────────────────────── */
+/* Base: all grids are single-column on mobile                                */
+.r-grid-2col,
+.r-grid-3col,
+.r-grid-4col,
+.r-grid-bio,
+.r-grid-footer {
+  grid-template-columns: 1fr;
+}
+
+/* sm (640px): 4-col → 2, bio → 2fr+1fr */
+@media (min-width: 640px) {
+  .r-grid-4col   { grid-template-columns: repeat(2, 1fr); }
+  .r-grid-bio    { grid-template-columns: 2fr 1fr; }
+}
+
+/* md (768px): 2-col → 2, 3-col → 2, footer → custom fractions */
+@media (min-width: 768px) {
+  .r-grid-2col   { grid-template-columns: repeat(2, 1fr); }
+  .r-grid-3col   { grid-template-columns: repeat(2, 1fr); }
+  .r-grid-footer { grid-template-columns: 1.6fr 1fr 1.2fr; }
+}
+
+/* lg (1024px): 3-col → 3, 4-col → 4 */
+@media (min-width: 1024px) {
+  .r-grid-3col   { grid-template-columns: repeat(3, 1fr); }
+  .r-grid-4col   { grid-template-columns: repeat(4, 1fr); }
+}
+
+/* Skills AI featured card: span 2 only when grid has ≥2 columns             */
+.skills-featured { grid-column: span 1; }
+@media (min-width: 640px) {
+  .skills-featured { grid-column: span 2; }
+}
+
+/* Hero: push content below fixed mobile navbar; no offset needed on desktop  */
+#hero { padding-top: var(--header-height); }
+@media (min-width: 1024px) {
+  #hero { padding-top: 0; }
 }

@@ -49,3 +49,13 @@ docs/
 
 # source assets (PDF resume — only public/resume.pdf is needed)
 VeeraVDP-ReactNode.pdf
+
+# Claude Code / AI tooling artifacts
+.playwright-mcp/
+.superpowers/
+CLAUDE.md
+AGENTS.md
+
+# Playwright / browser screenshots captured during development
+medium-post-*.png
+*.screenshot.png

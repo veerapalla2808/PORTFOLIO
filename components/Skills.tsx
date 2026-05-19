@@ -24,10 +24,9 @@ export default function Skills() {
           <div
             style={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(4, 1fr)',
               gap: '1rem',
             }}
-            className="grid-cols-1 sm:grid-cols-2 lg:grid-cols-4"
+            className="r-grid-4col"
           >
             {skillCategories.map((cat, i) => {
               const Icon = ICON_MAP[cat.icon] ?? Monitor;
@@ -37,8 +36,8 @@ export default function Skills() {
                 <motion.div
                   key={cat.label}
                   variants={fadeUpVariant}
+                  className={isFeatured ? 'skills-featured' : ''}
                   style={{
-                    gridColumn: isFeatured ? 'span 2' : 'span 1',
                     background: isFeatured
                       ? 'linear-gradient(135deg, var(--accent-lite), var(--accent-lite-2))'
                       : 'var(--bg-card)',

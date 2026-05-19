@@ -10,6 +10,7 @@ const NAV_LINKS = [
   { label: 'Experience', href: '#experience' },
   { label: 'Projects',   href: '#projects' },
   { label: 'Education',  href: '#education' },
+  { label: 'Blog',       href: '#blog' },
   { label: 'Contact',    href: '#contact' },
 ];
 
@@ -138,12 +139,11 @@ export default function Footer() {
             variants={{ visible: { transition: { staggerChildren: 0.08 } } }}
             style={{
               display: 'grid',
-              gridTemplateColumns: '1.6fr 1fr 1.2fr',
               gap: '3rem',
               padding: '3.5rem 0',
               borderBottom: '1px solid var(--border)',
             }}
-            className="grid-cols-1 md:grid-cols-3"
+            className="r-grid-footer"
           >
 
             {/* Col 1 — Brand */}

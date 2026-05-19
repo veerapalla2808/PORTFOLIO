@@ -389,3 +389,35 @@ export const education: Education = {
   location: "Jalandhar, Punjab",
   year: 2013,
 };
+
+export interface BlogPost {
+  title: string;
+  date: string;
+  readTime: string;
+  tags: string[];
+  url: string;
+}
+
+export const blogPosts: BlogPost[] = [
+  {
+    title: 'Beyond the Queue: Why Apache Kafka is the Beating Heart of Modern Architecture',
+    date: 'May 3, 2026',
+    readTime: '7 min read',
+    tags: ['Apache Kafka', 'Architecture'],
+    url: 'https://medium.com/@veera.palla919/beyond-the-queue-why-apache-kafka-is-the-beating-heart-of-modern-architecture-a6f113f9ea4e',
+  },
+  {
+    title: 'DEVOPS and CI/CD Pipelines in a software development projects',
+    date: 'Sep 25, 2024',
+    readTime: '4 min read',
+    tags: ['DevOps', 'CI/CD'],
+    url: 'https://medium.com/@veera.palla919/devops-and-ci-cd-pipelines-in-a-software-development-projects-b7e0bc995d77',
+  },
+  {
+    title: 'Software Testing',
+    date: 'Sep 25, 2024',
+    readTime: '3 min read',
+    tags: ['Testing', 'Quality'],
+    url: 'https://medium.com/@veera.palla919/software-testing-559ee94af028',
+  },
+];

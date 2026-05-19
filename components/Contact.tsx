@@ -146,8 +146,8 @@ export default function Contact() {
           eyebrow="CONTACT"
           title={<>Let&apos;s Work <span className="text-grad">Together</span></>}
         >
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem', alignItems: 'start' }}
-               className="grid-cols-1 md:grid-cols-2">
+          <div style={{ display: 'grid', gap: '2rem', alignItems: 'start' }}
+               className="r-grid-2col">
 
             {/* Contact links */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
