@@ -12,6 +12,7 @@ export const personal = {
   linkedin: "https://www.linkedin.com/in/veera-palla",
   medium: "https://medium.com/@veera.palla919",
   resumeUrl: "/resume.pdf",
+  availability: 'Available',
 } as const;
 
 export const roles = [

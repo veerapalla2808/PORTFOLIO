@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import { FaLinkedin, FaMedium } from 'react-icons/fa6';
 import { FileText } from 'lucide-react';
 import VPLogo from './ui/VPLogo';
@@ -24,6 +24,7 @@ const SOCIALS = [
 
 export default function SideStrip() {
   const [active, setActive] = useState('');
+  const reduced = useReducedMotion();
 
   useEffect(() => {
     const observers = SECTIONS.map(({ id }) => {
@@ -111,10 +112,10 @@ export default function SideStrip() {
             display: 'inline-block',
             flexShrink: 0,
           }}
-          animate={{ scale: [1, 1.4, 1], opacity: [1, 0.5, 1] }}
+          animate={reduced ? {} : { scale: [1, 1.4, 1], opacity: [1, 0.5, 1] }}
           transition={{ repeat: Infinity, duration: 2 }}
         />
-        Available
+        {personal.availability}
       </div>
 
       {/* Divider */}
@@ -131,6 +132,7 @@ export default function SideStrip() {
             <a
               key={id}
               href={`#${id}`}
+              aria-current={isActive ? 'true' : undefined}
               style={{
                 display: 'flex',
                 alignItems: 'center',
@@ -188,12 +190,14 @@ export default function SideStrip() {
               el.style.borderColor = 'var(--border-accent)';
               el.style.color       = 'var(--accent)';
               el.style.background  = 'var(--accent-lite)';
+              el.style.transform   = 'translateY(-2px)';
             }}
             onMouseLeave={e => {
               const el = e.currentTarget as HTMLAnchorElement;
               el.style.borderColor = 'var(--border)';
               el.style.color       = 'var(--text-muted)';
               el.style.background  = 'var(--bg-primary)';
+              el.style.transform   = 'translateY(0)';
             }}
           >
             <Icon size={14} aria-hidden="true" />
