@@ -59,3 +59,8 @@ AGENTS.md
 # Playwright / browser screenshots captured during development
 medium-post-*.png
 *.screenshot.png
+sec-*.png
+mobile-*.png
+fix-*.png
+final-*.png
+m-0*.png

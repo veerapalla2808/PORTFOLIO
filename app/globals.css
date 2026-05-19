@@ -58,6 +58,7 @@
 html {
   scroll-behavior: smooth;
   color-scheme: light dark;
+  overflow-x: hidden;
 }
 
 body {
@@ -129,6 +130,7 @@ h1, h2, h3, h4, h5, h6 {
 @media (min-width: 1024px) {
   .page-shell { padding-left: var(--strip-width); }
 }
+.page-shell { overflow-x: hidden; }
 
 /* ─── Sections ───────────────────────────────────────────────────────────── */
 section { padding: 8rem 0; }
@@ -292,6 +294,14 @@ section, main, footer { position: relative; z-index: 1; }
 @media (min-width: 1024px) {
   .r-grid-3col   { grid-template-columns: repeat(3, 1fr); }
   .r-grid-4col   { grid-template-columns: repeat(4, 1fr); }
+}
+
+/* Stats grid: 2×2 on mobile, single row on desktop                          */
+.r-grid-stats {
+  grid-template-columns: repeat(2, 1fr);
+}
+@media (min-width: 1024px) {
+  .r-grid-stats { grid-template-columns: repeat(4, 1fr); }
 }
 
 /* Skills AI featured card: span 2 only when grid has ≥2 columns             */

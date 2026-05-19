@@ -111,7 +111,6 @@ export default function Navbar() {
           <nav
             aria-label="Main navigation"
             style={{
-              display: 'flex',
               gap: '0.25rem',
               alignItems: 'center',
             }}
@@ -159,10 +158,12 @@ export default function Navbar() {
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
             <ThemeToggle />
 
-            <MagneticButton href={personal.resumeUrl} className="hidden md:flex btn-primary" style={{ fontSize: '0.8rem', padding: '0.5rem 1rem' }}>
-              <Download size={14} />
-              Resume
-            </MagneticButton>
+            <div className="hidden md:flex">
+              <MagneticButton href={personal.resumeUrl} className="btn-primary" style={{ fontSize: '0.8rem', padding: '0.5rem 1rem' }}>
+                <Download size={14} />
+                Resume
+              </MagneticButton>
+            </div>
 
             {/* Mobile hamburger */}
             <button
@@ -170,7 +171,6 @@ export default function Navbar() {
               aria-label={menuOpen ? 'Close menu' : 'Open menu'}
               aria-expanded={menuOpen}
               style={{
-                display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 width: 36,

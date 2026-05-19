@@ -82,7 +82,7 @@ export default function About() {
           {/* Stats row */}
           <motion.div
             variants={fadeUpVariant}
-            className="r-grid-4col"
+            className="r-grid-stats"
             style={{
               display: 'grid',
               gap: '1rem',
