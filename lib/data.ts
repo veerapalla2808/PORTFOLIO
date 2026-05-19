@@ -9,7 +9,7 @@ export const personal = {
   email: "veerapalla.work28@gmail.com",
   phone: "(989) 318-3683",
   location: "Michigan, USA",
-  linkedin: "https://www.linkedin.com/in/veera-palla",
+  linkedin: "https://www.linkedin.com/in/veera-p-6097071b8/",
   medium: "https://medium.com/@veera.palla919",
   resumeUrl: "/resume.pdf",
   availability: 'Available',
@@ -185,7 +185,6 @@ export interface Project {
   name: string;
   description: string;
   tech: string[];
-  github?: string;
   live?: string;
   highlights: string[];
 }
@@ -208,7 +207,6 @@ export const projects: Project[] = [
       "Docker",
       "K8s",
     ],
-    github: "https://github.com/veera9999",
     highlights: [
       "Integrated ChatGPT APIs with a RAG pipeline over MongoDB vector embeddings for context-aware financial Q&A.",
       "Implemented real-time streaming responses via WebSockets with Kafka as the message backbone.",
@@ -233,7 +231,6 @@ export const projects: Project[] = [
       "Cypress",
       "Playwright",
     ],
-    github: "https://github.com/veera9999",
     highlights: [
       "Designed HIPAA-compliant data schemas for EMR/FHIR workflows using PostgreSQL and Neo4j graph database.",
       "Built a Nest.js GraphQL API layer reducing over-fetching by 50 % compared to prior REST endpoints.",

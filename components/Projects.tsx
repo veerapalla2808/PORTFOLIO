@@ -1,7 +1,7 @@
 // components/Projects.tsx
 'use client';
 import { motion } from 'framer-motion';
-import { GitFork, ExternalLink } from 'lucide-react';
+import { ExternalLink } from 'lucide-react';
 import SectionTransition, { fadeUpVariant } from './ui/SectionTransition';
 import TiltCard from './ui/TiltCard';
 import { projects } from '@/lib/data';
@@ -57,17 +57,6 @@ export default function Projects() {
                         {project.name}
                       </h3>
                       <div style={{ display: 'flex', gap: '0.5rem' }}>
-                        {project.github && (
-                          <a
-                            href={project.github}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            aria-label={`${project.name} GitHub`}
-                            style={{ color: 'var(--text-muted)', transition: 'color 0.2s' }}
-                          >
-                            <GitFork size={18} />
-                          </a>
-                        )}
                         {project.live && (
                           <a
                             href={project.live}
