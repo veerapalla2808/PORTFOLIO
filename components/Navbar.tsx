@@ -55,6 +55,7 @@ export default function Navbar() {
       <ScrollProgressBar />
 
       <header
+        className="lg:hidden"
         style={{
           position: 'fixed',
           top: 0,
