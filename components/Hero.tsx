@@ -18,7 +18,6 @@ function useCountUp(target: number, inView: boolean, duration = 1500) {
     if (!inView) return;
     const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     if (prefersReduced) { setCount(target); return; }
-    let start = 0;
     const startTime = performance.now();
     const step = (now: number) => {
       const elapsed = now - startTime;
@@ -74,7 +73,6 @@ export default function Hero() {
   const contentY = useTransform(scrollYProgress, [0, 1], ['0px', '-60px']);
   const opacity  = useTransform(scrollYProgress, [0, 0.6], [1, 0]);
 
-  // Trigger stat counters once hero enters view
   useEffect(() => {
     const timer = setTimeout(() => setStatsInView(true), 700);
     return () => clearTimeout(timer);
