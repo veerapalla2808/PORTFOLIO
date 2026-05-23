@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Menu, X, Download } from 'lucide-react';
+import Image from 'next/image';
 import ThemeToggle from './ThemeToggle';
 import ScrollProgressBar from './ui/ScrollProgressBar';
 import MagneticButton from './ui/MagneticButton';
@@ -93,19 +94,15 @@ export default function Navbar() {
           }}
         >
           {/* Logo */}
-          <a
-            href="#hero"
-            aria-label="Back to top"
-            style={{
-              fontFamily: 'var(--font-mono)',
-              fontSize: '1rem',
-              fontWeight: 900,
-              color: 'var(--accent)',
-              letterSpacing: '0.1em',
-              textDecoration: 'none',
-            }}
-          >
-            VP
+          <a href="#hero" aria-label="Back to top" style={{ display: 'inline-flex', alignItems: 'center', textDecoration: 'none' }}>
+            <Image
+              src="/veera-logo.png"
+              alt="Veera Palla"
+              width={120}
+              height={40}
+              style={{ width: 'auto', height: 36, objectFit: 'contain' }}
+              priority
+            />
           </a>
 
           {/* Desktop nav */}

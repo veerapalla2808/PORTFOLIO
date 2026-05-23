@@ -65,11 +65,9 @@ const ITEM_VARIANT = {
 
 export default function Hero() {
   const ref         = useRef<HTMLElement>(null);
-  const glowRef     = useRef<HTMLDivElement>(null);
   const [statsInView, setStatsInView] = useState(false);
 
   const { scrollYProgress } = useScroll({ target: ref, offset: ['start start', 'end start'] });
-  const glowY    = useTransform(scrollYProgress, [0, 1], ['0%', '-30%']);
   const contentY = useTransform(scrollYProgress, [0, 1], ['0px', '-60px']);
   const opacity  = useTransform(scrollYProgress, [0, 0.6], [1, 0]);
 
@@ -91,23 +89,6 @@ export default function Hero() {
         overflow: 'hidden',
       }}
     >
-      {/* Parallax background glow */}
-      <motion.div
-        ref={glowRef}
-        aria-hidden="true"
-        style={{
-          position: 'absolute',
-          top: '-10%',
-          right: '-5%',
-          width: 'clamp(300px, 50vw, 600px)',
-          height: 'clamp(300px, 50vw, 600px)',
-          borderRadius: '50%',
-          background: 'radial-gradient(circle, color-mix(in srgb, var(--accent) 20%, transparent) 0%, transparent 70%)',
-          pointerEvents: 'none',
-          y: glowY,
-        }}
-      />
-
       {/* Subtle grid overlay */}
       <div
         aria-hidden="true"
