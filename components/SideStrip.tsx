@@ -59,16 +59,52 @@ export default function SideStrip() {
         overflowY: 'auto',
       }}
     >
-      {/* ── Logo ── */}
-      <div style={{ marginBottom: '1.25rem' }}>
-        <Image
-          src="/veera-logo.png"
-          alt="Veera Palla"
-          width={160}
-          height={60}
-          style={{ width: 'auto', height: 52, objectFit: 'contain', objectPosition: 'left center' }}
-          priority
-        />
+      {/* ── Top row: logo ring + theme toggle ── */}
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '1.25rem' }}>
+        {/* Logo inside gradient ring */}
+        <motion.div
+          whileHover={reduced ? {} : { scale: 1.04 }}
+          transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+          style={{ position: 'relative', width: 120, height: 120, flexShrink: 0 }}
+        >
+          {/* Gradient ring SVG — 120×120, circle cx=60 cy=60 r=55 */}
+          <svg
+            width="120" height="120" viewBox="0 0 120 120"
+            aria-hidden="true"
+            style={{ position: 'absolute', inset: 0 }}
+          >
+            <defs>
+              <linearGradient id="vp-ring-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="var(--accent)" />
+                <stop offset="100%" stopColor="var(--accent-2)" />
+              </linearGradient>
+            </defs>
+            <circle cx="60" cy="60" r="55" fill="none" stroke="url(#vp-ring-grad)" strokeWidth="7" />
+          </svg>
+
+          {/* Logo — circular clip, 96×96, inset 12px */}
+          <div style={{
+            position: 'absolute',
+            top: 12, left: 12,
+            width: 96, height: 96,
+            borderRadius: '50%',
+            overflow: 'hidden',
+            background: 'var(--bg-card)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>
+            <Image
+              src="/veera-logo.png"
+              alt="Veera Palla"
+              width={96}
+              height={96}
+              style={{ display: 'block', width: '80%', height: '80%', objectFit: 'contain' }}
+              priority
+            />
+          </div>
+        </motion.div>
+
+        {/* Theme toggle — top right */}
+        <ThemeToggle />
       </div>
 
       {/* Identity */}
@@ -174,15 +210,10 @@ export default function SideStrip() {
       <a
         href={`mailto:${personal.email}`}
         className="btn-primary"
-        style={{ textAlign: 'center', justifyContent: 'center', marginBottom: '1rem', fontSize: '0.875rem', padding: '0.6rem 1rem' }}
+        style={{ textAlign: 'center', justifyContent: 'center', fontSize: '0.875rem', padding: '0.6rem 1rem' }}
       >
         Let&apos;s Talk
       </a>
-
-      {/* Theme toggle */}
-      <div style={{ display: 'flex', justifyContent: 'center' }}>
-        <ThemeToggle />
-      </div>
     </aside>
   );
 }

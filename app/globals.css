@@ -33,23 +33,23 @@
 [data-theme="dark"] {
   --bg-primary:    #0d0d1a;
   --bg-secondary:  #12122a;
-  --bg-card:       rgba(99, 102, 241, 0.07);
+  --bg-card:       rgba(24, 0, 173, 0.10);
 
-  --accent:        #818cf8;
+  --accent:        #1800ad;
   --accent-2:      #c084fc;
-  --accent-lite:   rgba(129, 140, 248, 0.15);
+  --accent-lite:   rgba(24, 0, 173, 0.18);
   --accent-lite-2: rgba(192, 132, 252, 0.12);
-  --accent-text:   #a5b4fc;
+  --accent-text:   #a89eff;
 
   --text-primary:   #f1f5f9;
   --text-secondary: #94a3b8;
   --text-muted:     #475569;
 
-  --border:        rgba(129, 140, 248, 0.10);
-  --border-accent: rgba(129, 140, 248, 0.25);
+  --border:        rgba(24, 0, 173, 0.18);
+  --border-accent: rgba(24, 0, 173, 0.45);
 
   --shadow:        none;
-  --shadow-hover:  0 0 28px rgba(129, 140, 248, 0.20);
+  --shadow-hover:  0 0 28px rgba(24, 0, 173, 0.30);
 }
 
 /* ─── Reset ──────────────────────────────────────────────────────────────── */
