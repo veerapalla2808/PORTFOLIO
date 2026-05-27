@@ -82,22 +82,20 @@ export default function SideStrip() {
             <circle cx="60" cy="60" r="55" fill="none" stroke="url(#vp-ring-grad)" strokeWidth="7" />
           </svg>
 
-          {/* Logo — circular clip, 96×96, inset 12px */}
+          {/* Logo — fills circle completely, clipped */}
           <div style={{
             position: 'absolute',
             top: 12, left: 12,
             width: 96, height: 96,
             borderRadius: '50%',
             overflow: 'hidden',
-            background: 'var(--bg-card)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}>
             <Image
               src="/veera-logo.png"
               alt="Veera Palla"
               width={96}
               height={96}
-              style={{ display: 'block', width: '80%', height: '80%', objectFit: 'contain' }}
+              style={{ display: 'block', width: '100%', height: '100%', objectFit: 'cover' }}
               priority
             />
           </div>

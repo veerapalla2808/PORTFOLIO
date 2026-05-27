@@ -112,16 +112,14 @@ export default function Navbar() {
               <div style={{
                 width: '100%', height: '100%',
                 borderRadius: '50%',
-                background: 'var(--bg-primary)',
                 overflow: 'hidden',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
               }}>
                 <Image
                   src="/veera-logo.png"
                   alt="Veera Palla"
                   width={52}
                   height={52}
-                  style={{ width: '72%', height: '72%', objectFit: 'contain' }}
+                  style={{ display: 'block', width: '100%', height: '100%', objectFit: 'cover' }}
                   priority
                 />
               </div>
