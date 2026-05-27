@@ -93,16 +93,39 @@ export default function Navbar() {
             gap: '1rem',
           }}
         >
-          {/* Logo */}
+          {/* Logo — floating gradient ring */}
           <a href="#hero" aria-label="Back to top" style={{ display: 'inline-flex', alignItems: 'center', textDecoration: 'none' }}>
-            <Image
-              src="/veera-logo.png"
-              alt="Veera Palla"
-              width={120}
-              height={40}
-              style={{ width: 'auto', height: 36, objectFit: 'contain' }}
-              priority
-            />
+            <motion.div
+              animate={{ y: [0, -5, 0] }}
+              transition={{ repeat: Infinity, duration: 3, ease: 'easeInOut' }}
+              whileHover={{ scale: 1.08 }}
+              style={{
+                width: 52, height: 52,
+                borderRadius: '50%',
+                background: 'linear-gradient(135deg, var(--accent), var(--accent-2))',
+                padding: 3,
+                boxShadow: '0 6px 20px rgba(24,0,173,0.40), 0 2px 6px rgba(24,0,173,0.25), 0 0 0 1px rgba(24,0,173,0.12)',
+                filter: 'drop-shadow(0 4px 12px rgba(24,0,173,0.30))',
+                flexShrink: 0,
+              }}
+            >
+              <div style={{
+                width: '100%', height: '100%',
+                borderRadius: '50%',
+                background: 'var(--bg-primary)',
+                overflow: 'hidden',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>
+                <Image
+                  src="/veera-logo.png"
+                  alt="Veera Palla"
+                  width={52}
+                  height={52}
+                  style={{ width: '72%', height: '72%', objectFit: 'contain' }}
+                  priority
+                />
+              </div>
+            </motion.div>
           </a>
 
           {/* Desktop nav */}
