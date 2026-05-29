@@ -1,13 +1,36 @@
 // components/three/Scene3D.tsx
 'use client';
-import { useState } from 'react';
-import { Canvas } from '@react-three/fiber';
+import { useState, useEffect } from 'react';
+import { Canvas, useThree } from '@react-three/fiber';
 import { PerformanceMonitor, AdaptiveDpr } from '@react-three/drei';
 import { TIER_CONFIG, type Tier } from '@/lib/capability';
 import { useScrollProgress } from '@/lib/useScrollProgress';
 import HeroObject from './HeroObject';
 import AmbientField from './AmbientField';
 import CameraRig from './CameraRig';
+
+// In reduced-motion mode the canvas uses frameloop="demand" (no continuous loop,
+// so no perceptible motion). This requests a fresh single frame after the layout
+// has settled and whenever the viewport resizes, so the static 3D scene is drawn
+// at the correct size instead of being left blank.
+function StaticFrame() {
+  const invalidate = useThree((s) => s.invalidate);
+  useEffect(() => {
+    let raf1 = 0, raf2 = 0;
+    // Two rAFs: ensure the canvas has its final size before the one render.
+    raf1 = requestAnimationFrame(() => {
+      raf2 = requestAnimationFrame(() => invalidate());
+    });
+    const onResize = () => invalidate();
+    window.addEventListener('resize', onResize, { passive: true });
+    return () => {
+      cancelAnimationFrame(raf1);
+      cancelAnimationFrame(raf2);
+      window.removeEventListener('resize', onResize);
+    };
+  }, [invalidate]);
+  return null;
+}
 
 export default function Scene3D({
   tier,
@@ -23,9 +46,16 @@ export default function Scene3D({
   return (
     <Canvas
       aria-hidden="true"
-      frameloop={reducedMotion ? 'never' : 'always'}
+      frameloop={reducedMotion ? 'demand' : 'always'}
       dpr={dpr}
-      gl={{ antialias: tier !== 'S', powerPreference: 'high-performance', alpha: true }}
+      gl={{
+        antialias: tier !== 'S',
+        powerPreference: 'high-performance',
+        alpha: true,
+        // Keep the painted frame around when motion is disabled (demand mode
+        // paints rarely) so the static scene never flashes to empty.
+        preserveDrawingBuffer: reducedMotion,
+      }}
       camera={{ position: [0, 0, 6], fov: 50 }}
       style={{ position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none' }}
     >
@@ -39,6 +69,7 @@ export default function Scene3D({
       <AmbientField count={cfg.particleCount} frozen={reducedMotion} />
       <CameraRig scrollProgress={scrollProgress} frozen={reducedMotion} />
       <fog attach="fog" args={['#0d0d1a', 6, 16]} />
+      {reducedMotion && <StaticFrame />}
     </Canvas>
   );
 }

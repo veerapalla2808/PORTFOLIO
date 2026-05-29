@@ -1,6 +1,6 @@
 // components/ui/ThreadLines.tsx
 'use client';
-import { useRef } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { motion, useScroll, useTransform, useReducedMotion } from 'framer-motion';
 
 const PATHS = [
@@ -11,12 +11,22 @@ const PATHS = [
 export default function ThreadLines({ className = '' }: { className?: string }) {
   const ref = useRef<HTMLDivElement>(null);
   const reduce = useReducedMotion();
+  const [mounted, setMounted] = useState(false);
   const { scrollYProgress } = useScroll({
     target: ref,
     offset: ['start end', 'end start'],
   });
   // Draw 0→1 across the element's scroll span.
   const drawn = useTransform(scrollYProgress, [0, 0.6], [0, 1]);
+
+  useEffect(() => {
+    // Client-only render: avoids an SSR/client hydration mismatch on the
+    // motion path's pathLength (which depends on the reduced-motion preference).
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setMounted(true);
+  }, []);
+
+  if (!mounted) return null;
 
   return (
     <div
