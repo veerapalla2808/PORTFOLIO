@@ -34,11 +34,21 @@ Tier is chosen from an initial heuristic (viewport size, `navigator.hardwareConc
 `navigator.deviceMemory`, pointer type) and then **auto-adjusted at runtime** by
 drei `<PerformanceMonitor>` + `<AdaptiveDpr>` so a struggling device steps down a tier.
 
-**Fallback hierarchy (edge cases only):**
+**Fallback hierarchy — "push 3D as far as possible everywhere":**
 
-- No WebGL support at all → existing 2D `ParticleBackground` canvas.
-- `prefers-reduced-motion: reduce` → static accent gradient (no canvas, no RAF).
-- Everything else (including all modern phones) → the real 3D scene at an
+- WebGL2 unavailable → attempt **WebGL1** context before any non-3D fallback.
+- `prefers-reduced-motion: reduce` → still render the **full 3D scene with depth +
+  lighting, but frozen on a single frame** (`frameloop="never"`, no auto-rotate, no
+  scroll/pointer motion). The user gets the rich 3D visual; their stated
+  accessibility preference (no continuous/animated motion) is respected. This is a
+  deliberate, documented accessibility decision — we do **not** override the OS-level
+  reduced-motion signal with continuous animation.
+- No WebGL at all (genuinely no context, ~<1% of devices) → animated **CSS-3D**
+  scene using `transform: perspective(...)` / `rotate3d` on accent shapes
+  (`CSS3DBackground.tsx`), so even non-WebGL devices see a moving 3D-style scene.
+- Existing 2D `ParticleBackground` is retained only as the absolute last-resort
+  safety net (e.g., CSS-3D also unsupported / errors).
+- Everything else (including all modern phones) → the real WebGL 3D scene at an
   appropriate tier.
 
 ## 3. Architecture & components
@@ -47,10 +57,11 @@ drei `<PerformanceMonitor>` + `<AdaptiveDpr>` so a struggling device steps down 
 
 ```
 BackgroundManager (client)
- ├─ detects: WebGL support, reduced-motion, capability tier
- ├─ reduced-motion        → StaticGradientBackground
- ├─ no WebGL              → ParticleBackground (existing 2D canvas)
- └─ WebGL capable         → Scene3D (lazy, ssr:false)  ← default incl. mobile
+ ├─ detects: WebGL2/WebGL1 support, reduced-motion, capability tier
+ ├─ WebGL capable + reduced-motion → Scene3D (frameloop="never", static 3D frame)
+ ├─ WebGL capable                  → Scene3D (lazy, ssr:false)  ← default incl. mobile
+ ├─ no WebGL                        → CSS3DBackground (animated CSS perspective scene)
+ └─ CSS-3D unsupported / error      → ParticleBackground (2D canvas, last resort)
 ```
 
 - **`components/BackgroundManager.tsx`** — client component. Runs detection in
@@ -70,8 +81,11 @@ BackgroundManager (client)
   FOV adapt to viewport aspect for responsiveness.
 - **`components/three/useThreeTheme.ts`** — reads `--accent` / `--accent-2` from CSS,
   re-reads on `data-theme` mutation (mirrors current `ParticleBackground` logic).
-- **`components/StaticGradientBackground.tsx`** — CSS-only accent gradient for
-  reduced-motion.
+- **`components/CSS3DBackground.tsx`** — animated CSS-3D scene
+  (`transform: perspective()` / `rotate3d`) for the genuinely no-WebGL path, so even
+  those devices get moving 3D-style depth.
+- Reduced-motion is handled inside `Scene3D` itself (render one static frame), not a
+  separate gradient component.
 
 ### 3.2 SVG thread animations
 
@@ -145,10 +159,14 @@ BackgroundManager (client)
 | Hydration mismatch from capability detection | Detect in `useEffect` after mount; SSR renders neutral placeholder. |
 | iOS Safari WebGL / `100vh` quirks | Feature-detect; use `dvh`/`svh` units and resize handling. |
 | Custom SVG cursor unsupported / ugly on some OS | CSS fallback to native `auto`/`pointer`. |
+| Reduced-motion users still need depth without motion-sickness risk | Render static single-frame 3D scene (`frameloop="never"`); never force continuous motion. |
+| No-WebGL device still expected to show 3D | Animated CSS-3D perspective scene; 2D canvas only as final safety net. |
 
 ## 8. Success criteria
 
 - Central morphing 3D hero object + ambient field renders on desktop **and** mobile.
+- Reduced-motion users see a static 3D frame (depth, no motion); no-WebGL users see
+  an animated CSS-3D scene — i.e. some form of 3D depth is shown on every device.
 - SVG threads self-draw on scroll; themed SVG cursor active on pointer devices.
 - Parallax/depth/transitions present and smooth.
 - Lighthouse performance not regressed (ideally improved) vs. baseline on mobile.
