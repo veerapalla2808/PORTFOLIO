@@ -3,6 +3,7 @@
 import { useRef, useEffect, useState } from 'react';
 import { motion, useScroll, useTransform } from 'framer-motion';
 import MagneticButton from './ui/MagneticButton';
+import ThreadLines from './ui/ThreadLines';
 import { personal } from '@/lib/data';
 
 const STATS = [
@@ -101,6 +102,9 @@ export default function Hero() {
           pointerEvents: 'none',
         }}
       />
+
+      {/* Thread-line overlay (draws on scroll) */}
+      <ThreadLines />
 
       {/* Hero content */}
       <motion.div
