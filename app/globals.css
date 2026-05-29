@@ -253,9 +253,36 @@ section, main, footer { position: relative; z-index: 1; }
   border-color: var(--accent);
 }
 
-/* ─── Custom cursor — hides OS cursor so CustomCursor.tsx renders instead ── */
-/* The custom cursor component provides the visual dot + ring on pointer devices */
-@media (pointer: fine) { * { cursor: none !important; } }
+/* ─── Themed SVG cursor (normal cursor, accent-colored, per-theme) ────────── */
+@media (pointer: fine) {
+  /* Light theme: accent #1800ad / accent-2 #a855f7 */
+  html[data-theme="light"] body {
+    cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 26 26"><path d="M5 3 L5 21 L10 16 L13.2 23 L16 21.8 L12.9 15 L20 15 Z" fill="%231800ad" stroke="white" stroke-width="1.3" stroke-linejoin="round"/></svg>') 5 3, auto;
+  }
+  html[data-theme="light"] a,
+  html[data-theme="light"] button,
+  html[data-theme="light"] [role="button"],
+  html[data-theme="light"] input,
+  html[data-theme="light"] textarea,
+  html[data-theme="light"] select,
+  html[data-theme="light"] [tabindex] {
+    cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 26 26"><path d="M5 3 L5 21 L10 16 L13.2 23 L16 21.8 L12.9 15 L20 15 Z" fill="%23a855f7" stroke="white" stroke-width="1.3" stroke-linejoin="round"/></svg>') 5 3, pointer;
+  }
+
+  /* Dark theme: accent #7b6fff / accent-2 #c084fc */
+  html[data-theme="dark"] body {
+    cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 26 26"><path d="M5 3 L5 21 L10 16 L13.2 23 L16 21.8 L12.9 15 L20 15 Z" fill="%237b6fff" stroke="%230d0d1a" stroke-width="1.3" stroke-linejoin="round"/></svg>') 5 3, auto;
+  }
+  html[data-theme="dark"] a,
+  html[data-theme="dark"] button,
+  html[data-theme="dark"] [role="button"],
+  html[data-theme="dark"] input,
+  html[data-theme="dark"] textarea,
+  html[data-theme="dark"] select,
+  html[data-theme="dark"] [tabindex] {
+    cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 26 26"><path d="M5 3 L5 21 L10 16 L13.2 23 L16 21.8 L12.9 15 L20 15 Z" fill="%23c084fc" stroke="%230d0d1a" stroke-width="1.3" stroke-linejoin="round"/></svg>') 5 3, pointer;
+  }
+}
 
 /* ─── Reduced-motion overrides ───────────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {

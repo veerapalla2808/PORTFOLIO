@@ -4,7 +4,6 @@ import { Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import LenisProvider from "@/components/LenisProvider";
 import SkipLink from "@/components/ui/SkipLink";
-import CustomCursor from "@/components/ui/CustomCursor";
 import ParticleBackground from "@/components/ui/ParticleBackground";
 
 const inter = Inter({
@@ -60,7 +59,6 @@ export default function RootLayout({
         <ParticleBackground />
         <SkipLink />
         <LenisProvider>
-          <CustomCursor />
           {children}
         </LenisProvider>
       </body>
