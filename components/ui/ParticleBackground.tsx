@@ -240,6 +240,17 @@ export default function ParticleBackground() {
     window.addEventListener('mousemove', onMove, { passive: true });
     window.addEventListener('resize', resize);
 
+    // Pause the RAF loop while the tab is hidden to save CPU/GPU.
+    const onVisibility = () => {
+      if (document.hidden) {
+        cancelAnimationFrame(raf);
+      } else {
+        cancelAnimationFrame(raf);
+        raf = requestAnimationFrame(tick);
+      }
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+
     readColors();
     resize();
     tick();
@@ -248,6 +259,7 @@ export default function ParticleBackground() {
       cancelAnimationFrame(raf);
       window.removeEventListener('mousemove', onMove);
       window.removeEventListener('resize', resize);
+      document.removeEventListener('visibilitychange', onVisibility);
       observer.disconnect();
     };
   }, []);
