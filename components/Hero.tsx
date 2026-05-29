@@ -70,6 +70,7 @@ export default function Hero() {
 
   const { scrollYProgress } = useScroll({ target: ref, offset: ['start start', 'end start'] });
   const contentY = useTransform(scrollYProgress, [0, 1], ['0px', '-60px']);
+  const titleY   = useTransform(scrollYProgress, [0, 1], ['0px', '-120px']);
   const opacity  = useTransform(scrollYProgress, [0, 0.6], [1, 0]);
 
   useEffect(() => {
@@ -81,7 +82,7 @@ export default function Hero() {
     <section
       id="hero"
       ref={ref}
-      className="section-bg-primary"
+      className="section-bg-primary depth-vignette"
       style={{
         minHeight: '100vh',
         display: 'flex',
@@ -145,29 +146,31 @@ export default function Hero() {
             // Senior Software Engineer · 11 Years
           </motion.p>
 
-          {/* Display title */}
-          <motion.h1
-            variants={ITEM_VARIANT}
-            style={{
-              fontSize: 'clamp(3rem, 8vw, 6rem)',
-              fontWeight: 900,
-              lineHeight: 0.92,
-              letterSpacing: '-0.05em',
-              color: 'var(--text-primary)',
-              marginBottom: '1.25rem',
-            }}
-          >
-            I build systems
-            <br />
-            <span style={{
-              color: 'transparent',
-              WebkitTextStroke: '2px var(--text-muted)',
-            }}>
-              that handle
-            </span>
-            <br />
-            <span className="text-grad">millions.</span>
-          </motion.h1>
+          {/* Display title (parallax layer — moves faster than the rest) */}
+          <motion.div style={{ y: titleY }}>
+            <motion.h1
+              variants={ITEM_VARIANT}
+              style={{
+                fontSize: 'clamp(3rem, 8vw, 6rem)',
+                fontWeight: 900,
+                lineHeight: 0.92,
+                letterSpacing: '-0.05em',
+                color: 'var(--text-primary)',
+                marginBottom: '1.25rem',
+              }}
+            >
+              I build systems
+              <br />
+              <span style={{
+                color: 'transparent',
+                WebkitTextStroke: '2px var(--text-muted)',
+              }}>
+                that handle
+              </span>
+              <br />
+              <span className="text-grad">millions.</span>
+            </motion.h1>
+          </motion.div>
 
           {/* Subtitle */}
           <motion.p

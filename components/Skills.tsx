@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import SectionTransition, { fadeUpVariant } from './ui/SectionTransition';
 import SkillTooltip from './ui/SkillTooltip';
+import TiltCard from './ui/TiltCard';
 import { skillCategories } from '@/lib/data';
 
 const ICON_MAP: Record<string, LucideIcon> = {
@@ -28,15 +29,13 @@ export default function Skills() {
             }}
             className="r-grid-4col"
           >
-            {skillCategories.map((cat, i) => {
+            {skillCategories.map((cat) => {
               const Icon = ICON_MAP[cat.icon] ?? Monitor;
               const isFeatured = cat.label === 'AI & GenAI';
 
-              return (
+              const card = (
                 <motion.div
-                  key={cat.label}
                   variants={fadeUpVariant}
-                  className={isFeatured ? 'skills-featured' : ''}
                   style={{
                     background: isFeatured
                       ? 'linear-gradient(135deg, var(--accent-lite), var(--accent-lite-2))'
@@ -45,9 +44,10 @@ export default function Skills() {
                     borderRadius: 12,
                     padding: '1.25rem',
                     boxShadow: 'var(--shadow)',
+                    height: '100%',
                     transition: 'box-shadow 0.2s ease, transform 0.2s ease',
                   }}
-                  whileHover={{ y: -3, boxShadow: 'var(--shadow-hover)' }}
+                  whileHover={isFeatured ? undefined : { y: -3, boxShadow: 'var(--shadow-hover)' }}
                 >
                   {/* Category header */}
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.9rem' }}>
@@ -108,6 +108,16 @@ export default function Skills() {
                     ))}
                   </div>
                 </motion.div>
+              );
+
+              // Featured AI card gets 3D tilt depth; the grid-span class lives on
+              // the grid item (the tilt wrapper) so layout is preserved.
+              return isFeatured ? (
+                <TiltCard key={cat.label} className="skills-featured">
+                  {card}
+                </TiltCard>
+              ) : (
+                <div key={cat.label}>{card}</div>
               );
             })}
           </div>

@@ -25,15 +25,15 @@ export default function HeroObject({
   });
 
   return (
-    <mesh ref={mesh} scale={1.7}>
+    <mesh ref={mesh} scale={1.45} position={[1.3, 0.1, 0]}>
       <icosahedronGeometry args={[1, detail]} />
       <MeshDistortMaterial
         color={accent}
         emissive={accent2}
-        emissiveIntensity={0.25}
-        roughness={0.25}
-        metalness={0.6}
-        distort={frozen ? 0.25 : 0.4}
+        emissiveIntensity={0.3}
+        roughness={0.2}
+        metalness={0.65}
+        distort={frozen ? 0.3 : 0.5}
         speed={frozen ? 0 : distortSpeed}
       />
     </mesh>

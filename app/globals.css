@@ -342,3 +342,13 @@ section, main, footer { position: relative; z-index: 1; }
 @media (min-width: 1024px) {
   #hero { padding-top: 0; }
 }
+
+/* ─── Depth helpers ──────────────────────────────────────────────────────── */
+.depth-vignette::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse at 50% 40%, transparent 55%, color-mix(in srgb, var(--bg-primary) 70%, transparent) 100%);
+  z-index: 0;
+}
