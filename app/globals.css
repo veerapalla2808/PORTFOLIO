@@ -136,9 +136,17 @@ h1, h2, h3, h4, h5, h6 {
 section { padding: 8rem 0; }
 @media (max-width: 768px) { section { padding: 5rem 0; } }
 
-/* Semi-transparent so the particle canvas bleeds through (35% canvas visible) */
-.section-bg-primary   { background-color: color-mix(in srgb, var(--bg-primary) 65%, transparent); }
-.section-bg-secondary { background-color: color-mix(in srgb, var(--bg-secondary) 65%, transparent); }
+/* Glassy panels so the 3D journey shows through behind the content */
+.section-bg-primary,
+.section-bg-secondary {
+  background-color: color-mix(in srgb, var(--bg-primary) 42%, transparent);
+  backdrop-filter: blur(7px);
+  -webkit-backdrop-filter: blur(7px);
+}
+[data-theme="light"] .section-bg-primary,
+[data-theme="light"] .section-bg-secondary {
+  background-color: color-mix(in srgb, var(--bg-primary) 60%, transparent);
+}
 
 /* Ensure all page content renders above the z-index:0 particle canvas */
 section, main, footer { position: relative; z-index: 1; }
@@ -347,6 +355,20 @@ section, main, footer { position: relative; z-index: 1; }
 section:not(#hero) {
   content-visibility: auto;
   contain-intrinsic-size: auto 800px;
+}
+
+/* ─── Droid narration bubble (3D companion) ──────────────────────────────── */
+.droid-html { pointer-events: none; }
+.droid-bubble {
+  width: max-content; max-width: 230px;
+  font-family: var(--font-mono); font-size: 0.72rem; line-height: 1.45;
+  color: var(--text-primary);
+  background: color-mix(in srgb, var(--bg-card) 80%, transparent);
+  border: 1px solid var(--border-accent); border-left: 3px solid var(--accent);
+  border-radius: 10px; padding: 0.55rem 0.7rem;
+  box-shadow: 0 0 24px color-mix(in srgb, var(--accent) 40%, transparent);
+  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  transform: translateX(-50%);
 }
 
 /* ─── Sector header (data-galaxy) ────────────────────────────────────────── */
