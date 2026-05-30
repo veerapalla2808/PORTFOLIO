@@ -4,7 +4,8 @@ import { Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import LenisProvider from "@/components/LenisProvider";
 import SkipLink from "@/components/ui/SkipLink";
-import BackgroundManager from "@/components/BackgroundManager";
+import WarpController from "@/components/galaxy/WarpController";
+import DataGalaxyBackground from "@/components/galaxy/DataGalaxyBackground";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -56,10 +57,12 @@ export default function RootLayout({
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
       <body className="min-h-screen antialiased">
-        <BackgroundManager />
         <SkipLink />
         <LenisProvider>
-          {children}
+          <WarpController>
+            <DataGalaxyBackground />
+            {children}
+          </WarpController>
         </LenisProvider>
       </body>
     </html>
