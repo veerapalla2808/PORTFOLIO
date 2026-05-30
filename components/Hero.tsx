@@ -2,9 +2,13 @@
 'use client';
 import { useRef, useEffect, useState } from 'react';
 import { motion, useScroll, useTransform } from 'framer-motion';
+import dynamic from 'next/dynamic';
 import MagneticButton from './ui/MagneticButton';
-import ThreadLines from './ui/ThreadLines';
 import { personal } from '@/lib/data';
+
+// Decorative scroll-driven overlay — client-only (ssr:false) so its motion
+// scroll target ref is always mounted and there is no hydration mismatch.
+const ThreadLines = dynamic(() => import('./ui/ThreadLines'), { ssr: false });
 
 const STATS = [
   { value: 11, suffix: '+', label: 'Yrs Exp' },
