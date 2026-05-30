@@ -11,6 +11,7 @@ import Contact from "@/components/Contact";
 import Footer from "@/components/Footer";
 import SectionReveal from "@/components/ui/SectionReveal";
 import SideStrip from "@/components/SideStrip";
+import Sector from "@/components/galaxy/Sector";
 
 export default function Home() {
   return (
@@ -19,14 +20,14 @@ export default function Home() {
       <Navbar />
       <div className="page-shell">
         <main id="main-content" tabIndex={-1}>
-          <Hero />
-          <SectionReveal variant="fold"        ><About      /></SectionReveal>
-          <SectionReveal variant="sweep-left"  ><Skills     /></SectionReveal>
-          <SectionReveal variant="curtain"     ><Experience /></SectionReveal>
-          <SectionReveal variant="zoom"        ><Projects   /></SectionReveal>
-          <SectionReveal variant="sweep-right" ><Education  /></SectionReveal>
-          <SectionReveal variant="fold"        ><Blog       /></SectionReveal>
-          <SectionReveal variant="blur-in"     ><Contact    /></SectionReveal>
+          <Sector id="hero"><Hero /></Sector>
+          <Sector id="about"><SectionReveal variant="fold"><About /></SectionReveal></Sector>
+          <Sector id="skills"><SectionReveal variant="sweep-left"><Skills /></SectionReveal></Sector>
+          <Sector id="experience"><SectionReveal variant="curtain"><Experience /></SectionReveal></Sector>
+          <Sector id="projects"><SectionReveal variant="zoom"><Projects /></SectionReveal></Sector>
+          <Sector id="education"><SectionReveal variant="sweep-right"><Education /></SectionReveal></Sector>
+          <Sector id="blog"><SectionReveal variant="fold"><Blog /></SectionReveal></Sector>
+          <Sector id="contact"><SectionReveal variant="blur-in"><Contact /></SectionReveal></Sector>
         </main>
         <Footer />
       </div>

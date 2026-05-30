@@ -349,6 +349,43 @@ section:not(#hero) {
   contain-intrinsic-size: auto 800px;
 }
 
+/* ─── Sector header (data-galaxy) ────────────────────────────────────────── */
+.sector-header {
+  display: flex; align-items: center; gap: 0.75rem;
+  font-family: var(--font-mono); font-size: 0.7rem; font-weight: 600;
+  letter-spacing: 0.3em; text-transform: uppercase; color: var(--accent);
+  margin: 0 0 1.5rem; padding-top: 2rem;
+}
+.sector-num { color: var(--text-muted); }
+.sector-line { flex: 1; height: 1px; background: linear-gradient(90deg, var(--border-accent), transparent); max-width: 160px; }
+
+/* ─── Sector guide HUD ───────────────────────────────────────────────────── */
+.guide-panel {
+  position: fixed; right: clamp(1rem, 3vw, 2.5rem); bottom: clamp(1rem, 4vh, 2.5rem);
+  z-index: 60; display: flex; gap: 0.85rem; align-items: center;
+  max-width: min(420px, 86vw); padding: 0.85rem 1rem;
+  background: color-mix(in srgb, var(--bg-card) 92%, transparent);
+  border: 1px solid var(--border-accent); border-radius: 14px;
+  box-shadow: var(--shadow-hover); backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+.guide-body { min-width: 0; }
+.guide-handle { font-family: var(--font-mono); font-size: 0.6rem; letter-spacing: 0.25em; color: var(--accent); text-transform: uppercase; }
+.guide-line { font-size: 0.82rem; color: var(--text-secondary); line-height: 1.5; margin-top: 0.15rem; }
+.guide-caret { display: inline-block; width: 7px; height: 1em; margin-left: 2px; background: var(--accent); vertical-align: text-bottom; animation: guide-blink 1s steps(2) infinite; }
+@keyframes guide-blink { 0%,50% { opacity: 1; } 50.01%,100% { opacity: 0; } }
+.guide-holo { animation: guide-glitch 0.6s steps(3) 1; }
+@keyframes guide-glitch { 0% { filter: hue-rotate(0) drop-shadow(2px 0 var(--accent-2)); opacity: 0.4; } 50% { filter: hue-rotate(40deg) drop-shadow(-2px 0 var(--accent)); } 100% { filter: none; opacity: 1; } }
+.guide-badge {
+  position: fixed; right: clamp(1rem, 3vw, 2.5rem); bottom: clamp(1rem, 4vh, 2.5rem);
+  z-index: 60; width: 48px; height: 48px; display: grid; place-items: center;
+  background: color-mix(in srgb, var(--bg-card) 90%, transparent);
+  border: 1px solid var(--border-accent); border-radius: 50%; cursor: pointer;
+}
+@media (prefers-reduced-motion: reduce) {
+  .guide-caret, .guide-holo { animation: none; }
+}
+
 /* ─── Depth helpers ──────────────────────────────────────────────────────── */
 .depth-vignette::after {
   content: "";

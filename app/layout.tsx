@@ -6,6 +6,7 @@ import LenisProvider from "@/components/LenisProvider";
 import SkipLink from "@/components/ui/SkipLink";
 import WarpController from "@/components/galaxy/WarpController";
 import DataGalaxyBackground from "@/components/galaxy/DataGalaxyBackground";
+import SectorGuide from "@/components/galaxy/SectorGuide";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -62,6 +63,7 @@ export default function RootLayout({
           <WarpController>
             <DataGalaxyBackground />
             {children}
+            <SectorGuide />
           </WarpController>
         </LenisProvider>
       </body>
