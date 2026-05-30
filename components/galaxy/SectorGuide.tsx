@@ -8,8 +8,16 @@ import GuideAvatar from './GuideAvatar';
 
 // Singleton HUD: shows the guide for the currently active sector. Rendered at the
 // app root (no transformed ancestor) so its position:fixed resolves to the viewport.
+// Client-only (mounted gate): its content depends entirely on client state
+// (active sector, reduced-motion, typewriter), so SSR would mismatch hydration.
 export default function SectorGuide() {
   const { activeSector } = useWarp();
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setMounted(true);
+  }, []);
+  if (!mounted) return null;
   // Remount per sector → fresh typewriter, no stale state.
   return <GuidePanel key={activeSector} sectorId={activeSector} />;
 }
