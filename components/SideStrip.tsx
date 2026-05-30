@@ -1,10 +1,10 @@
 'use client';
-import { useEffect, useState } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 import { FaLinkedin, FaMedium } from 'react-icons/fa6';
 import { FileText } from 'lucide-react';
 import Image from 'next/image';
 import ThemeToggle from './ThemeToggle';
+import { useWarp } from './galaxy/WarpController';
 import { personal } from '@/lib/data';
 
 const SECTIONS = [
@@ -24,22 +24,8 @@ const SOCIALS = [
 ];
 
 export default function SideStrip() {
-  const [active, setActive] = useState('');
   const reduced = useReducedMotion();
-
-  useEffect(() => {
-    const observers = SECTIONS.map(({ id }) => {
-      const el = document.getElementById(id);
-      if (!el) return null;
-      const obs = new IntersectionObserver(
-        ([entry]) => { if (entry.isIntersecting) setActive(id); },
-        { threshold: 0.3 },
-      );
-      obs.observe(el);
-      return obs;
-    });
-    return () => observers.forEach(o => o?.disconnect());
-  }, []);
+  const { warpTo, activeSector } = useWarp();
 
   return (
     <aside
@@ -135,12 +121,13 @@ export default function SideStrip() {
       {/* Section nav */}
       <nav aria-label="Section navigation" style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', flex: 1 }}>
         {SECTIONS.map(({ id, label }) => {
-          const isActive = active === id;
+          const isActive = activeSector === id;
           return (
             <a
               key={id}
               href={`#${id}`}
               aria-current={isActive ? 'true' : undefined}
+              onClick={(e) => { e.preventDefault(); warpTo(id); }}
               style={{
                 display: 'flex', alignItems: 'center', gap: '0.65rem',
                 fontSize: 'clamp(1rem, 1.2vw, 1.15rem)',

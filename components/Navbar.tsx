@@ -7,6 +7,7 @@ import Image from 'next/image';
 import ThemeToggle from './ThemeToggle';
 import ScrollProgressBar from './ui/ScrollProgressBar';
 import MagneticButton from './ui/MagneticButton';
+import { useWarp } from './galaxy/WarpController';
 import { personal } from '@/lib/data';
 
 const NAV_LINKS = [
@@ -23,6 +24,7 @@ export default function Navbar() {
   const [menuOpen, setMenuOpen]    = useState(false);
   const [scrolled, setScrolled]    = useState(false);
   const [activeSection, setActive] = useState('');
+  const { warpTo } = useWarp();
 
   // Shrink nav background after scrolling 60px
   useEffect(() => {
@@ -139,6 +141,7 @@ export default function Navbar() {
               <a
                 key={link.href}
                 href={link.href}
+                onClick={(e) => { e.preventDefault(); warpTo(link.href.slice(1)); }}
                 style={{
                   position: 'relative',
                   padding: '0.4rem 0.75rem',
@@ -231,7 +234,7 @@ export default function Navbar() {
               <motion.a
                 key={link.href}
                 href={link.href}
-                onClick={() => setMenuOpen(false)}
+                onClick={(e) => { e.preventDefault(); warpTo(link.href.slice(1)); setMenuOpen(false); }}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.06, duration: 0.3 }}
