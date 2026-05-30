@@ -5,7 +5,7 @@ import { useFrame } from '@react-three/fiber';
 import { Html } from '@react-three/drei';
 import { Group, Vector3, type Color, type Mesh, MeshStandardMaterial } from 'three';
 
-const offset = new Vector3(2.7, -0.7, -7.5);
+const offset = new Vector3(4.0, -1.5, -8);
 const tmp = new Vector3();
 
 export default function Droid({

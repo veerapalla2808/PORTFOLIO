@@ -2,11 +2,10 @@
 'use client';
 import { useRef, useEffect, type RefObject } from 'react';
 import { useFrame } from '@react-three/fiber';
-import { JOURNEY_DEPTH } from '@/lib/journey';
 
 export default function CameraRig({
-  scrollProgress, warpLevelRef, frozen,
-}: { scrollProgress: RefObject<number>; warpLevelRef: RefObject<number>; frozen: boolean }) {
+  cameraZRef, warpLevelRef, frozen,
+}: { cameraZRef: RefObject<number>; warpLevelRef: RefObject<number>; frozen: boolean }) {
   const pointer = useRef({ x: 0, y: 0 });
   const sway = useRef(0);
 
@@ -31,25 +30,22 @@ export default function CameraRig({
 
   useFrame((state, dt) => {
     const cam = state.camera;
-    const p = scrollProgress.current ?? 0;
     const warp = warpLevelRef.current ?? 0;
-
-    // Fly forward along -z with the journey; warp overshoots a little.
-    // Start a few units back so the first station sits ahead of the camera.
-    const targetZ = 6 - p * JOURNEY_DEPTH - warp * 6;
-    const k = frozen ? 1 : 0.08;
+    // Journey z (eased per-station) sits a few units back, with a small warp overshoot.
+    const targetZ = (cameraZRef.current ?? 0) + 7 - warp * 6;
+    const k = frozen ? 1 : 0.07;
     cam.position.z += (targetZ - cam.position.z) * k;
 
     if (!frozen) {
       sway.current += dt;
-      const px = pointer.current.x * 1.6 + Math.sin(sway.current * 0.3) * 0.5;
-      const py = -pointer.current.y * 1.0 + Math.cos(sway.current * 0.24) * 0.3;
-      cam.position.x += (px - cam.position.x) * 0.05;
-      cam.position.y += (py - cam.position.y) * 0.05;
-      cam.lookAt(cam.position.x * 0.4, cam.position.y * 0.4, cam.position.z - 12);
+      const px = pointer.current.x * 1.5 + Math.sin(sway.current * 0.3) * 0.4;
+      const py = -pointer.current.y * 0.9 + Math.cos(sway.current * 0.24) * 0.25;
+      cam.position.x += (px - cam.position.x) * 0.04;
+      cam.position.y += (py - cam.position.y) * 0.04;
+      cam.lookAt(cam.position.x * 0.5, cam.position.y * 0.5, cam.position.z - 14);
     } else {
       cam.position.x = 0; cam.position.y = 0;
-      cam.lookAt(0, 0, cam.position.z - 12);
+      cam.lookAt(0, 0, cam.position.z - 14);
     }
   });
 

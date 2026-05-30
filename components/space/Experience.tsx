@@ -6,7 +6,7 @@ import { PerformanceMonitor, AdaptiveDpr } from '@react-three/drei';
 import { EffectComposer, Bloom, Vignette } from '@react-three/postprocessing';
 import { Color } from 'three';
 import { detectGalaxy, GALAXY_DENSITY } from '@/lib/galaxyTier';
-import { useScrollProgress } from '@/lib/useScrollProgress';
+import { useJourneyCamera } from '@/lib/useJourneyCamera';
 import { useWarp } from '@/components/galaxy/WarpController';
 import { GUIDES } from '@/components/galaxy/guides';
 import Starfield from './Starfield';
@@ -20,11 +20,12 @@ function readColor(varName: string, fallback: string): Color {
 }
 
 export default function Experience() {
-  const scrollProgress = useScrollProgress();
+  const cameraZRef = useJourneyCamera();
   const { warpLevelRef, activeSector, reducedMotion } = useWarp();
   const [caps] = useState(() => detectGalaxy());
   const dens = GALAXY_DENSITY[caps.tier];
-  const [dpr, setDpr] = useState(dens.dprMax);
+  // Pixel count dominates cost with bloom — clamp DPR and let the monitor step down.
+  const [dpr, setDpr] = useState(Math.min(dens.dprMax, 1.4));
   const [colors, setColors] = useState(() => ({ accent: new Color('#7b6fff'), accent2: new Color('#c084fc'), base: new Color('#07070f') }));
 
   useEffect(() => {
@@ -41,7 +42,7 @@ export default function Experience() {
   }, []);
 
   const line = (GUIDES[activeSector]?.lines.join('  ')) ?? '';
-  const starCount = dens.stars * 6;
+  const starCount = dens.stars * 3;
 
   return (
     <div aria-hidden="true" style={{ position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none' }}>
@@ -63,12 +64,12 @@ export default function Experience() {
         <Starfield count={starCount} color={colors.accent} />
         <Stations color={colors.accent} color2={colors.accent2} />
         <Droid color={colors.accent} color2={colors.accent2} line={line} frozen={caps.reducedMotion} />
-        <CameraRig scrollProgress={scrollProgress} warpLevelRef={warpLevelRef} frozen={caps.reducedMotion} />
+        <CameraRig cameraZRef={cameraZRef} warpLevelRef={warpLevelRef} frozen={caps.reducedMotion} />
 
         {caps.tier !== 'S' && (
-          <EffectComposer>
-            <Bloom mipmapBlur intensity={1.1} luminanceThreshold={0.25} luminanceSmoothing={0.35} radius={0.8} />
-            <Vignette eskil={false} offset={0.25} darkness={0.75} />
+          <EffectComposer multisampling={0}>
+            <Bloom mipmapBlur intensity={0.85} luminanceThreshold={0.35} luminanceSmoothing={0.25} radius={0.6} />
+            <Vignette eskil={false} offset={0.3} darkness={0.7} />
           </EffectComposer>
         )}
       </Canvas>

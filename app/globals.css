@@ -357,6 +357,52 @@ section:not(#hero) {
   contain-intrinsic-size: auto 800px;
 }
 
+/* ─── Journey: top HUD (logo + theme) ────────────────────────────────────── */
+.top-hud { position: fixed; top: clamp(0.8rem, 2vw, 1.5rem); left: 0; right: 0; z-index: 70; display: flex; align-items: center; justify-content: space-between; padding: 0 clamp(1rem, 3vw, 2rem); pointer-events: none; }
+.top-hud > * { pointer-events: auto; }
+.top-hud-logo { background: none; border: none; cursor: pointer; padding: 0; border-radius: 50%; line-height: 0; box-shadow: 0 0 20px color-mix(in srgb, var(--accent) 35%, transparent); }
+.top-hud-logo img { border-radius: 50%; }
+
+/* ─── Journey: landing ───────────────────────────────────────────────────── */
+.landing-screen { min-height: 100vh; display: flex; align-items: center; justify-content: center; text-align: center; padding: 0 1.5rem; position: relative; }
+.landing-inner { max-width: 840px; }
+.landing-eyebrow { font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.3em; color: var(--accent); margin-bottom: 1.25rem; }
+.landing-name { font-size: clamp(2.8rem, 9vw, 6.5rem); font-weight: 900; letter-spacing: -0.04em; line-height: 0.95; color: var(--text-primary); }
+.landing-tagline { margin: 1.5rem auto 0; max-width: 560px; font-size: clamp(1rem, 2.2vw, 1.2rem); color: var(--text-secondary); line-height: 1.7; }
+.landing-cue { margin-top: 3rem; display: flex; flex-direction: column; align-items: center; gap: 0.6rem; font-family: var(--font-mono); font-size: 0.62rem; letter-spacing: 0.25em; color: var(--text-muted); }
+.landing-cue-line { width: 1px; height: 34px; background: linear-gradient(var(--accent), transparent); transform-origin: top; }
+
+/* ─── Journey: docked station panels ─────────────────────────────────────── */
+.station-block { min-height: 100vh; display: flex; align-items: center; padding: 6vh 0; }
+.holo-dock {
+  width: min(940px, 92vw); margin: 0 auto; position: relative;
+  background: color-mix(in srgb, var(--bg-card) 78%, transparent);
+  border: 1px solid var(--border-accent); border-radius: 20px;
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 18%, transparent),
+              0 30px 80px rgba(0,0,0,0.5),
+              0 0 60px color-mix(in srgb, var(--accent) 22%, transparent);
+  backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+  padding: clamp(1.5rem, 4vw, 3rem); will-change: opacity, transform;
+}
+.holo-dock::before {
+  content: ""; position: absolute; inset: 0; border-radius: 20px; pointer-events: none;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 10%, transparent), transparent 18%);
+}
+/* Neutralize inner section chrome inside a dock so the panel frames the content */
+.holo-dock section { padding: 0 !important; min-height: 0 !important; background: none !important; backdrop-filter: none !important; }
+.holo-dock .container-wide { padding: 0 !important; max-width: none !important; }
+
+.travel-gap { height: 120vh; }
+
+/* ─── Journey: station dots nav ──────────────────────────────────────────── */
+.station-dots { position: fixed; right: clamp(0.6rem, 1.6vw, 1.4rem); top: 50%; transform: translateY(-50%); z-index: 70; display: flex; flex-direction: column; gap: 0.55rem; align-items: flex-end; }
+.station-dot { display: flex; align-items: center; gap: 0.5rem; background: none; border: none; cursor: pointer; padding: 0.15rem; }
+.station-dot-mark { width: 9px; height: 9px; border-radius: 50%; border: 1.5px solid var(--text-muted); transition: all 0.25s ease; flex-shrink: 0; }
+.station-dot-label { font-family: var(--font-mono); font-size: 0.58rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--text-muted); opacity: 0; transform: translateX(6px); transition: all 0.25s ease; white-space: nowrap; }
+.station-dot:hover .station-dot-label, .station-dot.is-active .station-dot-label { opacity: 1; transform: none; }
+.station-dot:hover .station-dot-mark { border-color: var(--accent); }
+.station-dot.is-active .station-dot-mark { background: var(--accent); border-color: var(--accent); box-shadow: 0 0 10px var(--accent); transform: scale(1.25); }
+
 /* ─── Droid narration bubble (3D companion) ──────────────────────────────── */
 .droid-html { pointer-events: none; }
 .droid-bubble {
