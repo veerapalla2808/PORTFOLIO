@@ -7,35 +7,35 @@ import Education from "@/components/Education";
 import Blog from "@/components/Blog";
 import Contact from "@/components/Contact";
 import Footer from "@/components/Footer";
-import Landing from "@/components/journey/Landing";
-import StationBlock from "@/components/journey/StationBlock";
+import Briefing from "@/components/cockpit/Briefing";
+import ConsoleBlock from "@/components/cockpit/ConsoleBlock";
+import NavPanel from "@/components/cockpit/NavPanel";
+import Cockpit from "@/components/cockpit/Cockpit";
+import CockpitMobileNav from "@/components/cockpit/CockpitMobileNav";
 import TravelGap from "@/components/journey/TravelGap";
-import StationDots from "@/components/journey/StationDots";
-import MobileNav from "@/components/journey/MobileNav";
-import TopHud from "@/components/journey/TopHud";
 
 export default function Home() {
   return (
     <>
-      <TopHud />
-      <StationDots />
-      <MobileNav />
+      <NavPanel />
+      <CockpitMobileNav />
+      <Cockpit />
       <main id="main-content" tabIndex={-1}>
-        <Landing />
+        <Briefing />
         <TravelGap />
-        <StationBlock id="about"><About /></StationBlock>
+        <ConsoleBlock id="about"><About /></ConsoleBlock>
         <TravelGap />
-        <StationBlock id="skills"><Skills /></StationBlock>
+        <ConsoleBlock id="skills"><Skills /></ConsoleBlock>
         <TravelGap />
-        <StationBlock id="experience"><Experience /></StationBlock>
+        <ConsoleBlock id="experience"><Experience /></ConsoleBlock>
         <TravelGap />
-        <StationBlock id="projects"><Projects /></StationBlock>
+        <ConsoleBlock id="projects"><Projects /></ConsoleBlock>
         <TravelGap />
-        <StationBlock id="education"><Education /></StationBlock>
+        <ConsoleBlock id="education"><Education /></ConsoleBlock>
         <TravelGap />
-        <StationBlock id="blog"><Blog /></StationBlock>
+        <ConsoleBlock id="blog"><Blog /></ConsoleBlock>
         <TravelGap />
-        <StationBlock id="contact"><Contact /><Footer /></StationBlock>
+        <ConsoleBlock id="contact"><Contact /><Footer /></ConsoleBlock>
       </main>
     </>
   );

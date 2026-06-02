@@ -5,7 +5,7 @@ import "./globals.css";
 import LenisProvider from "@/components/LenisProvider";
 import SkipLink from "@/components/ui/SkipLink";
 import WarpController from "@/components/galaxy/WarpController";
-import ExperienceMount from "@/components/space/ExperienceMount";
+import SpaceMount from "@/components/cockpit/SpaceMount";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -60,7 +60,7 @@ export default function RootLayout({
         <SkipLink />
         <LenisProvider>
           <WarpController>
-            <ExperienceMount />
+            <SpaceMount />
             {children}
           </WarpController>
         </LenisProvider>

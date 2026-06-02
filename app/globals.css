@@ -29,27 +29,27 @@
   --strip-width:   clamp(260px, 22vw, 320px);
 }
 
-/* ─── Dark Theme ─────────────────────────────────────────────────────────── */
-[data-theme="dark"] {
-  --bg-primary:    #0d0d1a;
-  --bg-secondary:  #12122a;
-  --bg-card:       rgba(123, 111, 255, 0.08);
+/* ─── Cockpit theme (real-space HUD: cyan + amber on space-black) ─────────── */
+:root, [data-theme="dark"], [data-theme="light"] {
+  --bg-primary:    #02030a;
+  --bg-secondary:  #04060f;
+  --bg-card:       rgba(95, 211, 230, 0.05);
 
-  --accent:        #7b6fff;
-  --accent-2:      #c084fc;
-  --accent-lite:   rgba(123, 111, 255, 0.16);
-  --accent-lite-2: rgba(192, 132, 252, 0.12);
-  --accent-text:   #c4bdff;
+  --accent:        #5fd3e6;   /* HUD cyan */
+  --accent-2:      #ffb454;   /* instrument amber */
+  --accent-lite:   rgba(95, 211, 230, 0.14);
+  --accent-lite-2: rgba(255, 180, 84, 0.12);
+  --accent-text:   #b6ecf4;
 
-  --text-primary:   #f1f5f9;
-  --text-secondary: #94a3b8;
-  --text-muted:     #475569;
+  --text-primary:   #e6f4f7;
+  --text-secondary: #9fb6bd;
+  --text-muted:     #5a727b;
 
-  --border:        rgba(123, 111, 255, 0.14);
-  --border-accent: rgba(123, 111, 255, 0.35);
+  --border:        rgba(95, 211, 230, 0.16);
+  --border-accent: rgba(95, 211, 230, 0.4);
 
   --shadow:        none;
-  --shadow-hover:  0 0 28px rgba(123, 111, 255, 0.25);
+  --shadow-hover:  0 0 28px rgba(95, 211, 230, 0.25);
 }
 
 /* ─── Reset ──────────────────────────────────────────────────────────────── */
@@ -261,36 +261,7 @@ section, main, footer { position: relative; z-index: 1; }
   border-color: var(--accent);
 }
 
-/* ─── Themed SVG cursor (normal cursor, accent-colored, per-theme) ────────── */
-@media (pointer: fine) {
-  /* Light theme: accent #1800ad / accent-2 #a855f7 */
-  html[data-theme="light"] body {
-    cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 26 26"><path d="M5 3 L5 21 L10 16 L13.2 23 L16 21.8 L12.9 15 L20 15 Z" fill="%231800ad" stroke="white" stroke-width="1.3" stroke-linejoin="round"/></svg>') 5 3, auto;
-  }
-  html[data-theme="light"] a,
-  html[data-theme="light"] button,
-  html[data-theme="light"] [role="button"],
-  html[data-theme="light"] input,
-  html[data-theme="light"] textarea,
-  html[data-theme="light"] select,
-  html[data-theme="light"] [tabindex] {
-    cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 26 26"><path d="M5 3 L5 21 L10 16 L13.2 23 L16 21.8 L12.9 15 L20 15 Z" fill="%23a855f7" stroke="white" stroke-width="1.3" stroke-linejoin="round"/></svg>') 5 3, pointer;
-  }
-
-  /* Dark theme: accent #7b6fff / accent-2 #c084fc */
-  html[data-theme="dark"] body {
-    cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 26 26"><path d="M5 3 L5 21 L10 16 L13.2 23 L16 21.8 L12.9 15 L20 15 Z" fill="%237b6fff" stroke="%230d0d1a" stroke-width="1.3" stroke-linejoin="round"/></svg>') 5 3, auto;
-  }
-  html[data-theme="dark"] a,
-  html[data-theme="dark"] button,
-  html[data-theme="dark"] [role="button"],
-  html[data-theme="dark"] input,
-  html[data-theme="dark"] textarea,
-  html[data-theme="dark"] select,
-  html[data-theme="dark"] [tabindex] {
-    cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 26 26"><path d="M5 3 L5 21 L10 16 L13.2 23 L16 21.8 L12.9 15 L20 15 Z" fill="%23c084fc" stroke="%230d0d1a" stroke-width="1.3" stroke-linejoin="round"/></svg>') 5 3, pointer;
-  }
-}
+/* Normal cursor (cockpit) */
 
 /* ─── Reduced-motion overrides ───────────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
@@ -356,6 +327,110 @@ section:not(#hero) {
   content-visibility: auto;
   contain-intrinsic-size: auto 800px;
 }
+
+/* ════════════════════════════════════════════════════════════════════════
+   COCKPIT — real-space flight-deck UI
+   ════════════════════════════════════════════════════════════════════════ */
+body { background: #02030a; }
+
+/* ── Left flight-plan nav panel ─────────────────────────────────────────── */
+.nav-panel {
+  position: fixed; left: clamp(0.8rem, 1.6vw, 1.4rem); top: 50%; transform: translateY(-50%);
+  z-index: 70; width: 210px; padding: 1rem 1rem 0.8rem;
+  background: linear-gradient(180deg, rgba(95,211,230,0.06), rgba(2,3,10,0.7));
+  border: 1px solid var(--border-accent); border-left: 2px solid var(--accent);
+  border-radius: 4px; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  box-shadow: 0 0 30px rgba(0,0,0,0.5), inset 0 0 20px rgba(95,211,230,0.04);
+  font-family: var(--font-mono);
+}
+.nav-panel-title { font-size: 0.6rem; letter-spacing: 0.3em; color: var(--accent); margin-bottom: 0.75rem; opacity: 0.85; }
+.nav-panel-list { list-style: none; display: flex; flex-direction: column; }
+.nav-wp { position: relative; display: flex; align-items: center; gap: 0.6rem; width: 100%; background: none; border: none; cursor: pointer; padding: 0.5rem 0.3rem; border-top: 1px solid var(--border); text-align: left; transition: background 0.2s ease; }
+.nav-wp:hover { background: rgba(95,211,230,0.06); }
+.nav-wp-idx { font-size: 0.6rem; color: var(--text-muted); }
+.nav-wp-body { display: flex; flex-direction: column; line-height: 1.15; flex: 1; min-width: 0; }
+.nav-wp-code { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.12em; color: var(--text-secondary); }
+.nav-wp-label { font-size: 0.56rem; letter-spacing: 0.18em; color: var(--text-muted); text-transform: uppercase; }
+.nav-wp-mark { width: 6px; height: 6px; border-radius: 50%; border: 1px solid var(--text-muted); flex-shrink: 0; transition: all 0.2s ease; }
+.nav-wp.is-active { background: rgba(95,211,230,0.1); }
+.nav-wp.is-active .nav-wp-code { color: var(--accent); }
+.nav-wp.is-active .nav-wp-label { color: var(--accent-text); }
+.nav-wp.is-active .nav-wp-mark { background: var(--accent); border-color: var(--accent); box-shadow: 0 0 8px var(--accent); }
+.nav-panel-foot { font-size: 0.46rem; letter-spacing: 0.12em; color: var(--text-muted); margin-top: 0.75rem; opacity: 0.6; }
+@media (max-width: 1023px) { .nav-panel { display: none; } }
+
+/* ── Cockpit frame overlay ──────────────────────────────────────────────── */
+.cockpit { position: fixed; inset: 0; z-index: 60; pointer-events: none; font-family: var(--font-mono); }
+.cockpit-vignette { position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 45%, transparent 52%, rgba(1,2,8,0.55) 82%, rgba(1,2,8,0.9) 100%); }
+.cockpit-corner { position: absolute; width: 46px; height: 46px; border: 2px solid var(--border-accent); }
+.cockpit-corner.tl { top: 16px; left: 16px; border-right: none; border-bottom: none; }
+.cockpit-corner.tr { top: 16px; right: 16px; border-left: none; border-bottom: none; }
+.cockpit-corner.bl { bottom: 92px; left: 16px; border-right: none; border-top: none; }
+.cockpit-corner.br { bottom: 92px; right: 16px; border-left: none; border-top: none; }
+.cockpit-top { position: absolute; top: 18px; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 0.6rem; font-size: 0.58rem; letter-spacing: 0.25em; color: var(--text-secondary); }
+.cockpit-top-dot { width: 7px; height: 7px; border-radius: 50%; background: #46e08a; box-shadow: 0 0 8px #46e08a; }
+.cockpit-top-sep { width: 1px; height: 12px; background: var(--border-accent); }
+.cockpit-dash {
+  position: absolute; left: 0; right: 0; bottom: 0; height: 76px;
+  display: flex; align-items: center; justify-content: center; gap: clamp(1rem, 4vw, 3.5rem);
+  padding: 0 1.5rem;
+  background: linear-gradient(0deg, rgba(2,3,10,0.92), rgba(2,3,10,0.4));
+  border-top: 1px solid var(--border-accent);
+  box-shadow: 0 -10px 40px rgba(0,0,0,0.6);
+}
+.dash-cell { display: flex; flex-direction: column; align-items: center; gap: 0.2rem; }
+.dash-k { font-size: 0.5rem; letter-spacing: 0.25em; color: var(--text-muted); }
+.dash-v { font-size: 0.95rem; font-weight: 700; letter-spacing: 0.1em; color: var(--accent); }
+.dash-v small { color: var(--text-muted); font-size: 0.6rem; }
+.dash-reticle { position: relative; width: 34px; height: 34px; display: grid; place-items: center; }
+.dash-reticle-ring { position: absolute; inset: 0; border: 1px solid var(--accent); border-radius: 50%; opacity: 0.6; }
+.dash-reticle-cross { width: 14px; height: 14px; background:
+  linear-gradient(var(--accent), var(--accent)) center/1px 100% no-repeat,
+  linear-gradient(var(--accent), var(--accent)) center/100% 1px no-repeat; opacity: 0.7; }
+@media (max-width: 640px) { .cockpit-dash { gap: 1.2rem; height: 64px; } .dash-cell:nth-child(5) { display: none; } }
+
+/* ── Console data screens ───────────────────────────────────────────────── */
+.console-block { min-height: 100vh; display: flex; align-items: center; padding: 8vh 0 11vh; }
+@media (min-width: 1024px) { .console-block { padding-left: 240px; } }
+.console-screen {
+  width: min(760px, 90vw); margin: 0 auto; position: relative;
+  background: linear-gradient(165deg, rgba(95,211,230,0.05), rgba(2,4,12,0.82));
+  border: 1px solid var(--border-accent); border-radius: 6px;
+  box-shadow: 0 0 0 1px rgba(95,211,230,0.08), 0 30px 90px rgba(0,0,0,0.6), 0 0 50px rgba(95,211,230,0.1);
+  backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+  padding: clamp(1.4rem, 3.5vw, 2.6rem); will-change: opacity, transform;
+}
+.console-bar { display: flex; align-items: center; gap: 0.6rem; font-family: var(--font-mono); font-size: 0.58rem; letter-spacing: 0.2em; color: var(--text-secondary); margin-bottom: 1.4rem; padding-bottom: 0.8rem; border-bottom: 1px solid var(--border); }
+.console-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 8px var(--accent); }
+.console-code { color: var(--accent); }
+.console-bar-line { flex: 1; height: 1px; background: var(--border-accent); }
+.console-status { color: #46e08a; }
+.console-screen section { padding: 0 !important; min-height: 0 !important; background: none !important; backdrop-filter: none !important; }
+.console-screen .container-wide { padding: 0 !important; max-width: none !important; }
+
+/* ── Briefing (landing) ─────────────────────────────────────────────────── */
+.briefing-screen { min-height: 100vh; display: flex; align-items: center; padding: 0 clamp(1.5rem, 6vw, 5rem); }
+@media (min-width: 1024px) { .briefing-screen { padding-left: 260px; } }
+.briefing-inner { max-width: 680px; }
+.briefing-eyebrow { font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 0.28em; color: var(--accent); margin-bottom: 1.5rem; }
+.briefing-name { font-size: clamp(2.6rem, 8vw, 5.5rem); font-weight: 900; letter-spacing: -0.03em; line-height: 0.98; color: var(--text-primary); }
+.briefing-role { font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.2em; color: var(--text-secondary); margin-top: 1.2rem; text-transform: uppercase; }
+.briefing-tagline { margin-top: 1.4rem; max-width: 520px; font-size: clamp(0.95rem, 2vw, 1.1rem); color: var(--text-secondary); line-height: 1.7; }
+.briefing-cue { margin-top: 2.5rem; display: flex; align-items: center; gap: 0.7rem; font-family: var(--font-mono); font-size: 0.6rem; letter-spacing: 0.25em; color: var(--text-muted); }
+.briefing-cue-bar { width: 28px; height: 2px; background: var(--accent); transform-origin: left; display: inline-block; }
+
+/* ── Mobile flight-plan nav ─────────────────────────────────────────────── */
+.cm-nav { display: none; }
+@media (max-width: 1023px) { .cm-nav { display: block; } }
+.cm-toggle { position: fixed; top: clamp(0.8rem, 2vw, 1.3rem); right: clamp(1rem, 3vw, 1.4rem); z-index: 95; width: 44px; height: 44px; display: grid; place-items: center; border-radius: 4px; border: 1px solid var(--border-accent); color: var(--accent); background: rgba(2,4,12,0.85); backdrop-filter: blur(8px); }
+.cm-overlay { position: fixed; inset: 0; z-index: 90; display: flex; flex-direction: column; justify-content: center; padding: 2rem; background: rgba(1,2,8,0.95); backdrop-filter: blur(16px); }
+.cm-eyebrow { font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 0.3em; color: var(--accent); margin-bottom: 1.6rem; }
+.cm-list { list-style: none; display: flex; flex-direction: column; gap: 0.3rem; }
+.cm-item { display: flex; align-items: baseline; gap: 0.9rem; width: 100%; background: none; border: none; cursor: pointer; padding: 0.55rem 0; text-align: left; border-bottom: 1px solid var(--border); }
+.cm-idx { font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-muted); }
+.cm-code { font-family: var(--font-mono); font-size: 0.7rem; letter-spacing: 0.12em; color: var(--text-secondary); width: 5.5rem; }
+.cm-label { font-size: 1.5rem; font-weight: 800; color: var(--text-primary); }
+.cm-item.is-active .cm-label, .cm-item.is-active .cm-code { color: var(--accent); }
 
 /* ─── Journey: top HUD (logo + theme) ────────────────────────────────────── */
 .top-hud { position: fixed; top: clamp(0.8rem, 2vw, 1.5rem); left: 0; right: 0; z-index: 70; display: flex; align-items: center; justify-content: space-between; padding: 0 clamp(1rem, 3vw, 2rem); pointer-events: none; }
