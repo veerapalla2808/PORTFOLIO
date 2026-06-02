@@ -1,6 +1,6 @@
 // app/page.tsx
-import LivingConstellation from "@/components/living/LivingConstellation";
+import PortfolioApp from "@/components/living/PortfolioApp";
 
 export default function Home() {
-  return <LivingConstellation />;
+  return <PortfolioApp />;
 }
