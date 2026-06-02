@@ -51,18 +51,25 @@ export default function LivingConstellation({
       nodes.push({ x: cx + rnd(40) - 20, y: cy + rnd(40) - 20, vx: 0, vy: 0, hx: cx, hy: cy, cl: -1, kind: 'core', r: 5, ph: rnd(6.28), fr: 0.3 });
       const base = rnd(6.28);
       const homes: Array<{ x: number; y: number }> = [];
+      // Spread clusters across the full viewport (elliptical, width- & height-aware)
+      // so the constellation fills the screen instead of bunching in the centre.
+      const marginX = Math.min(140, W * 0.08);
+      const marginY = Math.min(120, H * 0.12);
+      const rxMax = (W / 2) - marginX;   // reach close to the side edges
+      const ryMax = (H / 2) - marginY;
       CLUSTERS.forEach((c, i) => {
-        const ang = base + (i / CLUSTERS.length) * Math.PI * 2 + (rnd(0.7) - 0.35);
-        const rad = minD * (0.2 + rnd(0.14));
-        const hx = cx + Math.cos(ang) * rad;
-        const hy = cy + Math.sin(ang) * rad * 0.82;
+        const ang = base + (i / CLUSTERS.length) * Math.PI * 2 + (rnd(0.5) - 0.25);
+        const rx = rxMax * (0.62 + rnd(0.38));
+        const ry = ryMax * (0.58 + rnd(0.42));
+        const hx = cx + Math.cos(ang) * rx;
+        const hy = cy + Math.sin(ang) * ry;
         homes.push({ x: hx, y: hy });
         labelNodes.push(nodes.length);
         nodes.push({ x: hx + rnd(60) - 30, y: hy + rnd(60) - 30, vx: 0, vy: 0, hx, hy, cl: i, kind: 'cluster', r: 3.2, ph: rnd(6.28), fr: 0.18 + rnd(0.1) });
       });
       CLUSTERS.forEach((c, i) => {
         for (let k = 0; k < c.n; k++) {
-          const a = rnd(6.28), rr = minD * (0.02 + rnd(0.09));
+          const a = rnd(6.28), rr = minD * (0.04 + rnd(0.11));
           const hx = homes[i].x + Math.cos(a) * rr, hy = homes[i].y + Math.sin(a) * rr;
           nodes.push({ x: hx + rnd(80) - 40, y: hy + rnd(80) - 40, vx: 0, vy: 0, hx, hy, cl: i, kind: 'particle', r: 0.8 + rnd(1.4), ph: rnd(6.28), fr: 0.25 + rnd(0.4) });
         }
