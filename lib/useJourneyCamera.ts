@@ -1,43 +1,40 @@
 // lib/useJourneyCamera.ts
 'use client';
 import { useRef, useEffect } from 'react';
-import { STATIONS, STATION_Z } from './journey';
+import { STATIONS } from './journey';
+import { STATION_U } from './journeyCurve';
 
 function smoothstep(t: number) { return t * t * (3 - 2 * t); }
 function lerp(a: number, b: number, t: number) { return a + (b - a) * t; }
 
-// Returns a ref with the target camera z, computed from where the viewport center
-// sits among the on-page station anchors. Camera lingers near a station (smoothstep)
-// and flies through the empty gaps between stations.
+// Returns a ref with the eased journey progress (0..1) along the flight curve,
+// derived from where the viewport center sits among the on-page station anchors.
+// Progress lingers near a station (smoothstep) and advances through the gaps.
 export function useJourneyCamera() {
-  const zRef = useRef(STATION_Z[STATIONS[0].id] ?? 0);
+  const pRef = useRef(0);
 
   useEffect(() => {
     const ids = STATIONS.map(s => s.id);
-    const zs = STATIONS.map(s => STATION_Z[s.id]);
     let raf = 0;
 
     const update = () => {
       raf = 0;
       const focus = window.innerHeight / 2;
-      const centers = ids.map(id => {
+      const pts: Array<{ c: number; u: number }> = [];
+      ids.forEach((id, i) => {
         const el = document.querySelector(`[data-station="${id}"]`);
-        if (!el) return null;
+        if (!el) return;
         const r = el.getBoundingClientRect();
-        return r.top + r.height / 2;
+        pts.push({ c: r.top + r.height / 2, u: STATION_U[i] });
       });
-      // Drop missing anchors but keep z aligned.
-      const pts: Array<{ c: number; z: number }> = [];
-      centers.forEach((c, i) => { if (c != null) pts.push({ c, z: zs[i] }); });
       if (pts.length === 0) return;
-      if (pts.length === 1) { zRef.current = pts[0].z; return; }
-
-      if (focus <= pts[0].c) { zRef.current = pts[0].z; return; }
-      if (focus >= pts[pts.length - 1].c) { zRef.current = pts[pts.length - 1].z; return; }
+      if (pts.length === 1) { pRef.current = pts[0].u; return; }
+      if (focus <= pts[0].c) { pRef.current = pts[0].u; return; }
+      if (focus >= pts[pts.length - 1].c) { pRef.current = pts[pts.length - 1].u; return; }
       for (let k = 0; k < pts.length - 1; k++) {
         if (focus >= pts[k].c && focus <= pts[k + 1].c) {
           const t = (focus - pts[k].c) / (pts[k + 1].c - pts[k].c || 1);
-          zRef.current = lerp(pts[k].z, pts[k + 1].z, smoothstep(t));
+          pRef.current = lerp(pts[k].u, pts[k + 1].u, smoothstep(t));
           return;
         }
       }
@@ -54,5 +51,5 @@ export function useJourneyCamera() {
     };
   }, []);
 
-  return zRef;
+  return pRef;
 }

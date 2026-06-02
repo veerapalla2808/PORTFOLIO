@@ -11,6 +11,7 @@ import Landing from "@/components/journey/Landing";
 import StationBlock from "@/components/journey/StationBlock";
 import TravelGap from "@/components/journey/TravelGap";
 import StationDots from "@/components/journey/StationDots";
+import MobileNav from "@/components/journey/MobileNav";
 import TopHud from "@/components/journey/TopHud";
 
 export default function Home() {
@@ -18,6 +19,7 @@ export default function Home() {
     <>
       <TopHud />
       <StationDots />
+      <MobileNav />
       <main id="main-content" tabIndex={-1}>
         <Landing />
         <TravelGap />

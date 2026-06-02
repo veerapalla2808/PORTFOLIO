@@ -17,7 +17,7 @@ function Origin({ color, color2 }: SProps) {
   useFrame((_, dt) => { if (g.current) g.current.rotation.y += dt * 0.2; });
   return (
     <group ref={g}>
-      <mesh><icosahedronGeometry args={[1.4, 1]} /><meshStandardMaterial {...emissive(color, 1.6)} toneMapped={false} roughness={0.3} metalness={0.5} /></mesh>
+      <mesh><sphereGeometry args={[1.5, 64, 64]} /><meshStandardMaterial {...emissive(color, 1.5)} toneMapped={false} roughness={0.25} metalness={0.5} /></mesh>
       {[2.6, 3.4, 4.2].map((r, i) => (
         <mesh key={r} rotation={[Math.PI / 2 + i * 0.5, i * 0.4, 0]}>
           <torusGeometry args={[r, 0.03, 8, 80]} /><meshStandardMaterial {...emissive(i % 2 ? color2 : color, 0.8)} toneMapped={false} transparent opacity={0.75} />
@@ -52,8 +52,8 @@ function SpaceStation({ color, color2 }: SProps) {
         const a = (i / 4) * Math.PI * 2;
         return (
           <group key={i} rotation={[Math.PI / 2, 0, a]}>
-            <mesh position={[3.4, 0, 0]}><boxGeometry args={[0.7, 0.5, 0.9]} /><meshStandardMaterial color={color} metalness={0.7} roughness={0.4} emissive={color2} emissiveIntensity={0.4} /></mesh>
-            <mesh position={[1.7, 0, 0]}><boxGeometry args={[2.6, 0.06, 0.1]} /><meshStandardMaterial {...emissive(color2, 0.6)} /></mesh>
+            <mesh position={[3.4, 0, 0]}><sphereGeometry args={[0.55, 32, 32]} /><meshStandardMaterial color={color} metalness={0.7} roughness={0.4} emissive={color2} emissiveIntensity={0.5} /></mesh>
+            <mesh position={[1.7, 0, 0]} rotation={[0, 0, Math.PI / 2]}><cylinderGeometry args={[0.05, 0.05, 2.4, 10]} /><meshStandardMaterial {...emissive(color2, 0.6)} /></mesh>
           </group>
         );
       })}
@@ -84,7 +84,7 @@ function Satellites({ color, color2 }: SProps) {
   });
   return (
     <group ref={g}>
-      <mesh><dodecahedronGeometry args={[1.3, 0]} /><meshStandardMaterial {...emissive(color, 1)} toneMapped={false} roughness={0.3} metalness={0.6} /></mesh>
+      <mesh><sphereGeometry args={[1.4, 64, 64]} /><meshStandardMaterial {...emissive(color, 1)} toneMapped={false} roughness={0.3} metalness={0.6} /></mesh>
       {[2.8, 3.8, 4.8].map((r, i) => (
         <group key={r} ref={(el) => { if (el) orbits.current[i] = el; }} rotation={[i * 0.5, 0, i * 0.3]}>
           <mesh position={[r, 0, 0]}>

@@ -11,6 +11,7 @@ import { useWarp } from '@/components/galaxy/WarpController';
 import { GUIDES } from '@/components/galaxy/guides';
 import Starfield from './Starfield';
 import Stations from './Stations';
+import Decor from './Decor';
 import Droid from './Droid';
 import CameraRig from './CameraRig';
 
@@ -20,7 +21,7 @@ function readColor(varName: string, fallback: string): Color {
 }
 
 export default function Experience() {
-  const cameraZRef = useJourneyCamera();
+  const progressRef = useJourneyCamera();
   const { warpLevelRef, activeSector, reducedMotion } = useWarp();
   const [caps] = useState(() => detectGalaxy());
   const dens = GALAXY_DENSITY[caps.tier];
@@ -50,21 +51,22 @@ export default function Experience() {
         frameloop={reducedMotion ? 'demand' : 'always'}
         dpr={dpr}
         gl={{ antialias: caps.tier !== 'S', powerPreference: 'high-performance', alpha: true }}
-        camera={{ position: [0, 0, 6], fov: 62, near: 0.1, far: 400 }}
+        camera={{ position: [0, 0, 6], fov: 60, near: 0.1, far: 900 }}
       >
         <color attach="background" args={[colors.base.r, colors.base.g, colors.base.b]} />
-        <fog attach="fog" args={[colors.base.getHex(), 14, 90]} />
-        <PerformanceMonitor onDecline={() => setDpr((d) => Math.max(dens.dprMax - 0.5, d - 0.5))} />
+        <fog attach="fog" args={[colors.base.getHex(), 35, 200]} />
+        <PerformanceMonitor onDecline={() => setDpr((d) => Math.max(1, d - 0.4))} />
         <AdaptiveDpr pixelated />
 
-        <ambientLight intensity={0.5} />
-        <pointLight position={[8, 6, 8]} intensity={120} color={colors.accent} distance={60} />
-        <pointLight position={[-8, -4, -10]} intensity={90} color={colors.accent2} distance={60} />
+        <ambientLight intensity={0.55} />
+        <pointLight position={[12, 8, 10]} intensity={160} color={colors.accent} distance={90} />
+        <pointLight position={[-12, -6, -14]} intensity={120} color={colors.accent2} distance={90} />
 
-        <Starfield count={starCount} color={colors.accent} />
+        <Starfield count={starCount} color={colors.accent} color2={colors.accent2} />
+        {caps.tier !== 'S' && <Decor color={colors.accent} color2={colors.accent2} />}
         <Stations color={colors.accent} color2={colors.accent2} />
         <Droid color={colors.accent} color2={colors.accent2} line={line} frozen={caps.reducedMotion} />
-        <CameraRig cameraZRef={cameraZRef} warpLevelRef={warpLevelRef} frozen={caps.reducedMotion} />
+        <CameraRig progressRef={progressRef} warpLevelRef={warpLevelRef} frozen={caps.reducedMotion} />
 
         {caps.tier !== 'S' && (
           <EffectComposer multisampling={0}>

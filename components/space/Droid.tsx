@@ -5,7 +5,7 @@ import { useFrame } from '@react-three/fiber';
 import { Html } from '@react-three/drei';
 import { Group, Vector3, type Color, type Mesh, MeshStandardMaterial } from 'three';
 
-const offset = new Vector3(4.0, -1.5, -8);
+const offset = new Vector3(5.4, -2.2, -8.5);
 const tmp = new Vector3();
 
 export default function Droid({
@@ -78,7 +78,7 @@ export default function Droid({
         </mesh>
 
         {/* Narration speech bubble */}
-        <Html position={[0, 1.9, 0]} center distanceFactor={9} pointerEvents="none" wrapperClass="droid-html">
+        <Html position={[0, 1.7, 0]} center distanceFactor={9} pointerEvents="none" wrapperClass="droid-html">
           <div className="droid-bubble">{line}</div>
         </Html>
       </group>
