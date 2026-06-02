@@ -1,6 +1,6 @@
 // app/page.tsx
-import PortfolioApp from "@/components/living/PortfolioApp";
+import StudioApp from "@/components/studio/StudioApp";
 
 export default function Home() {
-  return <PortfolioApp />;
+  return <StudioApp />;
 }
