@@ -1,14 +1,56 @@
-/* app/globals.css — minimal reset (design to be built fresh) */
+/* app/globals.css — living-constellation slice */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
 html { -webkit-text-size-adjust: 100%; }
 
 body {
   min-height: 100vh;
-  background: #000;
-  color: #fff;
+  background: radial-gradient(ellipse at 50% 45%, #0a0d14 0%, #05060a 60%, #030309 100%);
+  color: #e9f2f4;
   font-family: var(--font-inter), system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
+  overflow: hidden;
 }
 
 a { color: inherit; text-decoration: none; }
+
+/* ── Living constellation ─────────────────────────────────────────────────── */
+.lc-root { position: fixed; inset: 0; }
+.lc-canvas { position: fixed; inset: 0; }
+.lc-labels { position: fixed; inset: 0; pointer-events: none; }
+
+.lc-core-label {
+  position: absolute; top: 0; left: 0; will-change: transform;
+  display: flex; flex-direction: column; align-items: center; text-align: center;
+  pointer-events: none;
+}
+.lc-core-name {
+  font-size: clamp(1.8rem, 5vw, 3.4rem); font-weight: 800; letter-spacing: -0.03em;
+  color: #f3fbfb; text-shadow: 0 0 24px rgba(126, 240, 208, 0.45);
+  white-space: nowrap;
+}
+.lc-core-sub {
+  margin-top: 0.35rem; font-family: var(--font-jetbrains), monospace;
+  font-size: 0.6rem; letter-spacing: 0.28em; text-transform: uppercase;
+  color: rgba(126, 240, 208, 0.85); white-space: nowrap;
+}
+
+.lc-cluster-label {
+  position: absolute; top: 0; left: 0; will-change: transform; pointer-events: auto;
+  font-family: var(--font-jetbrains), monospace;
+  font-size: 0.78rem; letter-spacing: 0.12em; font-weight: 600;
+  color: #cfe9ec; background: rgba(8, 14, 16, 0.5);
+  border: 1px solid rgba(126, 240, 208, 0.3); border-radius: 999px;
+  padding: 0.32rem 0.85rem; cursor: pointer; white-space: nowrap;
+  backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+  transition: color 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+}
+.lc-cluster-label:hover {
+  color: #7ef0d0; border-color: #7ef0d0; background: rgba(126, 240, 208, 0.12);
+}
+
+.lc-hint {
+  position: fixed; bottom: 1.4rem; left: 50%; transform: translateX(-50%);
+  font-family: var(--font-jetbrains), monospace; font-size: 0.58rem;
+  letter-spacing: 0.22em; color: rgba(180, 205, 210, 0.45); pointer-events: none;
+  white-space: nowrap;
+}
