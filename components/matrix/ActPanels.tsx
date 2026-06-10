@@ -1,29 +1,28 @@
 'use client';
-// The DOM layer of NEON GRID — bands fade in around their flight offset.
-// Nothing is locked: checkpoints are optional sport, content is always open.
+// The DOM layer of NEON GRID v3 — bands fade in by 2D proximity to their
+// district on the street grid. Nothing is locked; checkpoints are sport.
 import DecodeText from './DecodeText';
 import {
-  IDENTITY_SPOT, ARSENAL_WALL, PORTALS, BILLBOARDS, CHECKPOINT_O,
+  SPAWN, IDENTITY_SPOT, ARSENAL_SPOT, PORTAL_XS, PORTAL_Z, ANOM_SPOTS,
+  CREDS_SPOT, TRANS_SPOT, PILLS_SPOT, CHECKPOINTS, JUNCTIONS,
   SKIP_LABEL, type Question,
 } from '@/lib/grid';
 import {
   personal, stats, experiences, projects, skillCategories,
-  certifications, education,
+  certifications, education, blogPosts,
 } from '@/lib/data';
 
 function Sec({
-  o, align = 'center', fade = 0.045, children,
-}: { o: number; align?: 'left' | 'right' | 'center'; fade?: number; children: React.ReactNode }) {
+  x, z, r = 16, align = 'center', children,
+}: { x: number; z: number; r?: number; align?: 'left' | 'right' | 'center'; children: React.ReactNode }) {
   return (
-    <section className={`mx-sec mx-sec-${align}`} data-o={o} data-fade={fade}>
+    <section className={`mx-sec mx-sec-${align}`} data-x={x} data-z={z} data-r={r}>
       {children}
     </section>
   );
 }
 
-// content panels taller than the viewport scroll internally — wheel inside
-// scrolls the panel, but at its edges the wheel flies the camera again
-// (never trap the traveler)
+// tall panels scroll internally; at their edges the wheel drives again
 function stopWheel(e: React.WheelEvent<HTMLElement>) {
   const el = e.currentTarget;
   if (el.scrollHeight <= el.clientHeight + 4) return;
@@ -104,30 +103,39 @@ export default function ActPanels({
 }) {
   return (
     <div className="mx-panels">
-      {/* ── 00 / hero ── */}
-      <Sec o={0} fade={0.055}>
+      {/* ── city gates — hero ── */}
+      <Sec x={SPAWN.x} z={SPAWN.z} r={20}>
         <div className="mx-hero">
-          <p className="mx-eyebrow vt">{'>'} jacked in. welcome to the neon grid…</p>
+          <p className="mx-eyebrow vt">{'>'} jacked in. the city is yours, operator…</p>
           <h1 className="mx-name"><DecodeText text="VEERA PALLA" speed={20} /></h1>
-          <p className="mx-hero-sub">SR. REACT.JS / NODE.JS DEVELOPER · 11 YEARS · A PLAYABLE RÉSUMÉ</p>
+          <p className="mx-hero-sub">SR. REACT.JS / NODE.JS DEVELOPER · 11 YEARS · A DRIVABLE RÉSUMÉ</p>
           <p className="mx-hero-cue">
-            SCROLL TO FLY INTO THE VORTEX <span className="mx-cue-arrow">▼</span> · drag to look around
+            SCROLL ▲ TO DRIVE · A/D OR ◀ ▶ TO TURN AT JUNCTIONS · DRAG TO LOOK
           </p>
         </div>
       </Sec>
 
-      {/* checkpoints — optional, rotating questions */}
+      {/* junction hints — tiny chips at every crossing */}
+      {JUNCTIONS.map((j, i) => (
+        <Sec key={`jx-${i}`} x={j.x} z={j.z} r={9}>
+          <p className="mx-junction">
+            {j.left ? `◀ ${j.left}` : `${j.right} ▶`} <em>· turn with A/D or ◀ ▶</em>
+          </p>
+        </Sec>
+      ))}
+
+      {/* checkpoints — optional, rotating questions, on the avenue */}
       {questions.map((q, i) => (
-        <Sec key={`cp-${i}`} o={CHECKPOINT_O[i]} fade={0.022}>
+        <Sec key={`cp-${i}`} x={CHECKPOINTS[i].x} z={CHECKPOINTS[i].z} r={10}>
           <Checkpoint index={i} q={q} result={results[i]} onResult={onResult} />
         </Sec>
       ))}
 
-      {/* ── 01 / identity ── */}
-      <Sec o={IDENTITY_SPOT.o} fade={0.03} align="left">
+      {/* ── 01 / identity plaza ── */}
+      <Sec x={IDENTITY_SPOT.x - 16} z={IDENTITY_SPOT.z + 4} r={17} align="left">
         <article className="mx-slab mx-slab-wide mx-scroll" onWheel={stopWheel}>
           <header className="mx-slab-head">
-            <span className="mx-slab-path">~/grid/identity.log</span>
+            <span className="mx-slab-path">~/city/identity_plaza.log</span>
             <span className="mx-slab-act">01 / IDENTITY</span>
           </header>
           <h2 className="mx-h2"><DecodeText text="IDENTITY" /></h2>
@@ -145,11 +153,11 @@ export default function ActPanels({
         </article>
       </Sec>
 
-      {/* ── 02 / arsenal ── */}
-      <Sec o={ARSENAL_WALL.o} fade={0.03} align="right">
+      {/* ── 02 / arsenal wall ── */}
+      <Sec x={ARSENAL_SPOT.x + 18} z={ARSENAL_SPOT.z} r={17} align="right">
         <article className="mx-slab mx-slab-wide mx-scroll" onWheel={stopWheel}>
           <header className="mx-slab-head">
-            <span className="mx-slab-path">~/grid/arsenal.bin</span>
+            <span className="mx-slab-path">~/city/arsenal_wall.bin</span>
             <span className="mx-slab-act">02 / ARSENAL</span>
           </header>
           <h2 className="mx-h2"><DecodeText text="THE ARSENAL" /></h2>
@@ -166,12 +174,18 @@ export default function ActPanels({
         </article>
       </Sec>
 
-      {/* ── 03 / time tunnel — one era panel right after each portal ── */}
+      {/* ── 03 / time tunnel — era panel just past each portal ── */}
       {experiences.map((e, i) => (
-        <Sec key={e.company} o={PORTALS[i].o + 0.016} fade={0.02} align={i % 2 === 0 ? 'left' : 'right'}>
+        <Sec
+          key={e.company}
+          x={PORTAL_XS[i] + 11}
+          z={PORTAL_Z}
+          r={10}
+          align={i % 2 === 0 ? 'left' : 'right'}
+        >
           <article className="mx-slab mx-slab-door mx-scroll" onWheel={stopWheel}>
             <header className="mx-slab-head">
-              <span className="mx-slab-path">~/timeline/era_0{i + 1}</span>
+              <span className="mx-slab-path">~/time_tunnel/era_0{i + 1}</span>
               <span className="mx-slab-act">03 / TIME TUNNEL</span>
             </header>
             <p className="mx-door-period">{e.period} · {e.location}</p>
@@ -185,9 +199,15 @@ export default function ActPanels({
         </Sec>
       ))}
 
-      {/* ── 04 / anomalies ── */}
+      {/* ── 04 / anomaly sector ── */}
       {projects.map((p, i) => (
-        <Sec key={p.name} o={BILLBOARDS[i].o} fade={0.026} align={i === 0 ? 'right' : 'left'}>
+        <Sec
+          key={p.name}
+          x={ANOM_SPOTS[i].x + 14}
+          z={ANOM_SPOTS[i].z + (i === 0 ? 7 : -7)}
+          r={13}
+          align={i === 0 ? 'right' : 'left'}
+        >
           <article className="mx-slab mx-slab-door mx-slab-anomaly mx-scroll" onWheel={stopWheel}>
             <header className="mx-slab-head">
               <span className="mx-slab-path">~/anomalies/case_0{i + 1}.rec</span>
@@ -208,12 +228,51 @@ export default function ActPanels({
         </Sec>
       ))}
 
-      {/* ── 05 / the choice ── */}
-      <Sec o={0.97} fade={0.05}>
+      {/* ── 05 / credentials court ── */}
+      <Sec x={CREDS_SPOT.x - 16} z={CREDS_SPOT.z + 5} r={15} align="left">
+        <article className="mx-slab mx-scroll" onWheel={stopWheel}>
+          <header className="mx-slab-head">
+            <span className="mx-slab-path">~/city/credentials.sig</span>
+            <span className="mx-slab-act">05 / CREDENTIALS</span>
+          </header>
+          <h2 className="mx-h3"><DecodeText text="CREDENTIALS VERIFIED" /></h2>
+          <ul className="mx-creds">
+            {certifications.map(c => (
+              <li key={c.title}><b>[{c.badge}]</b> {c.title} — {c.issuer} ✓</li>
+            ))}
+            <li><b>[B.TECH]</b> {education.degree}, {education.field} — {education.institution} ({education.year}) ✓</li>
+          </ul>
+        </article>
+      </Sec>
+
+      {/* ── 06 / transmission row ── */}
+      <Sec x={TRANS_SPOT.x + 16} z={TRANS_SPOT.z - 2} r={15} align="right">
+        <article className="mx-slab mx-scroll" onWheel={stopWheel}>
+          <header className="mx-slab-head">
+            <span className="mx-slab-path">~/city/transmissions.feed</span>
+            <span className="mx-slab-act">06 / TRANSMISSIONS</span>
+          </header>
+          <h2 className="mx-h3"><DecodeText text="TRANSMISSION ROW" /></h2>
+          <ul className="mx-creds">
+            {blogPosts.map(b => (
+              <li key={b.url}>
+                <a href={b.url} target="_blank" rel="noopener noreferrer">{b.title}</a>
+                {' '}— {b.date} · {b.readTime}
+              </li>
+            ))}
+          </ul>
+          <p className="mx-transmissions">
+            full feed: <a href={personal.medium} target="_blank" rel="noopener noreferrer">medium ↗</a>
+          </p>
+        </article>
+      </Sec>
+
+      {/* ── 07 / the choice ── */}
+      <Sec x={PILLS_SPOT.x} z={PILLS_SPOT.z + 14} r={18}>
         <div className="mx-choice">
           <h2 className="mx-h2"><DecodeText text="RED OR BLUE?" /></h2>
           <p className="mx-choice-sub">
-            You flew the grid, operator. One question left — and this one has no wrong answer.
+            You drove the whole grid, operator. One question left — and this one has no wrong answer.
           </p>
           <div className="mx-choice-row">
             <a className="mx-pill-btn mx-pill-red" href={`mailto:${personal.email}`}>
@@ -225,10 +284,6 @@ export default function ActPanels({
               <span>wake up in the terminal — read the résumé</span>
             </button>
           </div>
-          <p className="mx-creds-line">
-            {certifications.map(c => `[${c.badge}] ${c.title}`).join(' · ')} ·
-            [B.TECH] {education.field}, {education.year}
-          </p>
           <p className="mx-choice-links">
             <a href={`mailto:${personal.email}`}>{personal.email}</a>
             <span>{personal.phone}</span>

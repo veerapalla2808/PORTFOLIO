@@ -1,11 +1,12 @@
 'use client';
-// Digital rain in comic red & blue — one draw call per depth shell, all
-// animation in-shader. Each column carries a hue bit (blue or red) and rides
-// with the camera so the rain is the environment, not a backdrop.
+// Digital rain v3 — neon blue / violet / red columns with gentle wind sway,
+// brighter drop heads and deeper trails. One draw call per depth shell, all
+// animation in-shader. The field rides with the camera in BOTH axes.
 import { useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { GX } from '@/lib/grid';
+import { scrollBus } from '@/lib/scrollBus';
 import type { Tier } from '@/lib/tier';
 
 const GLYPHS =
@@ -44,6 +45,7 @@ function makeAtlas(): THREE.CanvasTexture {
 function rnd(n: number) { const x = Math.sin(n * 127.1) * 43758.5453; return x - Math.floor(x); }
 
 const VERT = /* glsl */ `
+uniform float uTime;
 attribute vec3 aOffset;
 attribute float aSpeed;
 attribute float aSeed;
@@ -60,7 +62,10 @@ void main() {
   vSeed = aSeed;
   vShade = aShade;
   vHue = aHue;
-  gl_Position = projectionMatrix * modelViewMatrix * vec4(position + aOffset, 1.0);
+  vec3 p = position + aOffset;
+  // gentle wind sway, stronger higher up
+  p.x += sin(uTime * 0.5 + aSeed) * 0.9 * (0.3 + uv.y);
+  gl_Position = projectionMatrix * modelViewMatrix * vec4(p, 1.0);
 }`;
 
 const FRAG = /* glsl */ `
@@ -69,9 +74,8 @@ uniform sampler2D uAtlas;
 uniform float uTime;
 uniform vec3 uBg;
 uniform vec3 uBlueDeep; uniform vec3 uBlue; uniform vec3 uBlueBright;
+uniform vec3 uVioletDeep; uniform vec3 uViolet; uniform vec3 uVioletBright;
 uniform vec3 uRedDeep;  uniform vec3 uRed;  uniform vec3 uRedBright;
-uniform vec3 uPurpleDeep; uniform vec3 uPurple; uniform vec3 uPurpleBright;
-uniform vec3 uGreenDeep;  uniform vec3 uGreen;  uniform vec3 uGreenBright;
 uniform vec3 uHead;
 varying vec2 vUv;
 varying float vSpeed;
@@ -93,13 +97,12 @@ void main() {
 
   float t1 = fract(vUv.y + uTime * vSpeed + vSeed);
   float t2 = fract(vUv.y + uTime * vSpeed * 0.57 + vSeed * 7.31);
-  float b = max(pow(t1, 7.0), pow(t2, 10.0) * 0.75);
+  float b = max(pow(t1, 6.0), pow(t2, 9.0) * 0.8);
   if (hash(vec2(vSeed, row * 3.3)) < 0.05) b *= 0.12;
 
   vec3 deep; vec3 core; vec3 brt;
   if (vHue < 0.5)      { deep = uBlueDeep;   core = uBlue;   brt = uBlueBright; }
-  else if (vHue < 1.5) { deep = uPurpleDeep; core = uPurple; brt = uPurpleBright; }
-  else if (vHue < 2.5) { deep = uGreenDeep;  core = uGreen;  brt = uGreenBright; }
+  else if (vHue < 1.5) { deep = uVioletDeep; core = uViolet; brt = uVioletBright; }
   else                 { deep = uRedDeep;    core = uRed;    brt = uRedBright; }
 
   vec3 col;
@@ -107,30 +110,31 @@ void main() {
   else if (b < 0.7)  col = mix(deep, core, (b - 0.25) / 0.45);
   else               col = mix(core, brt, (b - 0.7) / 0.3);
 
-  if (t1 > 0.968) col = uHead * 2.1;
+  // bright two-cell head
+  if (t1 > 0.955) col = mix(brt * 1.6, uHead * 2.6, step(0.978, t1));
   col += (hash(gl_FragCoord.xy * 0.7) - 0.5) * 0.05;
 
-  float alpha = glyph * (0.10 + b * 0.9) * vShade;
-  gl_FragColor = vec4(col * (0.55 + b * 1.7), alpha);
+  float alpha = glyph * (0.12 + b * 0.95) * vShade;
+  gl_FragColor = vec4(col * (0.6 + b * 1.8), alpha);
 }`;
 
 interface Shell { z: number; shade: number; cols: number }
 
 const SHELLS: Record<Tier, Shell[]> = {
   L: [
-    { z: 7, shade: 0.28, cols: 14 },   // sparse foreground for parallax depth
-    { z: -16, shade: 1.0, cols: 60 },
-    { z: -34, shade: 0.55, cols: 52 },
-    { z: -58, shade: 0.3, cols: 44 },
+    { z: 9, shade: 0.3, cols: 16 },
+    { z: -18, shade: 1.0, cols: 72 },
+    { z: -36, shade: 0.6, cols: 58 },
+    { z: -60, shade: 0.34, cols: 48 },
   ],
   M: [
-    { z: -16, shade: 1.0, cols: 54 },
-    { z: -38, shade: 0.5, cols: 42 },
+    { z: -18, shade: 1.0, cols: 56 },
+    { z: -40, shade: 0.5, cols: 44 },
   ],
-  S: [{ z: -20, shade: 0.9, cols: 38 }],
+  S: [{ z: -22, shade: 0.9, cols: 38 }],
 };
 
-const COL_H = 60;
+const COL_H = 58;
 
 export default function Rain({ tier, reduced }: { tier: Tier; reduced: boolean }) {
   const group = useRef<THREE.Group>(null);
@@ -154,15 +158,15 @@ export default function Rain({ tier, reduced }: { tier: Tier; reduced: boolean }
     shells.forEach((sh, si) => {
       for (let c = 0; c < sh.cols; c++, i++) {
         const k = si * 1000 + c;
-        offs[i * 3] = -70 + (140 * c) / sh.cols + (rnd(k + 1) - 0.5) * 2;
-        offs[i * 3 + 1] = 5 + (rnd(k + 2) - 0.5) * 9;
+        offs[i * 3] = -72 + (144 * c) / sh.cols + (rnd(k + 1) - 0.5) * 2;
+        offs[i * 3 + 1] = 14 + (rnd(k + 2) - 0.5) * 9;
         offs[i * 3 + 2] = sh.z + (rnd(k + 3) - 0.5) * 7;
-        spd[i] = 0.045 + rnd(k + 4) * 0.09;
+        spd[i] = 0.05 + rnd(k + 4) * 0.1;
         seed[i] = rnd(k + 5) * 113.0;
         shade[i] = sh.shade * (0.7 + rnd(k + 6) * 0.3);
-        // neon mix: 35% blue · 25% purple · 20% green · 20% red
+        // neon mix: 45% blue · 30% violet · 25% red — no green, ever
         const hr = rnd(k + 7);
-        hue[i] = hr < 0.35 ? 0 : hr < 0.6 ? 1 : hr < 0.8 ? 2 : 3;
+        hue[i] = hr < 0.45 ? 0 : hr < 0.75 ? 1 : 2;
       }
     });
     geo.setAttribute('aOffset', new THREE.InstancedBufferAttribute(offs, 3));
@@ -179,23 +183,31 @@ export default function Rain({ tier, reduced }: { tier: Tier; reduced: boolean }
       uBlueDeep: { value: new THREE.Color(GX.blueDeep) },
       uBlue: { value: new THREE.Color(GX.blue) },
       uBlueBright: { value: new THREE.Color(GX.blueBright) },
+      uVioletDeep: { value: new THREE.Color(GX.violetDeep) },
+      uViolet: { value: new THREE.Color(GX.violet) },
+      uVioletBright: { value: new THREE.Color(GX.violetBright) },
       uRedDeep: { value: new THREE.Color(GX.redDeep) },
       uRed: { value: new THREE.Color(GX.red) },
       uRedBright: { value: new THREE.Color(GX.redBright) },
-      uPurpleDeep: { value: new THREE.Color(GX.purpleDeep) },
-      uPurple: { value: new THREE.Color(GX.purple) },
-      uPurpleBright: { value: new THREE.Color(GX.purpleBright) },
-      uGreenDeep: { value: new THREE.Color(GX.greenDeep) },
-      uGreen: { value: new THREE.Color(GX.green) },
-      uGreenBright: { value: new THREE.Color(GX.greenBright) },
       uHead: { value: new THREE.Color(GX.white) },
     };
     return { geometry: geo, uniforms: u };
   }, [tier]);
 
-  useFrame((state) => {
+  const yaw = useRef(0);
+
+  useFrame((state, dt) => {
     if (group.current) {
+      // the rain is the weather — it follows you through the whole city and
+      // its curtain always hangs across your view, whichever way you face
       group.current.position.x = state.camera.position.x;
+      group.current.position.z = state.camera.position.z;
+      const ty = Math.atan2(-scrollBus.hx, -scrollBus.hz);
+      let dy = ty - yaw.current;
+      while (dy > Math.PI) dy -= Math.PI * 2;
+      while (dy < -Math.PI) dy += Math.PI * 2;
+      yaw.current += dy * Math.min(1, dt * 3);
+      group.current.rotation.y = yaw.current;
     }
     if (mat.current && !reduced) {
       mat.current.uniforms.uTime.value = state.clock.elapsedTime;

@@ -1,95 +1,82 @@
-// lib/grid.ts — NEON GRID: a 3D cyberpunk flythrough résumé.
-// One damped offset (0..1) moves you along a winding flight path with real
-// depth — forward, sideways and vertical. Content is always open; the
-// Operator's checkpoints are optional sport.
+// lib/grid.ts — NEON GRID v3: a drivable cyberpunk city.
+// A main avenue with side streets — you fly forward/back AND turn into
+// streets, every district holds a piece of the résumé. Nothing is locked.
 
-// ── Neon palette (cyberpunk: blue / red / purple / green on black) ──────────
+// ── Palette — neon blue / violet / red on near-black (NO green, NO pink) ────
 export const GX = {
-  bg: '#04050A',
-  blue: '#1E6FE6', blueBright: '#4D9FFF', blueDeep: '#0E2F66',
-  red: '#E62429', redBright: '#FF5252', redDeep: '#6E0F14',
-  purple: '#B026FF', purpleBright: '#C964FF', purpleDeep: '#3D0E66',
-  green: '#2BFF6F', greenBright: '#7DFFAB', greenDeep: '#0B5E2D',
+  bg: '#030308',
+  blue: '#2D7DFF', blueBright: '#66B0FF', blueDeep: '#0C2A66',
+  violet: '#7B2FFF', violetBright: '#9D5CFF', violetDeep: '#240B5E',
+  red: '#FF1F30', redBright: '#FF5C68', redDeep: '#660A12',
   white: '#F4F7FF',
-  text: '#C9D6EE',
-  dim: '#5E6E8E',
+  text: '#D4E0F5',
+  dim: '#6B7C9E',
 } as const;
 
-export const NEONS = [GX.blue, GX.purple, GX.green, GX.red] as const;
+export const NEONS = [GX.blue, GX.violet, GX.red] as const;
 
-// ── Flight path — keyframes in 3D (x sways, y climbs & dives, z always deeper)
-type V3 = [number, number, number];
-export interface PathKey { o: number; p: V3 }
+// ── Street network — axis-aligned segments (corridor half-width ~2.4) ───────
+export interface Street { a: [number, number]; b: [number, number]; name: string }
 
-export const PATH: PathKey[] = [
-  { o: 0.0, p: [0, 2, 40] },
-  { o: 0.05, p: [0, 2, 18] },
-  { o: 0.1, p: [0, 2, -8] },      // through the hero vortex
-  { o: 0.16, p: [6, 3, -42] },    // identity plaza (right)
-  { o: 0.22, p: [-4, 8, -74] },   // climb up-left
-  { o: 0.28, p: [-7, 10, -104] }, // arsenal neon wall (left, high)
-  { o: 0.34, p: [-2, 6, -132] },
-  { o: 0.4, p: [5, 2, -158] },    // dive toward the portal run
-  // portal run — five gates, weaving in x AND y
-  { o: 0.45, p: [6, 2, -176] },
-  { o: 0.5, p: [-6, 7, -208] },
-  { o: 0.55, p: [6, 3, -240] },
-  { o: 0.6, p: [-6, 9, -272] },
-  { o: 0.65, p: [5, 4, -304] },
-  { o: 0.7, p: [0, 5, -330] },
-  { o: 0.78, p: [-6, 6, -352] },  // anomaly billboards
-  { o: 0.86, p: [6, 4, -380] },
-  { o: 0.93, p: [0, 3, -404] },   // rooftop of the choice
-  { o: 1.0, p: [0, 2.5, -412] },
+export const STREETS: Street[] = [
+  { a: [0, 40], b: [0, -440], name: 'MAIN AVE' },
+  { a: [0, -60], b: [78, -60], name: 'IDENTITY PLAZA' },
+  { a: [0, -120], b: [-78, -120], name: 'ARSENAL WALL' },
+  { a: [0, -180], b: [152, -180], name: 'TIME TUNNEL' },
+  { a: [0, -240], b: [-92, -240], name: 'ANOMALY SECTOR' },
+  { a: [0, -300], b: [68, -300], name: 'CREDENTIALS COURT' },
+  { a: [0, -360], b: [-68, -360], name: 'TRANSMISSION ROW' },
 ];
 
-const smooth = (t: number) => t * t * (3 - 2 * t);
+export const LANE_HALF = 2.4;     // how far you can drift off a street line
+export const SPAWN = { x: 0, z: 30 };
 
-export function samplePath(o: number, out: { x: number; y: number; z: number }) {
-  const c = Math.min(1, Math.max(0, o));
-  let i = 0;
-  while (i < PATH.length - 2 && c > PATH[i + 1].o) i++;
-  const a = PATH[i], b = PATH[i + 1];
-  const t = smooth(Math.min(1, Math.max(0, (c - a.o) / (b.o - a.o || 1))));
-  out.x = a.p[0] + (b.p[0] - a.p[0]) * t;
-  out.y = a.p[1] + (b.p[1] - a.p[1]) * t;
-  out.z = a.p[2] + (b.p[2] - a.p[2]) * t;
-}
+// junctions — where side streets meet the avenue (for signposts + hints)
+export const JUNCTIONS = [
+  { x: 0, z: -60, left: null, right: 'IDENTITY PLAZA' },
+  { x: 0, z: -120, left: 'ARSENAL WALL', right: null },
+  { x: 0, z: -180, left: null, right: 'TIME TUNNEL' },
+  { x: 0, z: -240, left: 'ANOMALY SECTOR', right: null },
+  { x: 0, z: -300, left: null, right: 'CREDENTIALS COURT' },
+  { x: 0, z: -360, left: 'TRANSMISSION ROW', right: null },
+] as const;
 
-// ── World anchors ───────────────────────────────────────────────────────────
-export const VORTEX = { x: 0, y: 2, z: -14 };
-export const IDENTITY_SPOT = { x: 11, y: 3.4, z: -52, o: 0.16 };
-export const ARSENAL_WALL = { x: -16, y: 10, z: -104, o: 0.28 };
-// five era portals — the camera flies straight through each
-export const PORTALS = [
-  { x: 6, y: 2, z: -188, o: 0.469 },
-  { x: -6, y: 7, z: -220, o: 0.519 },
-  { x: 6, y: 3, z: -252, o: 0.569 },
-  { x: -6, y: 9, z: -284, o: 0.619 },
-  { x: 5, y: 4, z: -312, o: 0.663 },
+// ── District anchors ────────────────────────────────────────────────────────
+export const GATE_ARCH = { x: 0, z: -6 };
+export const IDENTITY_SPOT = { x: 72, y: 4, z: -66 };
+export const ARSENAL_SPOT = { x: -84, y: 9, z: -120 };
+export const PORTAL_XS = [30, 55, 80, 105, 130];
+export const PORTAL_Z = -180;
+export const ANOM_SPOTS = [
+  { x: -42, z: -247 },
+  { x: -74, z: -233 },
 ];
-export const BILLBOARDS = [
-  { x: -11, y: 7, z: -360, o: 0.78 },
-  { x: 11, y: 5, z: -386, o: 0.86 },
-];
-export const PILLS_SPOT = { x: 0, y: 2.6, z: -414, o: 0.96 };
+export const CREDS_SPOT = { x: 62, z: -294 };
+export const TRANS_SPOT = { x: -62, z: -366 };
+export const PILLS_SPOT = { x: 0, y: 2.6, z: -436 };
 
-// ── Zones (HUD narration — nothing locked, ever) ────────────────────────────
-export interface Zone { idx: number; id: string; code: string; line: string; start: number }
+// ── Zones (HUD narration — by proximity) ────────────────────────────────────
+export interface Zone { idx: number; id: string; code: string; line: string; x: number; z: number }
 
 export const ZONES: Zone[] = [
-  { idx: 0, id: 'gate', code: '00 / JACK-IN', line: 'Welcome to the grid. Scroll to fly — sideways, upward, and straight into the rain.', start: 0 },
-  { idx: 1, id: 'identity', code: '01 / IDENTITY', line: 'Identity verified the hard way: eleven years in production.', start: 0.13 },
-  { idx: 2, id: 'arsenal', code: '02 / ARSENAL', line: "An arsenal isn't what you know. It's what you reach for at 3 AM.", start: 0.21 },
-  { idx: 3, id: 'timeline', code: '03 / TIME TUNNEL', line: 'Five portals. Five eras. Fly through his timeline.', start: 0.4 },
-  { idx: 4, id: 'anomalies', code: '04 / ANOMALIES', line: 'Two anomalies reached production. Click the billboards — watch them stabilize.', start: 0.72 },
-  { idx: 5, id: 'choice', code: '05 / THE CHOICE', line: 'Last rooftop, operator. Red or blue?', start: 0.9 },
+  { idx: 0, id: 'gate', code: '00 / CITY GATES', line: 'Welcome to the grid, operator. Fly the avenue — and take the side streets. They pay.', x: 0, z: 30 },
+  { idx: 1, id: 'identity', code: '01 / IDENTITY PLAZA', line: 'Identity verified the hard way: eleven years in production.', x: 66, z: -60 },
+  { idx: 2, id: 'arsenal', code: '02 / ARSENAL WALL', line: "An arsenal isn't what you know. It's what you reach for at 3 AM.", x: -66, z: -120 },
+  { idx: 3, id: 'timeline', code: '03 / TIME TUNNEL', line: 'Five portals. Five eras. Punch through them.', x: 75, z: -180 },
+  { idx: 4, id: 'anomalies', code: '04 / ANOMALY SECTOR', line: 'Two anomalies reached production. Click the billboards — watch them surrender.', x: -55, z: -240 },
+  { idx: 5, id: 'creds', code: '05 / CREDENTIALS COURT', line: 'Stamped, sealed, verified. The machines agree: he is certified.', x: 55, z: -300 },
+  { idx: 6, id: 'transmissions', code: '06 / TRANSMISSION ROW', line: 'He also writes. The signal is strong on this one.', x: -55, z: -360 },
+  { idx: 7, id: 'choice', code: '07 / THE CHOICE', line: 'End of the avenue, operator. Red or blue?', x: 0, z: -420 },
 ];
 
-export function zoneAt(offset: number): Zone {
-  let z = ZONES[0];
-  for (const zone of ZONES) if (offset >= zone.start) z = zone;
-  return z;
+export function zoneAt(x: number, z: number): Zone {
+  let best = ZONES[0];
+  let bd = Infinity;
+  for (const zo of ZONES) {
+    const d = (zo.x - x) * (zo.x - x) + (zo.z - z) * (zo.z - z);
+    if (d < bd) { bd = d; best = zo; }
+  }
+  return best;
 }
 
 // ── Optional checkpoints — rotating sarcastic question pool ─────────────────
@@ -97,7 +84,7 @@ export interface Question {
   q: string;
   options: string[];
   correct: number;
-  sass: string[]; // index-aligned quips for wrong picks ('' on the correct slot)
+  sass: string[];
   win: string;
 }
 
@@ -248,19 +235,25 @@ export const QUESTION_POOL: Question[] = [
   },
 ];
 
-// checkpoint positions along the path (6 stops; questions rotate per visit)
-// — slotted into the gaps between set pieces so bands never collide
-export const CHECKPOINT_O = [0.125, 0.205, 0.33, 0.445, 0.72, 0.9];
+// checkpoints sit ON the main avenue so every traveler meets them
+export const CHECKPOINTS = [
+  { x: 0, z: -30 },
+  { x: 0, z: -90 },
+  { x: 0, z: -150 },
+  { x: 0, z: -210 },
+  { x: 0, z: -270 },
+  { x: 0, z: -395 },
+];
 
 export const SKIP_LABEL = '[ skip — the rabbit saw that ]';
 export const SKIP_QUIP = 'Skipped. The rabbit is updating your file.';
 
 export const RANKS = [
-  'BLUE-PILL TOURIST',   // 0
-  'SCRIPT KIDDO',        // 1
-  'CONSOLE LOGGER',      // 2
-  'OPERATOR',            // 3
-  'ARCHITECT',           // 4
-  'ORACLE',              // 5
-  'THE ONE',             // 6
+  'BLUE-PILL TOURIST',
+  'SCRIPT KIDDO',
+  'CONSOLE LOGGER',
+  'OPERATOR',
+  'ARCHITECT',
+  'ORACLE',
+  'THE ONE',
 ] as const;

@@ -1,32 +1,29 @@
-/* app/globals.css — THE GRID · comic red & blue on near-black
-   blue #1E6FE6 / #4D9FFF · red #E62429 / #FF5252 · white #F4F7FF only for
-   highlights & the rabbit. Black is the canvas, color is the voice. */
+/* app/globals.css — NEON GRID · cyberpunk blue / violet / red on near-black.
+   No green. No pink. Black is the canvas, neon is the voice. */
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html { -webkit-text-size-adjust: 100%; }
 
 :root {
-  --bg: #04050A;
-  --blue: #1E6FE6;
-  --blue-b: #4D9FFF;
-  --blue-d: #0E2F66;
-  --red: #E62429;
-  --red-b: #FF5252;
-  --red-d: #6E0F14;
-  --purple: #B026FF;
-  --purple-b: #C964FF;
-  --green: #2BFF6F;
-  --green-b: #7DFFAB;
+  --bg: #030308;
+  --blue: #2D7DFF;
+  --blue-b: #66B0FF;
+  --blue-d: #0C2A66;
+  --red: #FF1F30;
+  --red-b: #FF5C68;
+  --red-d: #660A12;
+  --purple: #7B2FFF;
+  --purple-b: #9D5CFF;
   --white: #F4F7FF;
-  --text: #D4E0F5;
-  --dim: #6B7C9E;
-  --panel: rgba(6, 8, 16, 0.93);
-  --line: rgba(30, 111, 230, 0.4);
+  --text: #D8E3F8;
+  --dim: #76879F;
+  --panel: rgba(4, 5, 12, 0.94);
+  --line: rgba(45, 125, 255, 0.5);
   --mono: var(--font-jetbrains), 'JetBrains Mono', monospace;
   --vt: var(--font-vt), 'VT323', monospace;
 }
 
-html { background: #04050A; }
+html { background: #030308; }
 
 body {
   min-height: 100vh;
@@ -164,13 +161,29 @@ button { font-family: inherit; }
 .mx-sec {
   position: absolute; inset: 0;
   display: flex; align-items: center; justify-content: center;
-  padding: 0 clamp(1rem, 4vw, 4.5rem);
+  padding: 0 clamp(1rem, 4vw, 4.5rem) 7vh;
   opacity: 0; visibility: hidden;
 }
 .mx-sec-left { justify-content: flex-start; }
 .mx-sec-right { justify-content: flex-end; }
 /* only truly interactive elements catch the pointer */
 .mx-panels a, .mx-panels button { pointer-events: auto; }
+
+/* junction hint chips */
+.mx-junction {
+  align-self: flex-end; margin-bottom: 12vh;
+  background: var(--panel); border: 1px solid var(--line);
+  padding: 0.55rem 1rem; font-size: 0.72rem; letter-spacing: 0.16em;
+  color: var(--blue-b); text-shadow: 0 0 12px rgba(102, 176, 255, 0.5);
+}
+.mx-junction em { color: var(--dim); font-style: normal; font-size: 0.6rem; letter-spacing: 0.1em; }
+
+/* portal-crossing flash tint */
+.mx-warp {
+  position: fixed; inset: 0; z-index: 30; pointer-events: none; opacity: 0;
+  background: radial-gradient(ellipse at center, rgba(200, 215, 255, 0.55), rgba(123, 47, 255, 0.25) 55%, transparent 80%);
+  mix-blend-mode: screen;
+}
 
 /* hero */
 .mx-hero { text-align: center; max-width: 1040px; }
@@ -205,7 +218,7 @@ button { font-family: inherit; }
 .mx-slab-wide { width: min(880px, 94vw); }
 .mx-slab-door { width: min(560px, 92vw); }
 /* tall panels scroll internally instead of clipping off-screen */
-.mx-scroll { max-height: min(76vh, 760px); overflow-y: auto; pointer-events: auto; overscroll-behavior: contain; }
+.mx-scroll { max-height: min(68vh, 720px); overflow-y: auto; pointer-events: auto; overscroll-behavior: contain; }
 .mx-scroll::-webkit-scrollbar { width: 5px; }
 .mx-scroll::-webkit-scrollbar-thumb { background: var(--blue-d); border-radius: 3px; }
 .mx-slab-head {

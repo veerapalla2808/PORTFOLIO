@@ -1,11 +1,11 @@
 'use client';
-// Orchestrator of NEON GRID — jack-in, rotating checkpoints + rank, operator
-// lines, idle detection, terminal mode. Nothing is ever locked.
+// Orchestrator of NEON GRID v3 — jack-in, district tracking, rotating
+// checkpoints + rank, operator lines, idle detection, terminal mode.
 import { useCallback, useEffect, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { detectCaps, type Caps } from '@/lib/tier';
 import { ZONES, zoneAt, QUESTION_POOL, RANKS, type Question } from '@/lib/grid';
-import { storyBands } from '@/lib/scrollBus';
+import { storyBands, scrollBus } from '@/lib/scrollBus';
 import BootOverlay from './BootOverlay';
 import OperatorHud from './OperatorHud';
 import TerminalResume from './TerminalResume';
@@ -26,13 +26,16 @@ export default function MatrixApp() {
   const [results, setResults] = useState<Record<number, CheckpointResult>>({});
   const [interacted, setInteracted] = useState<Set<string>>(new Set());
   const [quip, setQuip] = useState<string | null>(null);
+  const [visited, setVisited] = useState<Set<number>>(new Set([0]));
 
   const progressRef = useRef<HTMLDivElement>(null);
   const storyRef = useRef<HTMLDivElement>(null);
+  const warpRef = useRef<HTMLDivElement>(null);
   const lastMove = useRef(0);
-  const lastOffset = useRef(0);
+  const lastPos = useRef({ x: 0, z: 30 });
   const idleRef = useRef(false);
   const zoneRef = useRef(0);
+  const visitedRef = useRef<Set<number>>(new Set([0]));
   const quipTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   useEffect(() => {
@@ -59,7 +62,7 @@ export default function MatrixApp() {
     return () => clearInterval(t);
   }, []);
 
-  // collect story bands for proximity fades
+  // collect story bands for 2D proximity fades
   useEffect(() => {
     storyBands.length = 0;
     if (mode !== 'construct') return;
@@ -68,25 +71,35 @@ export default function MatrixApp() {
     for (const el of Array.from(root.querySelectorAll<HTMLElement>('.mx-sec'))) {
       storyBands.push({
         el,
-        o: parseFloat(el.dataset.o ?? '0'),
-        fade: parseFloat(el.dataset.fade ?? '0.045'),
+        x: parseFloat(el.dataset.x ?? '0'),
+        z: parseFloat(el.dataset.z ?? '0'),
+        r: parseFloat(el.dataset.r ?? '16'),
       });
     }
   }, [mode, caps, questions, results, interacted]);
 
-  const onFrame = useCallback((offset: number) => {
+  const onFrame = useCallback((x: number, z: number) => {
     for (const b of storyBands) {
-      const d = Math.abs(offset - b.o) / b.fade;
+      const d = Math.hypot(x - b.x, z - b.z) / b.r;
       const op = Math.max(0, 1 - d * d);
       b.el.style.opacity = op.toFixed(3);
       b.el.style.visibility = op <= 0.01 ? 'hidden' : 'visible';
     }
-    if (progressRef.current) progressRef.current.style.width = `${offset * 100}%`;
-    const z = zoneAt(offset).idx;
-    if (z !== zoneRef.current) { zoneRef.current = z; setZoneIdx(z); }
+    if (warpRef.current) warpRef.current.style.opacity = (scrollBus.warp * 0.4).toFixed(3);
+
+    const zo = zoneAt(x, z);
+    if (zo.idx !== zoneRef.current) { zoneRef.current = zo.idx; setZoneIdx(zo.idx); }
+    if (!visitedRef.current.has(zo.idx) && Math.hypot(x - zo.x, z - zo.z) < 26) {
+      visitedRef.current = new Set(visitedRef.current).add(zo.idx);
+      setVisited(visitedRef.current);
+    }
+    if (progressRef.current) {
+      progressRef.current.style.width = `${(visitedRef.current.size / ZONES.length) * 100}%`;
+    }
+
     const now = performance.now();
-    if (Math.abs(offset - lastOffset.current) > 0.0004) {
-      lastOffset.current = offset;
+    if (Math.hypot(x - lastPos.current.x, z - lastPos.current.z) > 0.04) {
+      lastPos.current = { x, z };
       lastMove.current = now;
       if (idleRef.current) { idleRef.current = false; setIdle(false); }
     } else if (!idleRef.current && now - lastMove.current > 5000) {
@@ -145,10 +158,12 @@ export default function MatrixApp() {
               />
             </div>
           </div>
+          {/* portal-crossing flash tint */}
+          <div ref={warpRef} className="mx-warp" aria-hidden="true" />
           {booted && (
             <OperatorHud
               code={zone.code}
-              rank={`RANK ${score}/6 · ${rank}`}
+              rank={`SECTORS ${visited.size}/8 · RANK ${score}/6 · ${rank}`}
               line={line}
               progressRef={progressRef}
             />

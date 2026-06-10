@@ -1,5 +1,5 @@
 'use client';
-// NEON GRID — the canvas. One damped offset flies the whole world.
+// NEON GRID v3 — the canvas. A drivable city of streets and districts.
 import { useState } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { PerformanceMonitor } from '@react-three/drei';
@@ -9,8 +9,9 @@ import Rain from './Rain';
 import CameraRig from './CameraRig';
 import Effects from './Effects';
 import {
-  CityCanyon, Streets, HeroVortex, SpeedLines, IdentityHolo,
-  NeonSignWall, EraPortals, AnomalyBillboards, Pills, Rabbit,
+  CityBlocks, StreetLanes, GateArch, Signposts, IdentityHolo, NeonSignWall,
+  EraPortals, SpeedLines, AnomalyBillboards, CredsCourt, TransmissionRow,
+  Pills, Rabbit,
 } from './scenes';
 
 export default function Construct({
@@ -19,7 +20,7 @@ export default function Construct({
   caps: Caps;
   idle: boolean;
   booted: Set<string>;
-  onFrame: (offset: number) => void;
+  onFrame: (x: number, z: number) => void;
   onBoot: (id: string) => void;
   onRed: () => void;
   onBlue: () => void;
@@ -33,25 +34,28 @@ export default function Construct({
     <Canvas
       className="mx-canvas"
       dpr={dpr}
-      camera={{ fov: 52, near: 0.1, far: 320, position: [0, 2, 40] }}
+      camera={{ fov: 52, near: 0.1, far: 240, position: [0, 2.2, 30] }}
       gl={{ antialias: true, powerPreference: 'high-performance' }}
     >
       <color attach="background" args={[GX.bg]} />
-      <fog attach="fog" args={[GX.bg, 30, 190]} />
+      <fog attach="fog" args={[GX.bg, 24, 150]} />
       <PerformanceMonitor onDecline={() => setDegraded(true)} />
 
-      <ambientLight intensity={0.45} />
-      <directionalLight position={[8, 14, 10]} intensity={0.4} color="#aac8ff" />
-      <directionalLight position={[-8, 6, -10]} intensity={0.3} color="#d9a8ff" />
+      <ambientLight intensity={0.42} />
+      <directionalLight position={[8, 16, 10]} intensity={0.38} color="#9CC2FF" />
+      <directionalLight position={[-8, 10, -10]} intensity={0.3} color="#C9A8FF" />
 
       <Rain tier={tier} reduced={reducedMotion} />
-      <Streets />
-      <CityCanyon tier={tier} />
-      <HeroVortex reduced={reducedMotion} />
+      <StreetLanes />
+      <CityBlocks tier={tier} />
+      <GateArch />
+      <Signposts />
       <IdentityHolo reduced={reducedMotion} />
       <NeonSignWall reduced={reducedMotion} />
       <EraPortals />
       <AnomalyBillboards booted={booted} onBoot={onBoot} />
+      <CredsCourt reduced={reducedMotion} />
+      <TransmissionRow />
       <Pills onRed={onRed} onBlue={onBlue} />
       <Rabbit idle={idle} reduced={reducedMotion} />
       <SpeedLines />
