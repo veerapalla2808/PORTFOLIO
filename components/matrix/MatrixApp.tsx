@@ -220,10 +220,11 @@ export default function MatrixApp() {
       }
       ctx.stroke();
     }
-    // the lake + the river
-    ctx.fillStyle = 'rgba(20,50,90,0.25)';
-    ctx.fillRect(mapX(72), 0, MAP_W - mapX(72), MAP_H);
-    ctx.fillRect(mapX(-51), 0, mapX(-39) - mapX(-51), MAP_H);
+    // the lake + the river Y (main branch flows into the lake)
+    ctx.fillStyle = 'rgba(20,50,90,0.3)';
+    ctx.fillRect(mapX(66), 0, MAP_W - mapX(66), MAP_H);
+    ctx.fillRect(mapX(-51), mapY(28), mapX(-39) - mapX(-51), MAP_H - mapY(28));
+    ctx.fillRect(mapX(-51), mapY(28), mapX(66) - mapX(-51), mapY(16) - mapY(28));
     // the elevated Loop
     ctx.strokeStyle = 'rgba(200,160,90,0.5)';
     ctx.lineWidth = 1;

@@ -54,23 +54,29 @@ export const STREETS: Street[] = [
   { pts: [[54, -132], [56, -156], [60, -176], [66, -200]], name: 'LAKE SHORE DR', color: GX.violetBright },
   // Navy Pier — straight out over the water
   { pts: [[56, -110], [160, -110]], name: 'NAVY PIER', color: GX.red },
-  // landmark driveways
-  { pts: [[-70, -80], [-92, -80]], name: 'WILLIS PLAZA', color: GX.violet },     // timeline
-  { pts: [[60, -18], [88, -18]], name: 'HANCOCK CT', color: GX.red },            // arsenal
-  { pts: [[62, -80], [92, -80]], name: 'LAKE POINT DR', color: GX.blue },        // identity
-  { pts: [[20, -40], [20, -16]], name: 'TOWER DR', color: GX.blueBright },       // credentials
+  // Michigan Ave — the Magnificent Mile, full north-south run
+  { pts: [[20, -40], [20, -16]], name: 'MICHIGAN AVE', color: GX.blueBright },
+  { pts: [[20, -40], [20, -110]], name: 'MICHIGAN AVE', color: GX.blueBright },
+  { pts: [[20, -110], [20, -126]], name: 'MICHIGAN AVE', color: GX.blueBright },
+  { pts: [[20, -126], [20, -150]], name: 'MICHIGAN AVE', color: GX.blueBright },
+  // landmark driveways (real-Chicago street names)
+  { pts: [[-70, -80], [-92, -80]], name: 'ADAMS ST', color: GX.violet },         // timeline (Willis sits on Adams)
+  { pts: [[60, -18], [88, -18]], name: 'CHESTNUT ST', color: GX.red },           // arsenal
+  { pts: [[62, -80], [92, -80]], name: 'GRAND AVE', color: GX.blue },            // identity
   { pts: [[-20, -110], [8, -110]], name: 'ANOMALY ALLEY', color: GX.redBright }, // anomalies (open air)
-  { pts: [[20, -150], [20, -126]], name: 'OBSERVATORY WAY', color: GX.violetBright }, // observatory
-  { pts: [[-100, -40], [-122, -40]], name: 'MART DOCKS', color: GX.blueBright }, // docks
-  { pts: [[-70, -176], [-96, -176]], name: 'MARINA LANE', color: GX.violetBright }, // transmissions
+  { pts: [[8, -110], [20, -110]], name: 'ANOMALY ALLEY', color: GX.redBright },  // …meets Michigan Ave
+  { pts: [[-100, -40], [-122, -40]], name: 'KINZIE ST', color: GX.blueBright },  // docks (the Mart's street)
+  { pts: [[-70, -176], [-96, -176]], name: 'DEARBORN ST', color: GX.violetBright }, // transmissions
 ];
 
 export const LANE_HALF = 2.4;
 export const SPAWN = { x: -20, z: 44 };
-export const GATE_ARCH = { x: -20, z: 32 };
+export const GATE_ARCH = { x: -20, z: 36 };
 export const HUB = { x: -20, z: -150 };
 export const BEAN = { x: -34, z: -160 };
-export const LAKE_X = 72; // water starts east of this (pier excepted)
+export const LAKE_X = 66;        // Lake Michigan east of this (pier excepted)
+export const RIVER_SX = -45;     // south branch centerline (north–south)
+export const RIVER_MZ = 22;      // main branch centerline (east–west, meets the lake)
 
 // ── Landmarks — sections you ENTER ──────────────────────────────────────────
 export interface Landmark {
@@ -385,15 +391,17 @@ export interface SignBoard { text: string; color: string }
 export interface SignPost { x: number; z: number; boards: SignBoard[] }
 
 export const SIGNPOSTS: SignPost[] = [
-  { x: -14.5, z: 26, boards: [{ text: '▲ STATE ST · ALL DISTRICTS', color: GX.white }, { text: 'WACKER ▶ LAKE SHORE DR', color: GX.violetBright }] },
-  { x: -14.5, z: -34, boards: [{ text: '◀ MADISON ▶', color: GX.blue }, { text: 'THE NEEDLE ▶', color: GX.blueBright }] },
-  { x: -64.5, z: -74, boards: [{ text: '◀ SPIRE OF ERAS', color: GX.violet }] },
+  { x: -14.5, z: 32, boards: [{ text: '▲ STATE ST · RIVER CROSSING', color: GX.white }, { text: 'WACKER DR ▶ LAKE SHORE DR', color: GX.violetBright }] },
+  { x: -14.5, z: -34, boards: [{ text: '◀ MADISON ST ▶', color: GX.blue }, { text: 'MICHIGAN AVE · THE NEEDLE ▶', color: GX.blueBright }] },
+  { x: 14.5, z: -34, boards: [{ text: '▲ N MICHIGAN AVE', color: GX.blueBright }, { text: '▼ S MICHIGAN AVE · WATCHTOWER', color: GX.violetBright }] },
+  { x: -64.5, z: -74, boards: [{ text: '◀ ADAMS ST · SPIRE OF ERAS', color: GX.violet }] },
   { x: -14.5, z: -104, boards: [{ text: 'ANOMALY ALLEY ▶', color: GX.redBright }] },
-  { x: -14.5, z: -144, boards: [{ text: 'BEAN PLAZA', color: GX.white }, { text: '◀ MONROE ▶', color: GX.blue }] },
-  { x: 54, z: -24, boards: [{ text: 'CROSSBRACE TOWER ▶', color: GX.red }, { text: 'LAKE SHORE DR ▼', color: GX.violetBright }] },
-  { x: 56, z: -86, boards: [{ text: 'LAKESIDE HELIX ▶', color: GX.blue }, { text: 'NAVY PIER ▼', color: GX.red }] },
+  { x: -14.5, z: -144, boards: [{ text: 'BEAN PLAZA', color: GX.white }, { text: '◀ MONROE ST ▶', color: GX.blue }] },
+  { x: 54, z: -24, boards: [{ text: 'CHESTNUT ST · CROSSBRACE ▶', color: GX.red }, { text: 'LAKE SHORE DR ▼', color: GX.violetBright }] },
+  { x: 56, z: -86, boards: [{ text: 'GRAND AVE · HELIX ▶', color: GX.blue }, { text: 'NAVY PIER ▼', color: GX.red }] },
   { x: 62, z: -104, boards: [{ text: 'NAVY PIER & THE WHEEL ▶', color: GX.white }] },
-  { x: 14, z: -144, boards: [{ text: 'WATCHTOWER ▲', color: GX.violetBright }, { text: 'LAKE SHORE ▶', color: GX.blue }] },
-  { x: -94, z: -34, boards: [{ text: '◀ GRAND MART DOCKS', color: GX.blueBright }] },
-  { x: -64.5, z: -170, boards: [{ text: '◀ TWIN COILS', color: GX.violetBright }] },
+  { x: 14, z: -144, boards: [{ text: 'MICHIGAN AVE ▲ WATCHTOWER', color: GX.violetBright }, { text: 'LAKE SHORE DR ▶', color: GX.blue }] },
+  { x: -94, z: -34, boards: [{ text: '◀ KINZIE ST · GRAND MART', color: GX.blueBright }] },
+  { x: -64.5, z: -170, boards: [{ text: '◀ DEARBORN ST · TWIN COILS', color: GX.violetBright }] },
+  { x: -50.5, z: -34, boards: [{ text: 'CHICAGO RIVER — S BRANCH', color: GX.blueBright }] },
 ];

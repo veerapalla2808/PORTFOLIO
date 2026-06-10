@@ -10,9 +10,9 @@ import CameraRig from './CameraRig';
 import Effects from './Effects';
 import {
   RainMatDriver, ZoneAmbience, StreetLanes, StreetLights, CityBlocks,
-  Lake, River, Bridges, TheL, Theatre, NavyPier, BeanPlaza, Landmarks,
-  Interiors, GateArch, Signposts, AnomalyBillboards, Pills, Phoenix,
-  SpeedLines, GlyphBurst, SkyTraffic, Searchlights,
+  Lake, River, Bridges, TheL, Theatre, CivicIcons, NavyPier, BeanPlaza,
+  Landmarks, Interiors, GateArch, Signposts, AnomalyBillboards, Pills,
+  Phoenix, SpeedLines, GlyphBurst, SkyTraffic, Searchlights,
 } from './scenes';
 
 export interface Burst { id: number; x: number; z: number; color: string }
@@ -64,6 +64,7 @@ export default function Construct({
       <Bridges />
       <TheL reduced={reducedMotion} />
       <Theatre reduced={reducedMotion} />
+      <CivicIcons reduced={reducedMotion} />
       <NavyPier reduced={reducedMotion} />
       <BeanPlaza reduced={reducedMotion} />
       <Landmarks />

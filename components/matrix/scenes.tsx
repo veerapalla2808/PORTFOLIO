@@ -6,7 +6,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import {
-  GX, NEONS, STREETS, SIGNPOSTS, GATE_ARCH, BEAN, LAKE_X,
+  GX, NEONS, STREETS, SIGNPOSTS, GATE_ARCH, BEAN, LAKE_X, RIVER_SX, RIVER_MZ,
   LANDMARKS, ERA_FLOORS, ZONES, zoneAt,
 } from '@/lib/grid';
 import { scrollBus } from '@/lib/scrollBus';
@@ -48,9 +48,13 @@ function nearLandmark(x: number, z: number) {
     if (Math.hypot(x - lx, z - lz) < 30) return true;
   }
   if (Math.hypot(x - BEAN.x, z - BEAN.z) < 22) return true;
-  if (Math.hypot(x - 172, z + 94) < 30) return true;  // ferris wheel
-  if (Math.hypot(x + 31, z + 66) < 17) return true;   // theatre
-  if (Math.abs(x + 45) < 12) return true;             // the river
+  if (Math.hypot(x - 172, z + 94) < 30) return true;       // ferris wheel
+  if (Math.hypot(x + 31, z + 66) < 17) return true;        // theatre
+  if (Math.abs(x - RIVER_SX) < 12) return true;            // river, south branch
+  if (Math.abs(z - RIVER_MZ) < 9 && x < LAKE_X) return true; // river, main branch
+  if (Math.hypot(x + 32, z - 38) < 15) return true;        // gothic tower (river gate W)
+  if (Math.hypot(x - 7, z - 38) < 15) return true;         // clock tower (river gate E)
+  if (Math.hypot(x - 38, z + 92) < 18) return true;        // the fountain
   return false;
 }
 
@@ -312,8 +316,9 @@ export function StreetLanes() {
 
   return (
     <group ref={group}>
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[-20, -0.05, -80]}>
-        <planeGeometry args={[320, 360]} />
+      {/* asphalt stops at the shoreline — the lake owns everything east */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[-57, -0.05, -80]}>
+        <planeGeometry args={[246, 360]} />
         <meshBasicMaterial color={'#020207'} />
       </mesh>
       {lanes.map((l, i) => (
@@ -394,21 +399,25 @@ export function StreetLights() {
 
 // ── filler skyline (kept off roads, landmarks and the lake) ─────────────────
 export function CityBlocks({ tier }: { tier: 'S' | 'M' | 'L' }) {
-  const step = tier === 'S' ? 26 : tier === 'M' ? 18 : 13;
+  const step = tier === 'S' ? 20 : tier === 'M' ? 13 : 9;
   const { body, trims, surgeAttr } = useMemo(() => {
     const slots: { x: number; z: number; seed: number }[] = [];
     SEGS.forEach((s, si) => {
       const nx = -s.uz, nz = s.ux;
       for (let d = 8; d < s.len - 4; d += step) {
         for (const side of [-1, 1]) {
-          const seed = si * 997 + d * 13 + side * 7;
-          const off = 16 + rnd(seed + 1) * 12;
-          const X = s.ax + s.ux * d + nx * side * off;
-          const Z = s.az + s.uz * d + nz * side * off;
-          if (X > LAKE_X - 6) continue;          // lake stays open water
-          if (distToRoads(X, Z) < 10) continue;  // never block a street
-          if (nearLandmark(X, Z)) continue;      // landmarks own their plots
-          slots.push({ x: X, z: Z, seed });
+          // two rings of towers: streetside + a taller back row behind it
+          for (const ring of [0, 1]) {
+            const seed = si * 997 + d * 13 + side * 7 + ring * 311;
+            if (ring === 1 && rnd(seed) > 0.62) continue; // back row is patchy
+            const off = ring === 0 ? 16 + rnd(seed + 1) * 12 : 34 + rnd(seed + 1) * 16;
+            const X = s.ax + s.ux * d + nx * side * off;
+            const Z = s.az + s.uz * d + nz * side * off;
+            if (X > LAKE_X - 6) continue;          // lake stays open water
+            if (distToRoads(X, Z) < 10) continue;  // never block a street
+            if (nearLandmark(X, Z)) continue;      // landmarks own their plots
+            slots.push({ x: X, z: Z, seed });
+          }
         }
       }
     });
@@ -425,7 +434,7 @@ export function CityBlocks({ tier }: { tier: 'S' | 'M' | 'L' }) {
     const q = new THREE.Quaternion();
     slots.forEach((sl, i) => {
       const w = 7 + rnd(sl.seed + 2) * 8;
-      const h = 14 + rnd(sl.seed + 3) * 30;
+      const h = 14 + rnd(sl.seed + 3) * 42;
       const dpt = 7 + rnd(sl.seed + 4) * 8;
       m.compose(new THREE.Vector3(sl.x, h / 2, sl.z), q, new THREE.Vector3(w, h, dpt));
       bodyMesh.setMatrixAt(i, m);
@@ -493,15 +502,34 @@ export function CityBlocks({ tier }: { tier: 'S' | 'M' | 'L' }) {
   );
 }
 
-// ── LAKE MICHIGAN — open water east of the Drive ────────────────────────────
+// ── LAKE MICHIGAN — open water east of the Drive. The water sits ABOVE the
+// asphalt plane (it was hidden under it before — that bug is dead). ─────────
+function waterLabel(text: string): THREE.CanvasTexture {
+  const cv = document.createElement('canvas');
+  cv.width = 1024; cv.height = 160;
+  const ctx = cv.getContext('2d')!;
+  ctx.clearRect(0, 0, 1024, 160);
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.font = '700 84px "JetBrains Mono", monospace';
+  ctx.fillStyle = 'rgba(126,168,232,0.55)';
+  ctx.shadowColor = 'rgba(126,168,232,0.8)';
+  ctx.shadowBlur = 24;
+  ctx.fillText(text, 512, 80);
+  const t = new THREE.CanvasTexture(cv);
+  t.colorSpace = THREE.SRGBColorSpace;
+  return t;
+}
+
 export function Lake({ reduced }: { reduced: boolean }) {
   const glints = useRef<(THREE.Mesh | null)[]>([]);
-  const rows = useMemo(() => Array.from({ length: 14 }, (_, i) => ({
-    x: LAKE_X + 14 + rnd(i * 5 + 1) * 130,
-    z: -200 + rnd(i * 5 + 2) * 240,
+  const rows = useMemo(() => Array.from({ length: 18 }, (_, i) => ({
+    x: LAKE_X + 8 + rnd(i * 5 + 1) * 140,
+    z: -200 + rnd(i * 5 + 2) * 250,
     len: 6 + rnd(i * 5 + 3) * 16,
     seed: rnd(i * 5 + 4) * 10,
   })), []);
+  const label = useMemo(() => waterLabel('— LAKE MICHIGAN —'), []);
   useFrame((state) => {
     if (reduced) return;
     const t = state.clock.elapsedTime;
@@ -509,28 +537,42 @@ export function Lake({ reduced }: { reduced: boolean }) {
       if (!m) return;
       const r = rows[i];
       m.position.x = r.x + Math.sin(t * 0.3 + r.seed) * 4;
-      (m.material as THREE.MeshBasicMaterial).opacity = 0.05 + (Math.sin(t * 0.8 + r.seed * 3) * 0.5 + 0.5) * 0.1;
+      (m.material as THREE.MeshBasicMaterial).opacity = 0.06 + (Math.sin(t * 0.8 + r.seed * 3) * 0.5 + 0.5) * 0.12;
     });
   });
   return (
     <group>
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[LAKE_X + 90, -0.12, -80]}>
-        <planeGeometry args={[220, 360]} />
-        <meshBasicMaterial color={'#041018'} />
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[LAKE_X + 112, 0.02, -80]}>
+        <planeGeometry args={[230, 380]} />
+        <meshBasicMaterial color={'#06182B'} />
+      </mesh>
+      {/* glowing shoreline along the Drive */}
+      <mesh position={[LAKE_X - 2, 0.1, -80]}>
+        <boxGeometry args={[0.4, 0.12, 372]} />
+        <meshBasicMaterial color={glow('#3D6FB8', 1.3)} toneMapped={false} transparent opacity={0.8} />
       </mesh>
       {/* moon-path shimmer toward the pier */}
       {rows.map((r, i) => (
-        <mesh key={i} ref={(m) => { glints.current[i] = m; }} rotation={[-Math.PI / 2, 0, 0]} position={[r.x, -0.06, r.z]}>
+        <mesh key={i} ref={(m) => { glints.current[i] = m; }} rotation={[-Math.PI / 2, 0, 0]} position={[r.x, 0.06, r.z]}>
           <planeGeometry args={[r.len, 0.5]} />
-          <meshBasicMaterial color={glow('#9FC2FF', 1)} transparent opacity={0.08} blending={THREE.AdditiveBlending} depthWrite={false} />
+          <meshBasicMaterial color={glow('#9FC2FF', 1)} transparent opacity={0.1} blending={THREE.AdditiveBlending} depthWrite={false} />
+        </mesh>
+      ))}
+      {/* it answers the question now */}
+      {[-30, -160].map(z => (
+        <mesh key={z} rotation={[-Math.PI / 2, 0, Math.PI / 2]} position={[116, 0.08, z]}>
+          <planeGeometry args={[58, 9.2]} />
+          <meshBasicMaterial map={label} transparent opacity={0.9} depthWrite={false} />
         </mesh>
       ))}
     </group>
   );
 }
 
-// ── CHICAGO RIVER (south branch) — flows between Franklin & State ───────────
-const RIVER_X = -45;
+// ── CHICAGO RIVER — the full Y: main branch flows east-west through downtown
+// into the lake; the south branch splits at Wolf Point between Franklin and
+// State. All water rides above the asphalt. ─────────────────────────────────
+const RIVER_X = RIVER_SX;
 
 export function River({ reduced }: { reduced: boolean }) {
   const flow = useRef<(THREE.Mesh | null)[]>([]);
@@ -540,44 +582,85 @@ export function River({ reduced }: { reduced: boolean }) {
     len: 4 + rnd(i * 9 + 3) * 9,
     speed: 1.6 + rnd(i * 9 + 4) * 2.4,
   })), []);
+  const mainFlow = useRef<(THREE.Mesh | null)[]>([]);
+  const mainBits = useMemo(() => Array.from({ length: 8 }, (_, i) => ({
+    z: RIVER_MZ - 4 + rnd(i * 11 + 1) * 8,
+    x0: rnd(i * 11 + 2) * 110,
+    len: 4 + rnd(i * 11 + 3) * 9,
+    speed: 2 + rnd(i * 11 + 4) * 2.6,
+  })), []);
+  const label = useMemo(() => waterLabel('CHICAGO RIVER'), []);
   useFrame((state) => {
     if (reduced) return;
     const t = state.clock.elapsedTime;
     flow.current.forEach((m, i) => {
       if (!m) return;
       const b = bits[i];
-      m.position.z = (((b.z0 - t * b.speed) % 250) + 250) % 250 - 205;
-      (m.material as THREE.MeshBasicMaterial).opacity = 0.06 + (Math.sin(t * 0.9 + i * 2.4) * 0.5 + 0.5) * 0.08;
+      m.position.z = (((b.z0 - t * b.speed) % 226) + 226) % 226 - 204;
+      (m.material as THREE.MeshBasicMaterial).opacity = 0.07 + (Math.sin(t * 0.9 + i * 2.4) * 0.5 + 0.5) * 0.09;
+    });
+    mainFlow.current.forEach((m, i) => {
+      if (!m) return;
+      const b = mainBits[i];
+      m.position.x = RIVER_X + (((b.x0 + t * b.speed) % 110) + 110) % 110;
+      (m.material as THREE.MeshBasicMaterial).opacity = 0.07 + (Math.sin(t * 0.8 + i * 1.9) * 0.5 + 0.5) * 0.09;
     });
   });
   return (
     <group>
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[RIVER_X, -0.12, -78]}>
-        <planeGeometry args={[12, 256]} />
-        <meshBasicMaterial color={'#04101C'} />
+      {/* south branch — Wolf Point down past the Loop */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[RIVER_X, 0.02, -89]}>
+        <planeGeometry args={[12, 226]} />
+        <meshBasicMaterial color={'#051625'} />
       </mesh>
-      {/* drifting current glints */}
+      {/* main branch — through downtown, out to the lake */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[(RIVER_X + LAKE_X) / 2, 0.02, RIVER_MZ]}>
+        <planeGeometry args={[LAKE_X - RIVER_X + 12, 12]} />
+        <meshBasicMaterial color={'#051625'} />
+      </mesh>
+      {/* current glints, both branches */}
       {bits.map((b, i) => (
-        <mesh key={i} ref={(m) => { flow.current[i] = m; }} rotation={[-Math.PI / 2, 0, 0]} position={[b.x, -0.06, b.z0]}>
+        <mesh key={i} ref={(m) => { flow.current[i] = m; }} rotation={[-Math.PI / 2, 0, 0]} position={[b.x, 0.07, b.z0]}>
           <planeGeometry args={[0.5, b.len]} />
           <meshBasicMaterial color={glow('#9FC2FF', 1)} transparent opacity={0.08} blending={THREE.AdditiveBlending} depthWrite={false} />
         </mesh>
       ))}
-      {/* glowing embankment edges */}
+      {mainBits.map((b, i) => (
+        <mesh key={`m${i}`} ref={(m) => { mainFlow.current[i] = m; }} rotation={[-Math.PI / 2, 0, 0]} position={[b.x0, 0.07, b.z]}>
+          <planeGeometry args={[b.len, 0.5]} />
+          <meshBasicMaterial color={glow('#9FC2FF', 1)} transparent opacity={0.08} blending={THREE.AdditiveBlending} depthWrite={false} />
+        </mesh>
+      ))}
+      {/* glowing embankments */}
       {[-6.2, 6.2].map(off => (
-        <mesh key={off} position={[RIVER_X + off, 0.02, -78]}>
-          <boxGeometry args={[0.18, 0.1, 256]} />
+        <mesh key={off} position={[RIVER_X + off, 0.1, -89]}>
+          <boxGeometry args={[0.18, 0.1, 222]} />
           <meshBasicMaterial color={glow('#27406E', 1.2)} toneMapped={false} transparent opacity={0.7} />
         </mesh>
       ))}
+      {[-6.2, 6.2].map(off => (
+        <mesh key={`m${off}`} position={[(RIVER_X + LAKE_X) / 2, 0.1, RIVER_MZ + off]}>
+          <boxGeometry args={[LAKE_X - RIVER_X + 8, 0.1, 0.18]} />
+          <meshBasicMaterial color={glow('#27406E', 1.2)} toneMapped={false} transparent opacity={0.7} />
+        </mesh>
+      ))}
+      {/* name on the water */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[16, 0.09, RIVER_MZ]}>
+        <planeGeometry args={[34, 5.4]} />
+        <meshBasicMaterial map={label} transparent opacity={0.9} depthWrite={false} />
+      </mesh>
+      <mesh rotation={[-Math.PI / 2, 0, Math.PI / 2]} position={[RIVER_X, 0.09, -110]}>
+        <planeGeometry args={[34, 5.4]} />
+        <meshBasicMaterial map={label} transparent opacity={0.9} depthWrite={false} />
+      </mesh>
     </group>
   );
 }
 
-// ── bascule bridges (the Batman ones) where Madison & Monroe cross the river ─
-function BasculeBridge({ z }: { z: number }) {
+// ── bascule bridges (the Batman ones) wherever a street crosses the river ───
+function BasculeBridge({ x = RIVER_X, z, rotY = 0 }: { x?: number; z: number; rotY?: number }) {
   return (
-    <group position={[RIVER_X, 0, z]}>
+    <group position={[x, 0, z]} rotation={[0, rotY, 0]}>
       {/* four tender towers with pyramid roofs + beacons */}
       {([[-7.5, -6.8], [7.5, -6.8], [-7.5, 6.8], [7.5, 6.8]] as [number, number][]).map(([ox, oz], i) => (
         <group key={i} position={[ox, 0, oz]}>
@@ -635,8 +718,12 @@ function BasculeBridge({ z }: { z: number }) {
 export function Bridges() {
   return (
     <>
+      {/* south branch: Madison & Monroe */}
       <BasculeBridge z={-40} />
       <BasculeBridge z={-150} />
+      {/* main branch: State St (your arrival into downtown) + the Drive */}
+      <BasculeBridge x={-20} z={RIVER_MZ} rotY={Math.PI / 2} />
+      <BasculeBridge x={45} z={RIVER_MZ} rotY={2.52} />
     </>
   );
 }
@@ -841,6 +928,128 @@ export function Theatre({ reduced }: { reduced: boolean }) {
   );
 }
 
+// ── CIVIC ICONS — the river-gate pair (Wrigley/Tribune homage) + fountain ───
+export function CivicIcons({ reduced }: { reduced: boolean }) {
+  const jets = useRef<(THREE.Mesh | null)[]>([]);
+  const clockTex = useMemo(() => {
+    const cv = document.createElement('canvas');
+    cv.width = 128; cv.height = 128;
+    const ctx = cv.getContext('2d')!;
+    ctx.clearRect(0, 0, 128, 128);
+    ctx.beginPath(); ctx.arc(64, 64, 56, 0, Math.PI * 2);
+    ctx.strokeStyle = '#E8F0FF'; ctx.lineWidth = 5;
+    ctx.shadowColor = '#9FC2FF'; ctx.shadowBlur = 14; ctx.stroke();
+    for (let i = 0; i < 12; i++) {
+      const a = (i / 12) * Math.PI * 2;
+      ctx.beginPath();
+      ctx.moveTo(64 + Math.cos(a) * 46, 64 + Math.sin(a) * 46);
+      ctx.lineTo(64 + Math.cos(a) * 52, 64 + Math.sin(a) * 52);
+      ctx.lineWidth = 3; ctx.stroke();
+    }
+    ctx.beginPath(); ctx.moveTo(64, 64); ctx.lineTo(64, 26); ctx.lineWidth = 4; ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(64, 64); ctx.lineTo(90, 76); ctx.lineWidth = 4; ctx.stroke();
+    const t = new THREE.CanvasTexture(cv);
+    t.colorSpace = THREE.SRGBColorSpace;
+    return t;
+  }, []);
+  useFrame((state) => {
+    if (reduced) return;
+    const t = state.clock.elapsedTime;
+    jets.current.forEach((m, i) => {
+      if (!m) return;
+      const k = (t * 0.9 + i * 0.13) % 1;
+      m.scale.y = 0.6 + Math.sin(k * Math.PI) * 0.9;
+      (m.material as THREE.MeshBasicMaterial).opacity = 0.3 + Math.sin(k * Math.PI) * 0.3;
+    });
+  });
+  return (
+    <group>
+      {/* CLOCK TOWER (Wrigley homage) — white wedding-cake setbacks, east bank */}
+      <group position={[7, 0, 38]}>
+        <RainBox x={0} z={0} w={13} h={26} d={11} hue={0} seed={71} />
+        <RainBox x={0} z={0} w={9} h={38} d={8} hue={0} seed={72} />
+        <mesh position={[0, 42, 0]}>
+          <cylinderGeometry args={[2.6, 3.2, 8, 8]} />
+          <meshStandardMaterial color={'#C9D2E0'} roughness={0.3} metalness={0.5} />
+        </mesh>
+        {[0, Math.PI / 2, Math.PI, -Math.PI / 2].map(a => (
+          <mesh key={a} position={[Math.sin(a) * 2.85, 43, Math.cos(a) * 2.85]} rotation={[0, a, 0]}>
+            <planeGeometry args={[3.4, 3.4]} />
+            <meshBasicMaterial map={clockTex} transparent side={THREE.DoubleSide} />
+          </mesh>
+        ))}
+        <mesh position={[0, 48.5, 0]}>
+          <coneGeometry args={[1.6, 5, 8]} />
+          <meshStandardMaterial color={'#C9D2E0'} roughness={0.3} metalness={0.5} />
+        </mesh>
+        <mesh position={[0, 51.4, 0]}>
+          <sphereGeometry args={[0.2, 8, 8]} />
+          <meshBasicMaterial color={glow(GX.blueBright, 2.2)} toneMapped={false} />
+        </mesh>
+      </group>
+
+      {/* GOTHIC TOWER (Tribune homage) — buttressed crown, west bank */}
+      <group position={[-32, 0, 38]}>
+        <RainBox x={0} z={0} w={14} h={34} d={12} hue={1} seed={75} />
+        {/* flying buttresses around an open crown */}
+        {[0, Math.PI / 2, Math.PI, -Math.PI / 2].map(a => (
+          <group key={a} rotation={[0, a, 0]}>
+            <mesh position={[5, 37.5, 0]} rotation={[0, 0, 0.5]}>
+              <boxGeometry args={[1, 8, 1]} />
+              <meshStandardMaterial color={'#11142A'} roughness={0.45} metalness={0.55} />
+            </mesh>
+          </group>
+        ))}
+        <mesh position={[0, 40, 0]}>
+          <cylinderGeometry args={[2, 3.4, 9, 8]} />
+          <meshStandardMaterial color={'#11142A'} roughness={0.45} metalness={0.55} />
+        </mesh>
+        <mesh position={[0, 45, 0]}>
+          <coneGeometry args={[1.4, 4.5, 8]} />
+          <meshBasicMaterial color={glow(GX.violetBright, 1.5)} toneMapped={false} />
+        </mesh>
+      </group>
+
+      {/* THE FOUNTAIN (Buckingham homage) — tiered, lit, jets breathing */}
+      <group position={[38, 0, -92]}>
+        <mesh position={[0, 0.3, 0]}>
+          <cylinderGeometry args={[10.5, 11, 0.6, 32]} />
+          <meshStandardMaterial color={'#0A0F1E'} roughness={0.4} metalness={0.6} />
+        </mesh>
+        <mesh position={[0, 0.62, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+          <circleGeometry args={[10.2, 32]} />
+          <meshBasicMaterial color={'#08203A'} />
+        </mesh>
+        {[{ r: 5.6, y: 1.8 }, { r: 3.4, y: 3.2 }, { r: 1.8, y: 4.5 }].map(t2 => (
+          <mesh key={t2.r} position={[0, t2.y, 0]}>
+            <cylinderGeometry args={[t2.r, t2.r * 1.18, 0.55, 24]} />
+            <meshStandardMaterial color={'#101830'} roughness={0.35} metalness={0.6} />
+          </mesh>
+        ))}
+        {/* center jet + ring jets */}
+        <mesh ref={(m) => { jets.current[0] = m; }} position={[0, 7.4, 0]}>
+          <coneGeometry args={[0.5, 5.4, 8]} />
+          <meshBasicMaterial color={glow('#BFD8FF', 1.6)} transparent opacity={0.5} blending={THREE.AdditiveBlending} depthWrite={false} />
+        </mesh>
+        {Array.from({ length: 8 }, (_, i) => {
+          const a = (i / 8) * Math.PI * 2;
+          return (
+            <mesh key={i} ref={(m) => { jets.current[i + 1] = m; }} position={[Math.cos(a) * 7.6, 2.2, Math.sin(a) * 7.6]} rotation={[Math.cos(a) * 0.35, 0, -Math.sin(a) * 0.35]}>
+              <coneGeometry args={[0.22, 2.8, 6]} />
+              <meshBasicMaterial color={glow('#9FC2FF', 1.5)} transparent opacity={0.4} blending={THREE.AdditiveBlending} depthWrite={false} />
+            </mesh>
+          );
+        })}
+        <pointLight position={[0, 3, 0]} intensity={70} color={'#7FB0FF'} />
+        <mesh position={[0, 0.08, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+          <ringGeometry args={[11.2, 11.6, 48]} />
+          <meshBasicMaterial color={glow(GX.blueBright, 1.5)} toneMapped={false} transparent opacity={0.7} side={THREE.DoubleSide} />
+        </mesh>
+      </group>
+    </group>
+  );
+}
+
 // ── NAVY PIER — deck, railings, and the Ferris wheel at the end ─────────────
 export function NavyPier({ reduced }: { reduced: boolean }) {
   const wheel = useRef<THREE.Group>(null);
@@ -933,38 +1142,87 @@ export function BeanPlaza({ reduced }: { reduced: boolean }) {
 }
 
 // ── LANDMARK TOWERS — sections you can enter ────────────────────────────────
+// portal-surface texture: concentric energy rings, rotated live
+function portalFilm(color: string): THREE.CanvasTexture {
+  const cv = document.createElement('canvas');
+  cv.width = 256; cv.height = 256;
+  const ctx = cv.getContext('2d')!;
+  ctx.clearRect(0, 0, 256, 256);
+  const c = new THREE.Color(color);
+  for (let r = 118; r > 8; r -= 9) {
+    ctx.beginPath();
+    ctx.arc(128 + Math.sin(r * 3.1) * 5, 128 + Math.cos(r * 1.7) * 5, r, 0, Math.PI * 2);
+    ctx.strokeStyle = `rgba(${(c.r * 255) | 0},${(c.g * 255) | 0},${(c.b * 255) | 0},${0.12 + (1 - r / 118) * 0.4})`;
+    ctx.lineWidth = 3 + (1 - r / 118) * 4;
+    ctx.stroke();
+  }
+  const g = ctx.createRadialGradient(128, 128, 0, 128, 128, 40);
+  g.addColorStop(0, 'rgba(255,255,255,0.75)');
+  g.addColorStop(1, 'rgba(255,255,255,0)');
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, 256, 256);
+  const t = new THREE.CanvasTexture(cv);
+  t.colorSpace = THREE.SRGBColorSpace;
+  return t;
+}
+
 function Entrance({ x, z, outDir, color, label }: { x: number; z: number; outDir: [number, number]; color: string; label: string }) {
   const fontsReady = useFontsReady();
   const tex = useMemo(() => textTexture([
     { text: label, size: 56, color: GX.white, family: zenFamily(), font: '400' },
-    { text: 'DRIVE IN ▸ ENTER', size: 30, color },
-  ], 760, 190, color), [label, color, fontsReady]); // eslint-disable-line react-hooks/exhaustive-deps
+    { text: '▸ DRIVE THROUGH THE PORTAL ◂', size: 32, color },
+  ], 860, 200, color), [label, color, fontsReady]); // eslint-disable-line react-hooks/exhaustive-deps
+  const film = useMemo(() => portalFilm(color), [color]);
   const rotY = Math.atan2(outDir[0], outDir[1]);
   const door = useRef<THREE.Mesh>(null);
-  useFrame((state) => {
+  const ring = useRef<THREE.Mesh>(null);
+  const beam = useRef<THREE.Mesh>(null);
+  useFrame((state, dt) => {
+    const t = state.clock.elapsedTime;
     if (door.current) {
-      (door.current.material as THREE.MeshBasicMaterial).opacity =
-        0.35 + Math.sin(state.clock.elapsedTime * 2.2) * 0.12;
+      door.current.rotation.z += dt * 0.5;
+      (door.current.material as THREE.MeshBasicMaterial).opacity = 0.55 + Math.sin(t * 2.2) * 0.18;
+    }
+    if (ring.current) {
+      const k = (t * 0.7) % 1;
+      ring.current.scale.setScalar(1 + k * 1.6);
+      (ring.current.material as THREE.MeshBasicMaterial).opacity = 0.55 * (1 - k);
+    }
+    if (beam.current) {
+      (beam.current.material as THREE.MeshBasicMaterial).opacity = 0.05 + (Math.sin(t * 1.3) * 0.5 + 0.5) * 0.05;
     }
   });
   return (
     <group position={[x, 0, z]} rotation={[0, rotY, 0]}>
-      {[-3.2, 3.2].map(off => (
-        <mesh key={off} position={[off, 3, -1]}>
-          <boxGeometry args={[0.7, 6.4, 0.7]} />
+      {/* tall portal pylons + lintel */}
+      {[-4, 4].map(off => (
+        <mesh key={off} position={[off, 4.5, -1]}>
+          <boxGeometry args={[0.8, 9.4, 0.8]} />
           <meshBasicMaterial color={glow(color, 1.8)} toneMapped={false} />
         </mesh>
       ))}
-      <mesh position={[0, 6.4, -1]}>
-        <boxGeometry args={[7.2, 0.6, 0.7]} />
+      <mesh position={[0, 9.4, -1]}>
+        <boxGeometry args={[8.8, 0.7, 0.8]} />
         <meshBasicMaterial color={glow(color, 1.8)} toneMapped={false} />
       </mesh>
-      <mesh ref={door} position={[0, 3, -1.1]}>
-        <planeGeometry args={[6, 6]} />
-        <meshBasicMaterial color={glow(color, 0.8)} transparent opacity={0.4} blending={THREE.AdditiveBlending} side={THREE.DoubleSide} depthWrite={false} />
+      {/* the swirling portal surface */}
+      <mesh ref={door} position={[0, 4.7, -1.15]}>
+        <circleGeometry args={[3.6, 40]} />
+        <meshBasicMaterial map={film} transparent opacity={0.6} blending={THREE.AdditiveBlending} side={THREE.DoubleSide} depthWrite={false} />
       </mesh>
-      <mesh position={[0, 8.6, -1]}>
-        <planeGeometry args={[8.4, 2.1]} />
+      {/* breathing ground ring at the threshold */}
+      <mesh ref={ring} position={[0, 0.06, 1.6]} rotation={[-Math.PI / 2, 0, 0]}>
+        <ringGeometry args={[2.2, 2.5, 40]} />
+        <meshBasicMaterial color={glow(color, 1.7)} toneMapped={false} transparent opacity={0.5} side={THREE.DoubleSide} depthWrite={false} />
+      </mesh>
+      {/* sky beam — find this entrance from across the city */}
+      <mesh ref={beam} position={[0, 36, -1]}>
+        <cylinderGeometry args={[1.6, 2.6, 64, 12, 1, true]} />
+        <meshBasicMaterial color={glow(color, 1)} transparent opacity={0.07} blending={THREE.AdditiveBlending} side={THREE.DoubleSide} depthWrite={false} />
+      </mesh>
+      {/* big name board */}
+      <mesh position={[0, 11.6, -1]}>
+        <planeGeometry args={[10.6, 2.5]} />
         <meshBasicMaterial map={tex} transparent side={THREE.DoubleSide} />
       </mesh>
     </group>
