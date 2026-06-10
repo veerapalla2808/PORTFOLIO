@@ -4,7 +4,7 @@
 import DecodeText from './DecodeText';
 import {
   SPAWN, IDENTITY_SPOT, ARSENAL_SPOT, PORTAL_XS, PORTAL_Z, ANOM_SPOTS,
-  CREDS_SPOT, TRANS_SPOT, PILLS_SPOT, CHECKPOINTS, JUNCTIONS,
+  CREDS_SPOT, TRANS_SPOT, PILLS_SPOT, CHECKPOINTS, HUB,
   SKIP_LABEL, type Question,
 } from '@/lib/grid';
 import {
@@ -110,19 +110,17 @@ export default function ActPanels({
           <h1 className="mx-name"><DecodeText text="VEERA PALLA" speed={20} /></h1>
           <p className="mx-hero-sub">SR. REACT.JS / NODE.JS DEVELOPER · 11 YEARS · A DRIVABLE RÉSUMÉ</p>
           <p className="mx-hero-cue">
-            SCROLL ▲ TO DRIVE · A/D OR ◀ ▶ TO TURN AT JUNCTIONS · DRAG TO LOOK
+            DRIVE WITH THE ▲▼◀▶ PAD, SCROLL OR WASD · OR JUST HIT “CONTINUE” AND RIDE
           </p>
         </div>
       </Sec>
 
-      {/* junction hints — tiny chips at every crossing */}
-      {JUNCTIONS.map((j, i) => (
-        <Sec key={`jx-${i}`} x={j.x} z={j.z} r={9}>
-          <p className="mx-junction">
-            {j.left ? `◀ ${j.left}` : `${j.right} ▶`} <em>· turn with A/D or ◀ ▶</em>
-          </p>
-        </Sec>
-      ))}
+      {/* hub welcome chip */}
+      <Sec x={HUB.x} z={HUB.z} r={11}>
+        <p className="mx-junction">
+          CENTRAL HUB <em>· every district is one turn away — check the map ↗</em>
+        </p>
+      </Sec>
 
       {/* checkpoints — optional, rotating questions, on the avenue */}
       {questions.map((q, i) => (
@@ -132,7 +130,7 @@ export default function ActPanels({
       ))}
 
       {/* ── 01 / identity plaza ── */}
-      <Sec x={IDENTITY_SPOT.x - 16} z={IDENTITY_SPOT.z + 4} r={17} align="left">
+      <Sec x={IDENTITY_SPOT.x - 12} z={IDENTITY_SPOT.z - 8} r={16} align="left">
         <article className="mx-slab mx-slab-wide mx-scroll" onWheel={stopWheel}>
           <header className="mx-slab-head">
             <span className="mx-slab-path">~/city/identity_plaza.log</span>

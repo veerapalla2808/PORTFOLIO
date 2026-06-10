@@ -1,15 +1,14 @@
 'use client';
-// Street navigation — drive the city like a courier. Wheel/W/S = forward and
-// back along the street you're on; A/D, ←/→ or horizontal wheel = turn into a
-// side street at a junction (corners auto-turn when the road bends). Mouse
-// drag looks around; touch drag drives.
+// Street navigation v4 — wheel/W/S drives, A/D or ◀▶ turns (forgiving
+// junction snap, U-turn anywhere). Touch: horizontal swipe pans the camera
+// smoothly, vertical swipe drives. On-screen D-pad commands and the
+// auto-drive route (Continue button) flow in through scrollBus.
 import { useEffect, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
-import { STREETS, LANE_HALF, SPAWN, PORTAL_XS, PORTAL_Z } from '@/lib/grid';
+import { STREETS, LANE_HALF, SPAWN, PORTAL_XS, PORTAL_Z, DISTRICT_PORTALS } from '@/lib/grid';
 import { scrollBus } from '@/lib/scrollBus';
 
-// nearest point on the street network
 function clampToNetwork(x: number, z: number) {
   let bx = x, bz = z, bd = Infinity;
   for (const s of STREETS) {
@@ -30,8 +29,8 @@ export default function CameraRig({
 }: { reduced: boolean; onFrame: (x: number, z: number) => void }) {
   const target = useRef({ x: SPAWN.x, z: SPAWN.z });
   const pos = useRef({ x: SPAWN.x, z: SPAWN.z });
-  const heading = useRef({ x: 0, z: -1 });       // cardinal travel direction
-  const yaw = useRef(Math.atan2(0, -1));          // visual yaw (lerped)
+  const heading = useRef({ x: 0, z: -1 });
+  const yaw = useRef(Math.atan2(0, -1));
   const look = useRef({ yaw: 0, pitch: 0 });
   const lookT = useRef({ yaw: 0, pitch: 0 });
   const pointer = useRef({ x: 0, y: 0 });
@@ -43,6 +42,7 @@ export default function CameraRig({
   useEffect(() => {
     const right = (h: { x: number; z: number }) => ({ x: -h.z, z: h.x });
     const left = (h: { x: number; z: number }) => ({ x: h.z, z: -h.x });
+    const cancelRoute = () => { scrollBus.route.length = 0; };
 
     const tryTurn = (dir: 1 | -1) => {
       const now = performance.now();
@@ -50,7 +50,6 @@ export default function CameraRig({
       const h = heading.current;
       const nh = dir === 1 ? right(h) : left(h);
       const t = target.current;
-      // forgiving turns: hunt for a junction a few steps behind/ahead too
       for (const off of [0, -2, 2, -4, 4, -6, 6, -8, 8]) {
         const bx = t.x + h.x * off, bz = t.z + h.z * off;
         if (onRoad(bx + nh.x * 5, bz + nh.z * 5)) {
@@ -61,8 +60,7 @@ export default function CameraRig({
           return;
         }
       }
-      // no street that way — turn around instead (U-turn anywhere)
-      heading.current = { x: -h.x, z: -h.z };
+      heading.current = { x: -h.x, z: -h.z }; // U-turn anywhere
       lastTurn.current = now;
     };
 
@@ -72,10 +70,23 @@ export default function CameraRig({
       let nx = t.x + h.x * d, nz = t.z + h.z * d;
       if (onRoad(nx, nz)) {
         const c = clampToNetwork(nx, nz);
+        // corner wedge: the clamp can snap back onto the street BEHIND us and
+        // eat the motion — when that stalls progress, glide onto the street
+        // we're actually trying to ride
+        const progressed = Math.abs(c.x - t.x) + Math.abs(c.z - t.z);
+        if (progressed < Math.abs(d) * 0.3) {
+          const seek = clampToNetwork(t.x + h.x * 6, t.z + h.z * 6);
+          const vx = seek.x - t.x, vz = seek.z - t.z;
+          const L = Math.hypot(vx, vz);
+          if (L > 0.01) {
+            const s = Math.min(Math.abs(d), L) / L;
+            target.current = { x: t.x + vx * s, z: t.z + vz * s };
+            return;
+          }
+        }
         target.current = { x: c.x, z: c.z };
         return;
       }
-      // road bends — auto-corner if exactly one side continues
       const r = right(h), l = left(h);
       const rOk = onRoad(t.x + r.x * 4, t.z + r.z * 4);
       const lOk = onRoad(t.x + l.x * 4, t.z + l.z * 4);
@@ -90,7 +101,11 @@ export default function CameraRig({
       }
     };
 
+    // expose for the frame loop (D-pad + autopilot share these)
+    rigApi.current = { tryTurn, advance };
+
     const onWheel = (e: WheelEvent) => {
+      cancelRoute();
       if (Math.abs(e.deltaX) > Math.abs(e.deltaY) * 1.4) {
         tryTurn(e.deltaX > 0 ? 1 : -1);
       } else {
@@ -98,17 +113,18 @@ export default function CameraRig({
       }
     };
     const kd = (e: KeyboardEvent) => {
-      if (['ArrowUp', 'w', 'W'].includes(e.key)) keysFwd.current = 1;
-      else if (['ArrowDown', 's', 'S'].includes(e.key)) keysFwd.current = -1;
-      else if (['ArrowRight', 'd', 'D'].includes(e.key)) tryTurn(1);
-      else if (['ArrowLeft', 'a', 'A'].includes(e.key)) tryTurn(-1);
+      if (['ArrowUp', 'w', 'W'].includes(e.key)) { cancelRoute(); keysFwd.current = 1; }
+      else if (['ArrowDown', 's', 'S'].includes(e.key)) { cancelRoute(); keysFwd.current = -1; }
+      else if (['ArrowRight', 'd', 'D'].includes(e.key)) { cancelRoute(); tryTurn(1); }
+      else if (['ArrowLeft', 'a', 'A'].includes(e.key)) { cancelRoute(); tryTurn(-1); }
     };
     const ku = (e: KeyboardEvent) => {
       if (['ArrowUp', 'w', 'W', 'ArrowDown', 's', 'S'].includes(e.key)) keysFwd.current = 0;
     };
     const pd = (e: PointerEvent) => {
-      const t = e.target as HTMLElement;
-      if (t.closest('a,button,.mx-hud,.mx-toggle,.mx-slab,.mx-gate')) return;
+      const t = e.target as HTMLElement | null;
+      if (t && typeof t.closest === 'function'
+        && t.closest('a,button,.mx-hud,.mx-toggle,.mx-slab,.mx-gate,.mx-dpad,.mx-map')) return;
       drag.current = { x: e.clientX, y: e.clientY, touch: e.pointerType === 'touch' };
     };
     const pm = (e: PointerEvent) => {
@@ -118,15 +134,15 @@ export default function CameraRig({
       const dx = e.clientX - drag.current.x;
       const dy = e.clientY - drag.current.y;
       if (drag.current.touch) {
-        // touch drives: vertical = move, horizontal = turn
-        advance(-dy * 0.05);
-        if (Math.abs(dx) > 42) { tryTurn(dx > 0 ? 1 : -1); drag.current.x = e.clientX; }
-        drag.current.y = e.clientY;
+        // touch: horizontal swipe pans the view smoothly; vertical drives
+        cancelRoute();
+        lookT.current.yaw = THREE.MathUtils.clamp(lookT.current.yaw - dx * 0.0042, -1.35, 1.35);
+        if (Math.abs(dy) > Math.abs(dx) * 0.6) advance(-dy * 0.06);
       } else {
         lookT.current.yaw = THREE.MathUtils.clamp(lookT.current.yaw - dx * 0.0035, -1.2, 1.2);
         lookT.current.pitch = THREE.MathUtils.clamp(lookT.current.pitch + dy * 0.0028, -0.8, 0.8);
-        drag.current = { x: e.clientX, y: e.clientY, touch: false };
       }
+      drag.current = { x: e.clientX, y: e.clientY, touch: drag.current.touch };
     };
     const pu = () => { drag.current = null; };
 
@@ -146,19 +162,41 @@ export default function CameraRig({
     };
   }, []);
 
+  const rigApi = useRef<{ tryTurn: (d: 1 | -1) => void; advance: (d: number) => void } | null>(null);
+
   useFrame((state, dt) => {
-    // keyboard cruise
-    if (keysFwd.current !== 0) {
-      const h = heading.current, t = target.current;
-      const d = keysFwd.current * dt * 26;
-      const nx = t.x + h.x * d, nz = t.z + h.z * d;
-      if (onRoad(nx, nz)) {
-        const c = clampToNetwork(nx, nz);
-        target.current = { x: c.x, z: c.z };
+    const api = rigApi.current;
+
+    // keyboard / D-pad cruise
+    const moveCmd = keysFwd.current || scrollBus.cmdMove;
+    if (moveCmd !== 0 && api) {
+      api.advance(moveCmd * dt * 26);
+    }
+    // D-pad one-shot turns
+    if (scrollBus.cmdTurn !== 0 && api) {
+      api.tryTurn(scrollBus.cmdTurn as 1 | -1);
+      scrollBus.cmdTurn = 0;
+    }
+    // auto-drive route
+    if (scrollBus.route.length > 0 && api && moveCmd === 0) {
+      const wp = scrollBus.route[0];
+      const t = target.current;
+      const dx = wp.x - t.x, dz = wp.z - t.z;
+      const dist = Math.hypot(dx, dz);
+      if (dist < 2.5) {
+        scrollBus.route.shift();
+      } else {
+        // face the waypoint (cardinal), then advance
+        const want = Math.abs(dx) > Math.abs(dz)
+          ? { x: Math.sign(dx), z: 0 }
+          : { x: 0, z: Math.sign(dz) };
+        if (want.x !== heading.current.x || want.z !== heading.current.z) {
+          heading.current = want;
+        }
+        api.advance(Math.min(dist, dt * 30));
       }
     }
 
-    // damp position
     const k = reduced ? 1 : 1 - Math.exp(-dt * 4.2);
     const px = pos.current.x, pz = pos.current.z;
     pos.current.x += (target.current.x - pos.current.x) * k;
@@ -169,26 +207,28 @@ export default function CameraRig({
     scrollBus.hx = heading.current.x;
     scrollBus.hz = heading.current.z;
 
-    // free-look recenters when released
     if (!drag.current) {
       lookT.current.yaw *= 1 - Math.min(1, dt * 1.1);
       lookT.current.pitch *= 1 - Math.min(1, dt * 1.1);
     }
-    look.current.yaw += (lookT.current.yaw - look.current.yaw) * Math.min(1, dt * 6);
-    look.current.pitch += (lookT.current.pitch - look.current.pitch) * Math.min(1, dt * 6);
+    look.current.yaw += (lookT.current.yaw - look.current.yaw) * Math.min(1, dt * 7);
+    look.current.pitch += (lookT.current.pitch - look.current.pitch) * Math.min(1, dt * 7);
 
-    // visual yaw chases the cardinal heading (shortest arc)
     const targetYaw = Math.atan2(-heading.current.x, -heading.current.z);
     let dy = targetYaw - yaw.current;
     while (dy > Math.PI) dy -= Math.PI * 2;
     while (dy < -Math.PI) dy += Math.PI * 2;
     yaw.current += dy * Math.min(1, dt * (reduced ? 20 : 3.6));
 
-    // portal warp — proximity to any gate ring
+    // warp: big through era portals, soft through district gates
     let warp = 0;
     for (const pxg of PORTAL_XS) {
       const ddx = pos.current.x - pxg, ddz = pos.current.z - PORTAL_Z;
       warp = Math.max(warp, Math.exp(-(ddx * ddx + ddz * ddz) / 38));
+    }
+    for (const dp of DISTRICT_PORTALS) {
+      const ddx = pos.current.x - dp.x, ddz = pos.current.z - dp.z;
+      warp = Math.max(warp, 0.55 * Math.exp(-(ddx * ddx + ddz * ddz) / 22));
     }
     scrollBus.warp = reduced ? 0 : warp;
 
@@ -211,7 +251,6 @@ export default function CameraRig({
       cam.fov += (fovTarget - cam.fov) * Math.min(1, dt * 7);
       cam.updateProjectionMatrix();
     }
-    // warp flash — the whole frame blows out while crossing a portal
     state.gl.toneMappingExposure = 1 + scrollBus.warp * 1.15;
     onFrame(pos.current.x, pos.current.z);
   });

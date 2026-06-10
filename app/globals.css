@@ -185,19 +185,56 @@ button { font-family: inherit; }
   mix-blend-mode: screen;
 }
 
-/* hero */
-.mx-hero { text-align: center; max-width: 1040px; }
-.mx-eyebrow { color: var(--blue-b); font-size: clamp(1.05rem, 2.6vw, 1.5rem); letter-spacing: 0.12em; margin-bottom: 1.1rem; text-shadow: 0 0 14px rgba(77, 159, 255, 0.5); }
+/* ── live mini-map ─────────────────────────────────────────────────────────── */
+.mx-map {
+  position: fixed; top: clamp(0.9rem, 2.4vh, 1.6rem); left: clamp(0.9rem, 2.4vw, 1.6rem);
+  z-index: 95; background: var(--panel); border: 1px solid var(--line);
+  padding: 0.5rem 0.55rem 0.4rem;
+  backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+}
+.mx-map::before { content: ""; position: absolute; top: -1px; left: -1px; width: 10px; height: 10px; border-top: 2px solid var(--blue-b); border-left: 2px solid var(--blue-b); }
+.mx-map canvas { display: block; }
+.mx-map-label { margin-top: 0.3rem; font-size: 0.52rem; letter-spacing: 0.16em; color: var(--blue-b); text-align: center; }
+
+/* ── on-screen drive controls — visible, labeled, no hidden gestures ───────── */
+.mx-dpad {
+  position: fixed; right: clamp(0.9rem, 2.4vw, 1.6rem); bottom: clamp(0.9rem, 2.6vh, 1.6rem);
+  z-index: 95; display: flex; flex-direction: column; align-items: center; gap: 0.3rem;
+}
+.mx-dpad-row { display: flex; gap: 0.3rem; }
+.mx-dpad-btn {
+  width: 52px; height: 44px; cursor: pointer;
+  background: var(--panel); border: 1px solid var(--line); color: var(--blue-b);
+  font-size: 1.05rem; touch-action: none; user-select: none; -webkit-user-select: none;
+  backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+  transition: border-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+}
+.mx-dpad-btn:hover, .mx-dpad-btn:active { color: var(--white); border-color: var(--blue-b); box-shadow: 0 0 16px rgba(102, 176, 255, 0.3); }
+.mx-dpad-hint { font-size: 0.5rem; letter-spacing: 0.24em; color: var(--dim); }
+.mx-continue {
+  margin-top: 0.35rem; cursor: pointer;
+  background: rgba(123, 47, 255, 0.16); border: 1px solid rgba(157, 92, 255, 0.6);
+  color: var(--purple-b); padding: 0.55rem 0.9rem;
+  font-size: 0.62rem; letter-spacing: 0.14em; white-space: nowrap;
+  text-shadow: 0 0 12px rgba(157, 92, 255, 0.5);
+  backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+}
+.mx-continue:hover { box-shadow: 0 0 22px rgba(157, 92, 255, 0.35); color: var(--white); }
+
+/* hero — full banner must render at every viewport (no right-edge clipping) */
+.mx-hero { text-align: center; width: 100%; max-width: 1100px; }
+.mx-eyebrow { color: var(--blue-b); font-size: clamp(1.05rem, 2.6vw, 1.5rem); letter-spacing: 0.12em; text-indent: 0.12em; margin-bottom: 1.1rem; text-shadow: 0 0 14px rgba(77, 159, 255, 0.5); }
 .mx-name {
   font-family: var(--mono); font-weight: 800;
-  font-size: clamp(3rem, 11vw, 8.6rem); letter-spacing: -0.02em; line-height: 0.95;
+  font-size: clamp(2.5rem, 10vw, 8.6rem); letter-spacing: -0.02em; line-height: 0.98;
+  padding: 0.04em 0.1em; overflow-wrap: break-word;
   color: var(--white);
   text-shadow:
     -4px 0 rgba(230, 36, 41, 0.65),
     4px 0 rgba(30, 111, 230, 0.65),
     0 0 44px rgba(120, 170, 255, 0.35);
 }
-.mx-hero-sub { margin-top: 1.3rem; color: var(--text); font-size: clamp(0.62rem, 1.6vw, 0.82rem); letter-spacing: 0.32em; }
+.mx-hero-sub { margin-top: 1.3rem; color: var(--text); font-size: clamp(0.6rem, 1.5vw, 0.82rem); letter-spacing: 0.28em; text-indent: 0.28em; }
 .mx-hero-cue { margin-top: 3rem; color: var(--white); font-size: 0.66rem; letter-spacing: 0.26em; opacity: 0.9; }
 .mx-cue-arrow { display: inline-block; color: var(--red-b); animation: mx-nudge 1.8s ease-in-out infinite; }
 @keyframes mx-nudge { 50% { transform: translateX(6px); } }
@@ -370,9 +407,12 @@ button { font-family: inherit; }
   .mx-rack-items { font-size: 0.62rem; line-height: 1.5; }
   .mx-stats { grid-template-columns: repeat(2, 1fr); }
   .mx-sec-left, .mx-sec-right { justify-content: center; }
-  .mx-hud { width: min(330px, calc(100vw - 5.4rem)); }
+  .mx-hud { width: min(230px, calc(100vw - 12.5rem)); padding: 0.5rem 0.6rem 0.6rem; }
+  .mx-hud-rank { display: none; }
   .mx-bullets li { font-size: 0.7rem; }
   .mx-gate-opt { font-size: 0.72rem; }
+  .mx-map { transform: scale(0.8); transform-origin: top left; }
+  .mx-dpad-btn { width: 46px; height: 40px; }
 }
 
 /* ── large screens: scale the experience up, never strand it in black ──────── */

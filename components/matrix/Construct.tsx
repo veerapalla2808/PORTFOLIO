@@ -11,7 +11,7 @@ import Effects from './Effects';
 import {
   CityBlocks, StreetLanes, GateArch, Signposts, IdentityHolo, NeonSignWall,
   EraPortals, SpeedLines, AnomalyBillboards, CredsCourt, TransmissionRow,
-  Pills, Rabbit,
+  Pills, Rabbit, HubBeacon, DistrictPortals, ZoneAmbience,
 } from './scenes';
 
 export default function Construct({
@@ -46,9 +46,12 @@ export default function Construct({
       <directionalLight position={[-8, 10, -10]} intensity={0.3} color="#C9A8FF" />
 
       <Rain tier={tier} reduced={reducedMotion} />
+      <ZoneAmbience />
       <StreetLanes />
       <CityBlocks tier={tier} />
       <GateArch />
+      <HubBeacon reduced={reducedMotion} />
+      <DistrictPortals />
       <Signposts />
       <IdentityHolo reduced={reducedMotion} />
       <NeonSignWall reduced={reducedMotion} />
