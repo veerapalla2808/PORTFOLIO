@@ -1189,22 +1189,58 @@ export function Pills({ onRed, onBlue }: { onRed: () => void; onBlue: () => void
   );
 }
 
-// ── the phoenix — a constantly-flying guide in a red→royal→blue gradient.
-// It glides ahead of you (never lands), banks into turns, leaves a fading
-// trail, and — like its rabbit ancestor — clicking it leads you to an
-// unanswered question.
+// ── the phoenix — a sleek falcon silhouette in a red→royal→blue gradient.
+// Swept vertex-colored wings flap from the shoulder, twin tail streamers
+// flutter, and a subtle spark trail follows. Always airborne; banks into
+// turns; clicking it leads you to an unanswered question.
+
+// swept wing with a true color gradient: royal at the shoulder → tip color.
+// Root sits at the origin so rotation.z flaps it like a real shoulder joint.
+function makeWing(dir: 1 | -1, tip: THREE.Color, royal: THREE.Color): THREE.BufferGeometry {
+  // x extends outward, z runs along the body (−z = forward)
+  const pts: [number, number, number][] = [
+    [0, 0, -0.18],            // 0 shoulder leading
+    [0, 0, 0.34],             // 1 shoulder trailing
+    [dir * 0.95, 0.04, -0.38],// 2 mid leading (swept forward)
+    [dir * 0.9, 0.02, 0.42],  // 3 mid trailing
+    [dir * 1.85, 0.1, 0.18],  // 4 wing tip (swept back)
+  ];
+  const tris = [0, 2, 1, 1, 2, 3, 2, 4, 3];
+  const pos: number[] = [];
+  const col: number[] = [];
+  const c = new THREE.Color();
+  for (const i of tris) {
+    const p = pts[i];
+    pos.push(p[0], p[1], p[2]);
+    const k = Math.min(1, Math.abs(p[0]) / 1.85);
+    c.copy(royal).lerp(tip, k);
+    col.push(c.r, c.g, c.b);
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
+  g.computeVertexNormals();
+  return g;
+}
+
 export function Phoenix({ idle, reduced, onQuest }: { idle: boolean; reduced: boolean; onQuest: () => void }) {
   const group = useRef<THREE.Group>(null);
   const wingL = useRef<THREE.Mesh>(null);
   const wingR = useRef<THREE.Mesh>(null);
+  const tailL = useRef<THREE.Mesh>(null);
+  const tailR = useRef<THREE.Mesh>(null);
   const target = useRef(new THREE.Vector3());
   const proj = useRef(new THREE.Vector3());
   const trail = useRef<(THREE.Mesh | null)[]>([]);
   const history = useRef<THREE.Vector3[]>(Array.from({ length: 30 }, () => new THREE.Vector3(0, 3, 30)));
   const tick = useRef(0);
-  const redC = useMemo(() => glow(GX.redBright, 2), []);
-  const royalC = useMemo(() => glow(GX.violetBright, 2), []);
-  const blueC = useMemo(() => glow(GX.blueBright, 2), []);
+  const bank = useRef(0);
+
+  const redC = useMemo(() => glow(GX.redBright, 1.9), []);
+  const royalC = useMemo(() => glow(GX.violetBright, 1.7), []);
+  const blueC = useMemo(() => glow(GX.blueBright, 1.9), []);
+  const wingGeoL = useMemo(() => makeWing(-1, redC, royalC), [redC, royalC]);
+  const wingGeoR = useMemo(() => makeWing(1, blueC, royalC), [blueC, royalC]);
 
   useFrame((state) => {
     const g = group.current;
@@ -1213,22 +1249,34 @@ export function Phoenix({ idle, reduced, onQuest }: { idle: boolean; reduced: bo
     // glide ahead of the traveler — always airborne
     target.current.set(
       scrollBus.x + scrollBus.hx * 10 - scrollBus.hz * 1.4,
-      reduced ? 3 : 3 + Math.sin(t * 1.5) * 0.6 + Math.sin(t * 0.6) * 0.3,
+      reduced ? 3.1 : 3.1 + Math.sin(t * 1.4) * 0.5 + Math.sin(t * 0.55) * 0.25,
       scrollBus.z + scrollBus.hz * 10 + scrollBus.hx * 1.4,
     );
     const beforeX = g.position.x;
     g.position.lerp(target.current, 0.06);
     if (idle) {
       g.lookAt(state.camera.position);
+      bank.current *= 0.92;
     } else {
       g.lookAt(g.position.x + scrollBus.hx * 4, g.position.y, g.position.z + scrollBus.hz * 4);
-      g.rotateZ(THREE.MathUtils.clamp((g.position.x - beforeX) * 6, -0.6, 0.6)); // bank into turns
+      // smooth banking into lateral motion
+      const lateral = THREE.MathUtils.clamp((g.position.x - beforeX) * 5, -0.55, 0.55);
+      bank.current += (lateral - bank.current) * 0.08;
     }
-    // wing flap
-    const flap = reduced ? 0.45 : 0.5 + Math.sin(t * (idle ? 3.4 : 7)) * 0.55;
-    if (wingL.current) wingL.current.rotation.z = flap;
-    if (wingR.current) wingR.current.rotation.z = -flap;
-    // fading trail
+    g.rotateZ(bank.current);
+    g.rotateX(0.14); // slight nose-down so the wing surfaces read from behind
+
+    // shoulder-joint flap around a dihedral resting V — wings never go edge-on
+    const phase = t * (idle ? 3 : 6.5);
+    const flap = reduced ? 0 : Math.sin(phase) * 0.34 + Math.sin(phase * 2) * 0.08;
+    if (wingL.current) wingL.current.rotation.z = -(0.24 + flap);
+    if (wingR.current) wingR.current.rotation.z = 0.24 + flap;
+    // tail streamers flutter gently
+    const flut = reduced ? 0 : Math.sin(t * 3.2) * 0.12;
+    if (tailL.current) tailL.current.rotation.y = 0.22 + flut;
+    if (tailR.current) tailR.current.rotation.y = -0.22 - flut;
+
+    // subtle spark trail
     tick.current++;
     if (tick.current % 3 === 0 && !reduced) {
       history.current.pop();
@@ -1236,12 +1284,13 @@ export function Phoenix({ idle, reduced, onQuest }: { idle: boolean; reduced: bo
     }
     trail.current.forEach((m, i) => {
       if (!m) return;
-      const h = history.current[(i + 1) * 5 - 1];
+      const h = history.current[(i + 1) * 4 - 1];
       if (h) m.position.copy(h);
-      const k = 1 - (i + 1) / 7;
-      m.scale.setScalar(0.25 * k + 0.05);
-      (m.material as THREE.MeshBasicMaterial).opacity = reduced ? 0 : 0.5 * k;
+      const k = 1 - (i + 1) / 8;
+      m.scale.setScalar(0.09 * k + 0.02);
+      (m.material as THREE.MeshBasicMaterial).opacity = reduced ? 0 : 0.45 * k;
     });
+
     // publish screen position (QA + UI hints)
     proj.current.copy(g.position).project(state.camera);
     scrollBus.rabbitScreen.x = ((proj.current.x + 1) / 2) * state.size.width;
@@ -1252,47 +1301,45 @@ export function Phoenix({ idle, reduced, onQuest }: { idle: boolean; reduced: bo
     <>
       <group
         ref={group}
+        scale={1.15}
         onClick={(e) => { e.stopPropagation(); onQuest(); }}
         onPointerOver={(e) => { e.stopPropagation(); setCursor(true); }}
         onPointerOut={() => setCursor(false)}
       >
-        {/* body — royal core */}
-        <mesh rotation={[Math.PI / 2, 0, 0]}>
-          <coneGeometry args={[0.24, 1.3, 6]} />
-          <meshBasicMaterial color={royalC} wireframe toneMapped={false} />
+        {/* fuselage — sleek royal diamond */}
+        <mesh scale={[0.16, 0.14, 0.62]}>
+          <octahedronGeometry args={[1, 0]} />
+          <meshBasicMaterial color={royalC} toneMapped={false} />
         </mesh>
-        {/* head */}
-        <mesh position={[0, 0.12, -0.78]}>
-          <icosahedronGeometry args={[0.18, 0]} />
-          <meshBasicMaterial color={glow(GX.white, 1.8)} wireframe toneMapped={false} />
+        {/* head — bright beak point */}
+        <mesh position={[0, 0.02, -0.66]} rotation={[-Math.PI / 2, 0, 0]} scale={[0.09, 0.22, 0.09]}>
+          <coneGeometry args={[1, 1, 6]} />
+          <meshBasicMaterial color={glow(GX.white, 2)} toneMapped={false} />
         </mesh>
-        {/* crest */}
-        <mesh position={[0, 0.34, -0.7]} rotation={[-0.5, 0, 0]}>
-          <coneGeometry args={[0.07, 0.4, 4]} />
+        {/* wings — shoulder-pivoted, gradient royal→red / royal→blue */}
+        <mesh ref={wingL} geometry={wingGeoL} position={[-0.12, 0.04, -0.05]}>
+          <meshBasicMaterial vertexColors toneMapped={false} transparent opacity={0.92} side={THREE.DoubleSide} depthWrite={false} />
+        </mesh>
+        <mesh ref={wingR} geometry={wingGeoR} position={[0.12, 0.04, -0.05]}>
+          <meshBasicMaterial vertexColors toneMapped={false} transparent opacity={0.92} side={THREE.DoubleSide} depthWrite={false} />
+        </mesh>
+        {/* twin tail streamers */}
+        <mesh ref={tailL} position={[-0.05, 0, 0.62]} rotation={[0, 0.22, 0]} scale={[0.05, 0.012, 0.55]}>
+          <octahedronGeometry args={[1, 0]} />
           <meshBasicMaterial color={redC} toneMapped={false} />
         </mesh>
-        {/* wings — red port, blue starboard: the gradient in motion */}
-        <mesh ref={wingL} position={[-0.18, 0.08, 0]}>
-          <planeGeometry args={[1.5, 0.62]} />
-          <meshBasicMaterial color={redC} transparent opacity={0.65} blending={THREE.AdditiveBlending} side={THREE.DoubleSide} depthWrite={false} />
-        </mesh>
-        <mesh ref={wingR} position={[0.18, 0.08, 0]}>
-          <planeGeometry args={[1.5, 0.62]} />
-          <meshBasicMaterial color={blueC} transparent opacity={0.65} blending={THREE.AdditiveBlending} side={THREE.DoubleSide} depthWrite={false} />
-        </mesh>
-        {/* tail feathers */}
-        <mesh position={[0, 0, 0.85]} rotation={[Math.PI / 2, 0, 0]}>
-          <coneGeometry args={[0.16, 0.7, 4]} />
-          <meshBasicMaterial color={blueC} wireframe toneMapped={false} />
+        <mesh ref={tailR} position={[0.05, 0, 0.62]} rotation={[0, -0.22, 0]} scale={[0.05, 0.012, 0.55]}>
+          <octahedronGeometry args={[1, 0]} />
+          <meshBasicMaterial color={blueC} toneMapped={false} />
         </mesh>
       </group>
-      {/* trail — red→royal→blue afterimages */}
-      {[0, 1, 2, 3, 4, 5].map(i => (
+      {/* spark trail — small, fading, no bloom blobs */}
+      {[0, 1, 2, 3, 4, 5, 6].map(i => (
         <mesh key={i} ref={(m) => { trail.current[i] = m; }}>
-          <sphereGeometry args={[1, 8, 8]} />
+          <sphereGeometry args={[1, 6, 6]} />
           <meshBasicMaterial
-            color={i < 2 ? redC : i < 4 ? royalC : blueC}
-            transparent opacity={0} blending={THREE.AdditiveBlending} depthWrite={false} toneMapped={false}
+            color={i < 2 ? redC : i < 5 ? royalC : blueC}
+            transparent opacity={0} depthWrite={false}
           />
         </mesh>
       ))}
