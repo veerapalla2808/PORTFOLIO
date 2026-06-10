@@ -55,6 +55,15 @@ export default function BootOverlay({ onDone }: { onDone: () => void }) {
 
   return (
     <div className={`mx-boot${fading ? ' is-fading' : ''}`} role="presentation">
+      {/* full-bleed ambient — the screen itself is alive */}
+      <div className="mx-boot-ambient" aria-hidden="true" />
+      <div className="mx-boot-sweep" aria-hidden="true" />
+
+      <header className="mx-boot-bar vt" aria-hidden="true">
+        <span>VPALLA SYSTEMS // BOOTSTRAP</span>
+        <span className="mx-boot-bar-right">DUAL-PHOSPHOR CRT · {pct}%</span>
+      </header>
+
       <div className="mx-boot-inner vt">
         {LINES.slice(0, shown).map((l, i) => (
           <p key={l}>
@@ -81,6 +90,11 @@ export default function BootOverlay({ onDone }: { onDone: () => void }) {
           </div>
         )}
       </div>
+
+      <footer className="mx-boot-bar mx-boot-bar-b vt" aria-hidden="true">
+        <span>MEM 11Y OK · SYS 5/5 · CLOUDS 3/3</span>
+        <span className="mx-boot-bar-right">© 2026 VEERA PALLA</span>
+      </footer>
     </div>
   );
 }

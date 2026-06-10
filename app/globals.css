@@ -54,15 +54,46 @@ button { font-family: inherit; }
   mix-blend-mode: multiply;
 }
 
-/* ── boot / jack-in ────────────────────────────────────────────────────────── */
+/* ── boot / jack-in — full-bleed CRT, never a floating snippet ─────────────── */
 .mx-boot {
   position: fixed; inset: 0; z-index: 100; background: var(--bg);
   display: flex; align-items: center; justify-content: center;
-  transition: opacity 0.6s ease;
+  transition: opacity 0.6s ease; overflow: hidden;
 }
 .mx-boot.is-fading { opacity: 0; pointer-events: none; }
-.mx-boot-inner { width: min(580px, 88vw); font-size: clamp(1rem, 2.4vw, 1.45rem); color: var(--blue-b); }
-.mx-boot-inner p { margin-bottom: 0.45rem; text-shadow: 0 0 12px rgba(77, 159, 255, 0.45); }
+.mx-boot-ambient {
+  position: absolute; inset: -12%;
+  background:
+    radial-gradient(42% 55% at 12% 85%, rgba(230, 36, 41, 0.16), transparent 70%),
+    radial-gradient(46% 60% at 88% 12%, rgba(30, 111, 230, 0.2), transparent 70%),
+    radial-gradient(30% 40% at 80% 90%, rgba(30, 111, 230, 0.1), transparent 70%),
+    radial-gradient(28% 38% at 18% 10%, rgba(230, 36, 41, 0.08), transparent 70%);
+  animation: mx-boot-drift 9s ease-in-out infinite alternate;
+}
+@keyframes mx-boot-drift {
+  0% { transform: scale(1) translate(0, 0); }
+  100% { transform: scale(1.08) translate(-1.5%, 1.5%); }
+}
+.mx-boot-sweep {
+  position: absolute; left: 0; right: 0; height: 26vh; top: -30vh;
+  background: linear-gradient(180deg, transparent, rgba(77, 159, 255, 0.05), transparent);
+  animation: mx-boot-sweep 4.2s linear infinite;
+}
+@keyframes mx-boot-sweep { to { transform: translateY(170vh); } }
+.mx-boot-bar {
+  position: absolute; left: 0; right: 0; top: 0;
+  display: flex; justify-content: space-between; gap: 1rem;
+  padding: clamp(0.7rem, 1.6vh, 1.1rem) clamp(1rem, 2.6vw, 2.2rem);
+  font-size: clamp(0.85rem, 1.5vw, 1.15rem); letter-spacing: 0.18em;
+  color: var(--dim); border-bottom: 1px solid rgba(30, 111, 230, 0.22);
+}
+.mx-boot-bar-b { top: auto; bottom: 0; border-bottom: none; border-top: 1px solid rgba(30, 111, 230, 0.22); }
+.mx-boot-bar-right { color: rgba(94, 110, 142, 0.8); }
+.mx-boot-inner {
+  position: relative; width: min(860px, 90vw);
+  font-size: clamp(1.15rem, 2.1vw, 1.9rem); color: var(--blue-b);
+}
+.mx-boot-inner p { margin-bottom: 0.5rem; text-shadow: 0 0 12px rgba(77, 159, 255, 0.45); }
 .mx-boot-wake {
   margin: 1.2rem 0 0.9rem; color: var(--white); font-size: 1.3em;
   text-shadow: -2px 0 rgba(230, 36, 41, 0.55), 2px 0 rgba(30, 111, 230, 0.55), 0 0 18px rgba(244, 247, 255, 0.4);
@@ -319,9 +350,29 @@ button { font-family: inherit; }
   .mx-gate-opt { font-size: 0.72rem; }
 }
 
+/* ── large screens: scale the experience up, never strand it in black ──────── */
+@media (min-width: 1600px) {
+  .mx-slab { width: min(760px, 80vw); padding: 2.2rem; }
+  .mx-slab-wide { width: min(1080px, 84vw); }
+  .mx-slab-door { width: min(680px, 80vw); }
+  .mx-gate { width: min(780px, 80vw); padding: 2.2rem; }
+  .mx-gate-q { font-size: 1.35rem; }
+  .mx-gate-opt { font-size: 0.92rem; padding: 0.75rem 1rem; }
+  .mx-name { font-size: clamp(8.6rem, 9.5vw, 12.5rem); }
+  .mx-hero-sub { font-size: 1rem; }
+  .mx-body { font-size: 0.95rem; }
+  .mx-lead { font-size: 1.05rem; }
+  .mx-bullets li { font-size: 0.88rem; }
+  .mx-rack-items { font-size: 0.8rem; }
+  .mx-hud { width: 520px; }
+  .mx-hud-line { font-size: 0.85rem; }
+  .mx-jack-btn { width: 520px; }
+}
+
 /* ── reduced motion ────────────────────────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
   .mx-cursor, .mx-cue-arrow, .mx-encrypted-glyphs { animation: none !important; }
+  .mx-boot-ambient, .mx-boot-sweep { animation: none !important; }
   .mx-pill-btn, .mx-toggle, .mx-gate-opt { transition: none; }
   .mx-crt { opacity: 0.2; }
 }
