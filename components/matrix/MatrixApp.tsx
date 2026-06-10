@@ -43,6 +43,7 @@ export default function MatrixApp() {
   const [bursts, setBursts] = useState<Burst[]>([]);
   const [cine, setCine] = useState(false);       // dive intro in progress
   const [topView, setTopView] = useState(false);
+  const [insideId, setInsideId] = useState<string | null>(null);
   const restored = useRef(false);
   const burstId = useRef(1);
   const fxPulses = useRef<{ x: number; z: number; color: string; t0: number }[]>([]);
@@ -126,6 +127,32 @@ export default function MatrixApp() {
     };
   }, []);
 
+  // exit a building cleanly: walking back out, Esc, ⏏ button — and the
+  // BROWSER BACK BUTTON. Entering pushes a history state; pressing back while
+  // inside pops it and steps you out instead of leaving the site.
+  const exitBuilding = useCallback(() => {
+    if (scrollBus.interior) scrollBus.intT = 0;
+  }, []);
+
+  useEffect(() => {
+    if (insideId) {
+      history.pushState({ gridInterior: insideId }, '');
+    }
+  }, [insideId]);
+
+  useEffect(() => {
+    const onPop = () => { if (scrollBus.interior) scrollBus.intT = 0; };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && scrollBus.interior) scrollBus.intT = 0;
+    };
+    window.addEventListener('popstate', onPop);
+    window.addEventListener('keydown', onKey);
+    return () => {
+      window.removeEventListener('popstate', onPop);
+      window.removeEventListener('keydown', onKey);
+    };
+  }, []);
+
   const sayQuip = useCallback((text: string) => {
     clearTimeout(quipTimer.current);
     setQuip(text);
@@ -193,9 +220,14 @@ export default function MatrixApp() {
       }
       ctx.stroke();
     }
-    // the lake
+    // the lake + the river
     ctx.fillStyle = 'rgba(20,50,90,0.25)';
     ctx.fillRect(mapX(72), 0, MAP_W - mapX(72), MAP_H);
+    ctx.fillRect(mapX(-51), 0, mapX(-39) - mapX(-51), MAP_H);
+    // the elevated Loop
+    ctx.strokeStyle = 'rgba(200,160,90,0.5)';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(mapX(-70), mapY(-40), mapX(-20) - mapX(-70), mapY(-150) - mapY(-40));
     // districts: hollow = unvisited, filled = visited
     for (const zo of ZONES) {
       if (zo.id === 'gate') continue;
@@ -265,11 +297,12 @@ export default function MatrixApp() {
     }
     if (warpRef.current) warpRef.current.style.opacity = (scrollBus.warp * 0.55).toFixed(3);
 
-    // enter/exit narration
+    // enter/exit narration + exit-button UI state
     if (inside !== interiorRef.current) {
       const lm = landmarkById(inside ?? interiorRef.current ?? '');
       interiorRef.current = inside;
-      if (inside && lm) sayQuip(`Inside ${lm.name}. Walk back out whenever you're done.`);
+      setInsideId(inside);
+      if (inside && lm) sayQuip(`Inside ${lm.name}. Back out, Esc, or ⏏ to leave.`);
       else if (lm) sayQuip('Back on the street, operator.');
     }
 
@@ -364,6 +397,7 @@ export default function MatrixApp() {
   // CONTINUE — auto-drive to the next unvisited district (or the choice)
   const nextTarget = ZONES.find(z => z.idx !== 0 && !visited.has(z.idx)) ?? ZONES[ZONES.length - 1];
   const goNext = useCallback(() => {
+    if (scrollBus.interior) scrollBus.intT = 0; // step outside first
     const t = ZONES.find(z => z.idx !== 0 && !visitedRef.current.has(z.idx)) ?? ZONES[ZONES.length - 1];
     const route = routeBetween(scrollBus.x, scrollBus.z, t.x, t.z);
     scrollBus.route.length = 0;
@@ -488,6 +522,11 @@ export default function MatrixApp() {
                   CONTINUE ▸ {nextTarget.code.split('/')[1]?.trim() ?? 'NEXT'}
                 </button>
               </div>
+              {insideId && (
+                <button className="mx-exit" onClick={exitBuilding}>
+                  ⏏ EXIT {landmarkById(insideId)?.name ?? 'BUILDING'}
+                </button>
+              )}
             </>
           )}
           {!booted && <BootOverlay onDone={onEnter} />}

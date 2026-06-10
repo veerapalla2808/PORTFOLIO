@@ -48,7 +48,9 @@ function nearLandmark(x: number, z: number) {
     if (Math.hypot(x - lx, z - lz) < 30) return true;
   }
   if (Math.hypot(x - BEAN.x, z - BEAN.z) < 22) return true;
-  if (Math.hypot(x - 172, z + 94) < 30) return true; // wheel
+  if (Math.hypot(x - 172, z + 94) < 30) return true;  // ferris wheel
+  if (Math.hypot(x + 31, z + 66) < 17) return true;   // theatre
+  if (Math.abs(x + 45) < 12) return true;             // the river
   return false;
 }
 
@@ -527,6 +529,318 @@ export function Lake({ reduced }: { reduced: boolean }) {
   );
 }
 
+// ── CHICAGO RIVER (south branch) — flows between Franklin & State ───────────
+const RIVER_X = -45;
+
+export function River({ reduced }: { reduced: boolean }) {
+  const flow = useRef<(THREE.Mesh | null)[]>([]);
+  const bits = useMemo(() => Array.from({ length: 10 }, (_, i) => ({
+    x: RIVER_X - 4 + rnd(i * 9 + 1) * 8,
+    z0: 40 - rnd(i * 9 + 2) * 240,
+    len: 4 + rnd(i * 9 + 3) * 9,
+    speed: 1.6 + rnd(i * 9 + 4) * 2.4,
+  })), []);
+  useFrame((state) => {
+    if (reduced) return;
+    const t = state.clock.elapsedTime;
+    flow.current.forEach((m, i) => {
+      if (!m) return;
+      const b = bits[i];
+      m.position.z = (((b.z0 - t * b.speed) % 250) + 250) % 250 - 205;
+      (m.material as THREE.MeshBasicMaterial).opacity = 0.06 + (Math.sin(t * 0.9 + i * 2.4) * 0.5 + 0.5) * 0.08;
+    });
+  });
+  return (
+    <group>
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[RIVER_X, -0.12, -78]}>
+        <planeGeometry args={[12, 256]} />
+        <meshBasicMaterial color={'#04101C'} />
+      </mesh>
+      {/* drifting current glints */}
+      {bits.map((b, i) => (
+        <mesh key={i} ref={(m) => { flow.current[i] = m; }} rotation={[-Math.PI / 2, 0, 0]} position={[b.x, -0.06, b.z0]}>
+          <planeGeometry args={[0.5, b.len]} />
+          <meshBasicMaterial color={glow('#9FC2FF', 1)} transparent opacity={0.08} blending={THREE.AdditiveBlending} depthWrite={false} />
+        </mesh>
+      ))}
+      {/* glowing embankment edges */}
+      {[-6.2, 6.2].map(off => (
+        <mesh key={off} position={[RIVER_X + off, 0.02, -78]}>
+          <boxGeometry args={[0.18, 0.1, 256]} />
+          <meshBasicMaterial color={glow('#27406E', 1.2)} toneMapped={false} transparent opacity={0.7} />
+        </mesh>
+      ))}
+    </group>
+  );
+}
+
+// ── bascule bridges (the Batman ones) where Madison & Monroe cross the river ─
+function BasculeBridge({ z }: { z: number }) {
+  return (
+    <group position={[RIVER_X, 0, z]}>
+      {/* four tender towers with pyramid roofs + beacons */}
+      {([[-7.5, -6.8], [7.5, -6.8], [-7.5, 6.8], [7.5, 6.8]] as [number, number][]).map(([ox, oz], i) => (
+        <group key={i} position={[ox, 0, oz]}>
+          <mesh position={[0, 3.4, 0]}>
+            <boxGeometry args={[2.2, 6.8, 2.2]} />
+            <meshStandardMaterial color={'#0B0E18'} roughness={0.4} metalness={0.65} />
+          </mesh>
+          <mesh position={[0, 7.6, 0]}>
+            <coneGeometry args={[1.8, 1.8, 4]} />
+            <meshStandardMaterial color={'#101524'} roughness={0.4} metalness={0.6} />
+          </mesh>
+          <mesh position={[0, 8.8, 0]}>
+            <sphereGeometry args={[0.18, 8, 8]} />
+            <meshBasicMaterial color={glow(GX.redBright, 2.2)} toneMapped={false} />
+          </mesh>
+          {/* lit tower windows */}
+          <mesh position={[0, 4.2, oz > 0 ? -1.12 : 1.12]}>
+            <planeGeometry args={[0.7, 1.1]} />
+            <meshBasicMaterial color={glow('#FFD9A0', 1.5)} toneMapped={false} />
+          </mesh>
+        </group>
+      ))}
+      {/* side trusses with X-bracing over the water */}
+      {[-5.8, 5.8].map(oz => (
+        <group key={oz} position={[0, 0, oz]}>
+          <mesh position={[0, 5.2, 0]}>
+            <boxGeometry args={[14.4, 0.22, 0.22]} />
+            <meshBasicMaterial color={glow('#8FA8D8', 1.2)} toneMapped={false} />
+          </mesh>
+          {[-4.6, 0, 4.6].map(ox => (
+            <group key={ox} position={[ox, 3.1, 0]}>
+              <mesh rotation={[0, 0, 0.75]}>
+                <boxGeometry args={[5.6, 0.16, 0.16]} />
+                <meshBasicMaterial color={glow('#5F7BB0', 1.2)} toneMapped={false} />
+              </mesh>
+              <mesh rotation={[0, 0, -0.75]}>
+                <boxGeometry args={[5.6, 0.16, 0.16]} />
+                <meshBasicMaterial color={glow('#5F7BB0', 1.2)} toneMapped={false} />
+              </mesh>
+            </group>
+          ))}
+          {/* bulb string along the top chord */}
+          {Array.from({ length: 9 }, (_, i) => (
+            <mesh key={i} position={[-6.4 + i * 1.6, 5.45, 0]}>
+              <sphereGeometry args={[0.11, 6, 6]} />
+              <meshBasicMaterial color={glow('#FFE8C0', 2)} toneMapped={false} />
+            </mesh>
+          ))}
+        </group>
+      ))}
+    </group>
+  );
+}
+
+export function Bridges() {
+  return (
+    <>
+      <BasculeBridge z={-40} />
+      <BasculeBridge z={-150} />
+    </>
+  );
+}
+
+// ── THE L — seven elevated transit lines with running trains ────────────────
+interface LSeg { ax: number; az: number; ux: number; uz: number; len: number; cum: number }
+interface LLine { name: string; pts: [number, number][]; color: string; off: number; y: number; speed: number; start: number; deck: boolean }
+
+const LOOP_PTS: [number, number][] = [[-70, -44], [-24, -44], [-24, -146], [-70, -146], [-70, -44]];
+
+const L_LINES: LLine[] = [
+  { name: 'brown', pts: LOOP_PTS, color: '#9A5B2D', off: -1.6, y: 10.2, speed: 9, start: 0, deck: true },
+  { name: 'orange', pts: LOOP_PTS, color: '#FF7A1A', off: -0.55, y: 10.2, speed: 10.5, start: 0.35, deck: false },
+  { name: 'green', pts: LOOP_PTS, color: '#27B05A', off: 0.55, y: 10.2, speed: 8.4, start: 0.6, deck: false },
+  { name: 'pink', pts: LOOP_PTS, color: '#FF6FB5', off: 1.6, y: 10.2, speed: 11.4, start: 0.82, deck: false },
+  { name: 'red', pts: [[-15, 46], [-15, -200]], color: '#E03131', off: 0, y: 13.6, speed: 13, start: 0.2, deck: true },
+  { name: 'blue', pts: [[-100, -35], [64, -35]], color: '#2D7DFF', off: 0, y: 12.2, speed: 12, start: 0.5, deck: true },
+  { name: 'yellow', pts: [[-25, 42], [0, 36], [22, 31], [44, 26]], color: '#F2C81E', off: 0, y: 12.8, speed: 7, start: 0, deck: true },
+];
+
+function lineSegs(pts: [number, number][], off: number): { segs: LSeg[]; total: number } {
+  // lateral offset per segment (simple shift; junction kinks are fine at night)
+  const segs: LSeg[] = [];
+  let cum = 0;
+  for (let i = 0; i < pts.length - 1; i++) {
+    const [ax0, az0] = pts[i];
+    const [bx0, bz0] = pts[i + 1];
+    const len = Math.hypot(bx0 - ax0, bz0 - az0);
+    const ux = (bx0 - ax0) / len, uz = (bz0 - az0) / len;
+    const nx = -uz, nz = ux;
+    segs.push({ ax: ax0 + nx * off, az: az0 + nz * off, ux, uz, len, cum });
+    cum += len;
+  }
+  return { segs, total: cum };
+}
+
+function posAt(segs: LSeg[], total: number, d: number) {
+  const dd = ((d % total) + total) % total;
+  for (const s of segs) {
+    if (dd <= s.cum + s.len) {
+      const t = dd - s.cum;
+      return { x: s.ax + s.ux * t, z: s.az + s.uz * t, rot: Math.atan2(s.ux, s.uz) };
+    }
+  }
+  const s = segs[segs.length - 1];
+  return { x: s.ax + s.ux * s.len, z: s.az + s.uz * s.len, rot: Math.atan2(s.ux, s.uz) };
+}
+
+export function TheL({ reduced }: { reduced: boolean }) {
+  const lines = useMemo(() => L_LINES.map(l => ({ ...l, ...lineSegs(l.pts, l.off) })), []);
+  const cars = useRef<(THREE.Mesh | null)[]>([]);
+
+  useFrame((state) => {
+    if (reduced) return;
+    const t = state.clock.elapsedTime;
+    let ci = 0;
+    for (const l of lines) {
+      const head = t * l.speed + l.start * l.total;
+      for (let c = 0; c < 3; c++) {
+        const m = cars.current[ci++];
+        if (!m) continue;
+        const p = posAt(l.segs, l.total, head - c * 3.6);
+        m.position.set(p.x, l.y + 0.75, p.z);
+        m.rotation.y = p.rot;
+      }
+    }
+  });
+
+  return (
+    <group>
+      {lines.map((l, li) => (
+        <group key={l.name}>
+          {/* rails */}
+          {l.segs.map((s, si) => {
+            const cx = s.ax + s.ux * s.len / 2, cz = s.az + s.uz * s.len / 2;
+            const rot = Math.atan2(s.ux, s.uz);
+            const nx = -s.uz, nz = s.ux;
+            return (
+              <group key={si}>
+                {[-0.55, 0.55].map(ro => (
+                  <mesh key={ro} position={[cx + nx * ro, l.y + 0.32, cz + nz * ro]} rotation={[0, rot, 0]}>
+                    <boxGeometry args={[0.14, 0.14, s.len]} />
+                    <meshBasicMaterial color={glow(l.color, 1.25)} toneMapped={false} />
+                  </mesh>
+                ))}
+                {l.deck && (
+                  <mesh position={[cx, l.y, cz]} rotation={[0, rot, 0]}>
+                    <boxGeometry args={[l.pts === LOOP_PTS ? 5.4 : 2.6, 0.5, s.len + 0.8]} />
+                    <meshStandardMaterial color={'#0A0D16'} roughness={0.5} metalness={0.55} />
+                  </mesh>
+                )}
+                {/* support columns */}
+                {l.deck && Array.from({ length: Math.max(1, Math.floor(s.len / 14)) }, (_, k) => {
+                  const d = 7 + k * 14;
+                  return (
+                    <mesh key={k} position={[s.ax + s.ux * d, l.y / 2, s.az + s.uz * d]}>
+                      <cylinderGeometry args={[0.26, 0.34, l.y, 8]} />
+                      <meshStandardMaterial color={'#0B0E18'} roughness={0.5} metalness={0.6} />
+                    </mesh>
+                  );
+                })}
+              </group>
+            );
+          })}
+          {/* train — three glowing cars */}
+          {[0, 1, 2].map(c => (
+            <mesh key={c} ref={(m) => { cars.current[li * 3 + c] = m; }}>
+              <boxGeometry args={[1.15, 1.15, 3.1]} />
+              <meshBasicMaterial color={glow(l.color, c === 0 ? 2.1 : 1.5)} toneMapped={false} />
+            </mesh>
+          ))}
+        </group>
+      ))}
+    </group>
+  );
+}
+
+// ── THE GRID THEATRE — vertical blade marquee on State St ───────────────────
+export function Theatre({ reduced }: { reduced: boolean }) {
+  const fontsReady = useFontsReady();
+  const bladeTex = useMemo(() => {
+    const cv = document.createElement('canvas');
+    cv.width = 200; cv.height = 880;
+    const ctx = cv.getContext('2d')!;
+    ctx.fillStyle = '#1A060C';
+    ctx.fillRect(0, 0, 200, 880);
+    ctx.strokeStyle = '#FF3B52';
+    ctx.lineWidth = 8;
+    ctx.shadowColor = '#FF3B52';
+    ctx.shadowBlur = 22;
+    ctx.strokeRect(8, 8, 184, 864);
+    ctx.shadowBlur = 0;
+    // marquee bulbs along the border
+    for (let i = 0; i < 22; i++) {
+      for (const x of [26, 174]) {
+        ctx.beginPath();
+        ctx.arc(x, 40 + i * 38, 6, 0, Math.PI * 2);
+        ctx.fillStyle = i % 2 === 0 ? '#FFE8C0' : '#FFB36B';
+        ctx.shadowColor = '#FFD9A0';
+        ctx.shadowBlur = 12;
+        ctx.fill();
+      }
+    }
+    ctx.shadowBlur = 0;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.font = `400 132px ${zenFamily()}`;
+    ctx.fillStyle = '#F4F7FF';
+    ctx.shadowColor = '#FF3B52';
+    ctx.shadowBlur = 30;
+    ['G', 'R', 'I', 'D'].forEach((ch, i) => {
+      ctx.fillText(ch, 100, 150 + i * 200);
+    });
+    const t = new THREE.CanvasTexture(cv);
+    t.colorSpace = THREE.SRGBColorSpace;
+    return t;
+  }, [fontsReady]); // eslint-disable-line react-hooks/exhaustive-deps
+  const marqueeTex = useMemo(() => textTexture([
+    { text: 'NOW SHOWING', size: 30, color: '#FFD9A0' },
+    { text: 'THE NEON GRID · 11 YEARS · NO INTERMISSION', size: 34, color: GX.white },
+  ], 900, 170, '#FF3B52'), []);
+  const bulbs = useRef<THREE.Mesh>(null);
+  useFrame((state) => {
+    if (reduced || !bulbs.current) return;
+    // chasing marquee lights
+    (bulbs.current.material as THREE.MeshBasicMaterial).color.setScalar(
+      2 + Math.sin(state.clock.elapsedTime * 9) * 0.8,
+    );
+  });
+  return (
+    <group position={[-29, 0, -66]}>
+      {/* theatre hall behind */}
+      <mesh position={[-5, 11, 0]}>
+        <boxGeometry args={[10, 22, 14]} />
+        <meshStandardMaterial color={'#0A0810'} roughness={0.5} metalness={0.5} />
+      </mesh>
+      {/* vertical blade sign */}
+      <mesh position={[0.4, 13.5, 0]} rotation={[0, -Math.PI / 2, 0]}>
+        <planeGeometry args={[3.4, 15]} />
+        <meshBasicMaterial map={bladeTex} transparent side={THREE.DoubleSide} />
+      </mesh>
+      {/* canopy marquee over the doors */}
+      <mesh position={[1.4, 5.2, 0]}>
+        <boxGeometry args={[2.8, 1.7, 9.4]} />
+        <meshStandardMaterial color={'#140509'} roughness={0.4} metalness={0.5} />
+      </mesh>
+      <mesh position={[2.85, 5.2, 0]} rotation={[0, -Math.PI / 2, 0]}>
+        <planeGeometry args={[9, 1.5]} />
+        <meshBasicMaterial map={marqueeTex} transparent />
+      </mesh>
+      {/* chasing bulb strip under the canopy */}
+      <mesh ref={bulbs} position={[2.9, 4.25, 0]} rotation={[0, -Math.PI / 2, 0]}>
+        <planeGeometry args={[9, 0.16]} />
+        <meshBasicMaterial color={glow('#FFE8C0', 2)} toneMapped={false} />
+      </mesh>
+      {/* lobby door glow */}
+      <mesh position={[0.15, 2, 0]} rotation={[0, Math.PI / 2, 0]}>
+        <planeGeometry args={[7, 4]} />
+        <meshBasicMaterial color={glow('#FF3B52', 0.7)} transparent opacity={0.25} blending={THREE.AdditiveBlending} depthWrite={false} side={THREE.DoubleSide} />
+      </mesh>
+    </group>
+  );
+}
+
 // ── NAVY PIER — deck, railings, and the Ferris wheel at the end ─────────────
 export function NavyPier({ reduced }: { reduced: boolean }) {
   const wheel = useRef<THREE.Group>(null);
@@ -673,15 +987,15 @@ export function Landmarks() {
       {/* SPIRE OF ERAS (Willis homage): 3×3 stepped tubes + twin antennas */}
       <group>
         {([
-          [-8, -8, 36], [0, -8, 46], [8, -8, 36],
-          [-8, 0, 46], [0, 0, 64], [8, 0, 46],
-          [-8, 8, 36], [0, 8, 52], [8, 8, 36],
+          [-8, -8, 52], [0, -8, 67], [8, -8, 52],
+          [-8, 0, 67], [0, 0, 93], [8, 0, 67],
+          [-8, 8, 52], [0, 8, 75], [8, 8, 52],
         ] as [number, number, number][]).map(([ox, oz, h], i) => (
           <RainBox key={i} x={-104 + ox} z={-80 + oz} w={8} h={h} d={8} hue={1} seed={i * 3 + 2} />
         ))}
         {[-3, 3].map(ox => (
-          <mesh key={ox} position={[-104 + ox, 72, -80]}>
-            <cylinderGeometry args={[0.12, 0.2, 16, 6]} />
+          <mesh key={ox} position={[-104 + ox, 104, -80]}>
+            <cylinderGeometry args={[0.12, 0.2, 22, 6]} />
             <meshBasicMaterial color={glow(GX.white, 1.8)} toneMapped={false} />
           </mesh>
         ))}
@@ -690,18 +1004,18 @@ export function Landmarks() {
 
       {/* CROSSBRACE TOWER (Hancock homage): taper + X-braces + antennas */}
       <group>
-        <RainBox x={100} z={-18} w={24} h={22} d={20} hue={2} seed={11} />
-        <RainBox x={100} z={-18} w={19} h={40} d={16} hue={2} seed={12} />
-        <RainBox x={100} z={-18} w={14} h={56} d={12} hue={2} seed={13} />
+        <RainBox x={100} z={-18} w={24} h={32} d={20} hue={2} seed={11} />
+        <RainBox x={100} z={-18} w={19} h={58} d={16} hue={2} seed={12} />
+        <RainBox x={100} z={-18} w={14} h={81} d={12} hue={2} seed={13} />
         {[0, 1, 2, 3].map(i => (
-          <mesh key={i} position={[100, 10 + i * 13, -18 + (i % 2 === 0 ? 8.6 : -8.6)]} rotation={[0, 0, i % 2 === 0 ? 0.7 : -0.7]}>
+          <mesh key={i} position={[100, 14 + i * 19, -18 + (i % 2 === 0 ? 8.6 : -8.6)]} rotation={[0, 0, i % 2 === 0 ? 0.7 : -0.7]}>
             <boxGeometry args={[16, 0.5, 0.5]} />
             <meshBasicMaterial color={glow(GX.redBright, 1.8)} toneMapped={false} />
           </mesh>
         ))}
         {[-2.5, 2.5].map(ox => (
-          <mesh key={ox} position={[100 + ox, 63, -18]}>
-            <cylinderGeometry args={[0.1, 0.18, 14, 6]} />
+          <mesh key={ox} position={[100 + ox, 90, -18]}>
+            <cylinderGeometry args={[0.1, 0.18, 18, 6]} />
             <meshBasicMaterial color={glow(GX.white, 1.8)} toneMapped={false} />
           </mesh>
         ))}
@@ -710,8 +1024,8 @@ export function Landmarks() {
 
       {/* LAKESIDE HELIX (Lake Point homage): curved elliptical tower */}
       <group>
-        <RainCylinder x={104} z={-80} r={9} h={46} hue={0} seed={21} sx={0.55} />
-        <mesh position={[104, 46.4, -80]} scale={[0.55, 1, 1]}>
+        <RainCylinder x={104} z={-80} r={9} h={66} hue={0} seed={21} sx={0.55} />
+        <mesh position={[104, 66.4, -80]} scale={[0.55, 1, 1]}>
           <torusGeometry args={[9, 0.18, 8, 40]} />
           <meshBasicMaterial color={glow(GX.blueBright, 1.8)} toneMapped={false} />
         </mesh>
@@ -720,11 +1034,11 @@ export function Landmarks() {
 
       {/* THE NEEDLE (Trump homage): setbacks + spire */}
       <group>
-        <RainBox x={20} z={-2} w={20} h={20} d={14} hue={0} seed={31} />
-        <RainBox x={20} z={-2} w={15} h={36} d={11} hue={0} seed={32} />
-        <RainBox x={20} z={-2} w={10} h={50} d={8} hue={0} seed={33} />
-        <mesh position={[20, 58, -2]}>
-          <coneGeometry args={[0.5, 16, 8]} />
+        <RainBox x={20} z={-2} w={20} h={29} d={14} hue={0} seed={31} />
+        <RainBox x={20} z={-2} w={15} h={52} d={11} hue={0} seed={32} />
+        <RainBox x={20} z={-2} w={10} h={72} d={8} hue={0} seed={33} />
+        <mesh position={[20, 82, -2]}>
+          <coneGeometry args={[0.5, 20, 8]} />
           <meshBasicMaterial color={glow(GX.blueBright, 1.9)} toneMapped={false} />
         </mesh>
         <Entrance x={20} z={-16} outDir={[0, -1]} color={GX.blueBright} label="THE NEEDLE" />
@@ -732,9 +1046,9 @@ export function Landmarks() {
 
       {/* WATCHTOWER (Aon homage): pale monolith + orrery crown */}
       <group>
-        <RainBox x={20} z={-112} w={16} h={52} d={16} hue={1} seed={41} />
+        <RainBox x={20} z={-112} w={16} h={75} d={16} hue={1} seed={41} />
         {[3, 4.4].map((r, i) => (
-          <mesh key={r} position={[20, 56, -112]} rotation={[0.6 + i * 0.5, 0, 0.3]}>
+          <mesh key={r} position={[20, 79, -112]} rotation={[0.6 + i * 0.5, 0, 0.3]}>
             <torusGeometry args={[r, 0.08, 8, 48]} />
             <meshBasicMaterial color={glow(NEONS[i % NEONS.length], 1.7)} toneMapped={false} />
           </mesh>
@@ -744,8 +1058,8 @@ export function Landmarks() {
 
       {/* GRAND MART (Merchandise Mart homage): the wide one */}
       <group>
-        <RainBox x={-136} z={-40} w={28} h={22} d={22} hue={0} seed={51} />
-        <RainBox x={-136} z={-40} w={20} h={30} d={16} hue={0} seed={52} />
+        <RainBox x={-136} z={-40} w={28} h={26} d={22} hue={0} seed={51} />
+        <RainBox x={-136} z={-40} w={20} h={36} d={16} hue={0} seed={52} />
         <Entrance x={-122} z={-40} outDir={[1, 0]} color={GX.blueBright} label="GRAND MART" />
       </group>
 
@@ -753,8 +1067,8 @@ export function Landmarks() {
       <group>
         {[-7, 7].map((oz, ci) => (
           <group key={oz}>
-            <RainCylinder x={-108} z={-176 + oz} r={5.4} h={34} hue={1} seed={61 + ci} />
-            {[8, 15, 22, 29].map(y => (
+            <RainCylinder x={-108} z={-176 + oz} r={5.4} h={48} hue={1} seed={61 + ci} />
+            {[10, 19, 28, 37, 45].map(y => (
               <mesh key={y} position={[-108, y, -176 + oz]}>
                 <torusGeometry args={[5.7, 0.14, 8, 28]} />
                 <meshBasicMaterial color={glow(GX.violetBright, 1.5)} toneMapped={false} transparent opacity={0.85} />
