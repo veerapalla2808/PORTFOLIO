@@ -134,10 +134,16 @@ export default function MatrixApp() {
     ctx.restore();
   }, []);
 
+  const frameNo = useRef(0);
+
   const onFrame = useCallback((x: number, z: number) => {
+    frameNo.current++;
     for (const b of storyBands) {
       const d = Math.hypot(x - b.x, z - b.z) / b.r;
       const op = Math.max(0, 1 - d * d);
+      // only touch the DOM when the value meaningfully changed
+      if (b.lastOp !== undefined && Math.abs(op - b.lastOp) < 0.012) continue;
+      b.lastOp = op;
       b.el.style.opacity = op.toFixed(3);
       b.el.style.visibility = op <= 0.01 ? 'hidden' : 'visible';
     }
@@ -152,7 +158,7 @@ export default function MatrixApp() {
     if (progressRef.current) {
       progressRef.current.style.width = `${(visitedRef.current.size / ZONES.length) * 100}%`;
     }
-    drawMap(x, z);
+    if (frameNo.current % 3 === 0) drawMap(x, z); // mini-map at ~20fps is plenty
 
     const now = performance.now();
     if (Math.hypot(x - lastPos.current.x, z - lastPos.current.z) > 0.04) {

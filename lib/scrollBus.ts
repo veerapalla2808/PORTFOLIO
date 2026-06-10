@@ -13,5 +13,5 @@ export const scrollBus = {
 };
 
 // story bands registered for proximity fade (mutated outside React state)
-export interface StoryBand { el: HTMLElement; x: number; z: number; r: number }
+export interface StoryBand { el: HTMLElement; x: number; z: number; r: number; lastOp?: number }
 export const storyBands: StoryBand[] = [];

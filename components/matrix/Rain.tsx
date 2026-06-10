@@ -120,18 +120,15 @@ void main() {
 
 interface Shell { z: number; shade: number; cols: number }
 
+// the buildings now carry most of the rain — the ambient weather layer is
+// deliberately thin (big perf win, no visual loss)
 const SHELLS: Record<Tier, Shell[]> = {
   L: [
-    { z: 9, shade: 0.3, cols: 16 },
-    { z: -18, shade: 1.0, cols: 72 },
-    { z: -36, shade: 0.6, cols: 58 },
-    { z: -60, shade: 0.34, cols: 48 },
+    { z: 9, shade: 0.28, cols: 14 },
+    { z: -20, shade: 0.9, cols: 56 },
   ],
-  M: [
-    { z: -18, shade: 1.0, cols: 56 },
-    { z: -40, shade: 0.5, cols: 44 },
-  ],
-  S: [{ z: -22, shade: 0.9, cols: 38 }],
+  M: [{ z: -20, shade: 0.85, cols: 44 }],
+  S: [{ z: -22, shade: 0.8, cols: 30 }],
 };
 
 const COL_H = 58;

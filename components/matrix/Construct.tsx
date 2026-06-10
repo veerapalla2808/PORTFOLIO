@@ -45,10 +45,10 @@ export default function Construct({
       <directionalLight position={[8, 16, 10]} intensity={0.38} color="#9CC2FF" />
       <directionalLight position={[-8, 10, -10]} intensity={0.3} color="#C9A8FF" />
 
-      <Rain tier={tier} reduced={reducedMotion} />
+      <Rain tier={degraded ? 'S' : tier} reduced={reducedMotion} />
       <ZoneAmbience />
       <StreetLanes />
-      <CityBlocks tier={tier} />
+      <CityBlocks tier={degraded ? 'S' : tier} reduced={reducedMotion} />
       <GateArch />
       <HubBeacon reduced={reducedMotion} />
       <DistrictPortals />

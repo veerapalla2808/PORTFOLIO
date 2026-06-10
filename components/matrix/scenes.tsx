@@ -29,25 +29,33 @@ function distToRoads(x: number, z: number) {
 }
 
 // ── canvas texture helpers ──────────────────────────────────────────────────
-function windowsTexture(): THREE.CanvasTexture {
+const GLYPHS =
+  'アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモ0123456789Z+*=<>:・"日';
+
+function glyphAtlas(): THREE.CanvasTexture {
+  const size = 512;
+  const cell = size / 8;
   const cv = document.createElement('canvas');
-  cv.width = 128; cv.height = 256;
+  cv.width = size; cv.height = size;
   const ctx = cv.getContext('2d')!;
-  ctx.fillStyle = '#05060C';
-  ctx.fillRect(0, 0, 128, 256);
-  const hues = ['#9FC7FF', '#C9A8FF', '#FF9DA6', '#FFE9C4', '#7FA8E8'];
-  for (let y = 6; y < 250; y += 12) {
-    for (let x = 6; x < 122; x += 14) {
-      if (Math.random() < 0.4) {
-        ctx.fillStyle = hues[(Math.random() * hues.length) | 0];
-        ctx.globalAlpha = 0.22 + Math.random() * 0.78;
-        ctx.fillRect(x, y, 8, 6);
-      }
-    }
+  ctx.fillStyle = '#000';
+  ctx.fillRect(0, 0, size, size);
+  ctx.fillStyle = '#fff';
+  ctx.font = `${cell * 0.72}px "JetBrains Mono", monospace`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  for (let i = 0; i < 64; i++) {
+    const x = (i % 8) * cell + cell / 2;
+    const y = Math.floor(i / 8) * cell + cell / 2;
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.scale(-1, 1);
+    ctx.fillText(GLYPHS[i % GLYPHS.length], 0, 0);
+    ctx.restore();
   }
-  ctx.globalAlpha = 1;
   const t = new THREE.CanvasTexture(cv);
-  t.colorSpace = THREE.SRGBColorSpace;
+  t.generateMipmaps = true;
+  t.minFilter = THREE.LinearMipmapLinearFilter;
   return t;
 }
 
@@ -129,10 +137,75 @@ export function ZoneAmbience() {
   );
 }
 
-// ── city blocks (kept clear of every road) ──────────────────────────────────
-export function CityBlocks({ tier }: { tier: 'S' | 'M' | 'L' }) {
+// ── city blocks — towers BUILT of falling code (matrix-rain facades) ────────
+const BLDG_VERT = /* glsl */ `
+attribute float aHue;
+attribute float aSeed;
+varying vec3 vWorld;
+varying float vNy;
+varying float vHue;
+varying float vSeed;
+void main() {
+  vHue = aHue;
+  vSeed = aSeed;
+  vNy = normal.y;
+  vec4 mp = vec4(position, 1.0);
+  #ifdef USE_INSTANCING
+    mp = instanceMatrix * mp;
+  #endif
+  vWorld = (modelMatrix * mp).xyz;
+  gl_Position = projectionMatrix * viewMatrix * modelMatrix * mp;
+}`;
+
+const BLDG_FRAG = /* glsl */ `
+precision highp float;
+uniform sampler2D uAtlas;
+uniform float uTime;
+uniform vec3 uBase;
+uniform vec3 uBlue; uniform vec3 uViolet; uniform vec3 uRed;
+varying vec3 vWorld;
+varying float vNy;
+varying float vHue;
+varying float vSeed;
+
+float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+
+void main() {
+  // roofs stay matte — the rain lives on the faces
+  if (vNy > 0.5) { gl_FragColor = vec4(uBase * 0.6, 1.0); return; }
+
+  // planar glyph grid in world units (x+z collapses each face to a line)
+  float u = vWorld.x + vWorld.z + vSeed * 7.0;
+  float v = vWorld.y;
+  float colW = 1.05;
+  float rowH = 1.3;
+  float col = floor(u / colW);
+  float row = floor(v / rowH);
+  vec2 local = vec2(fract(u / colW), fract(v / rowH));
+
+  // each column is a falling code stream
+  float spd = 0.05 + hash(vec2(col, vSeed)) * 0.11;
+  float t = fract(v * 0.03 + uTime * spd + hash(vec2(col, 3.7)) * 7.0);
+  float b = pow(t, 5.0);
+  if (hash(vec2(col, row * 2.3)) < 0.08) b *= 0.15; // dead cells
+
+  float cyc = floor(uTime * (0.6 + hash(vec2(col, row)) * 1.6));
+  float gi = floor(hash(vec2(col * 1.7 + row * 3.1, cyc)) * 63.99);
+  vec2 tile = vec2(mod(gi, 8.0), floor(gi / 8.0));
+  float glyph = texture2D(uAtlas, (tile + local) / 8.0).r;
+
+  vec3 neon = vHue < 0.5 ? uBlue : (vHue < 1.5 ? uViolet : uRed);
+  vec3 c = uBase + neon * (glyph * (0.10 + b * 1.7));
+  if (t > 0.962) c += (neon * 1.1 + vec3(0.4)) * glyph; // bright stream head
+  c += (hash(gl_FragCoord.xy * 0.7) - 0.5) * 0.04;      // dither
+  gl_FragColor = vec4(c, 1.0);
+}`;
+
+export function CityBlocks({ tier, reduced }: { tier: 'S' | 'M' | 'L'; reduced: boolean }) {
   const step = tier === 'S' ? 24 : tier === 'M' ? 16 : 12;
-  const winTex = useMemo(() => windowsTexture(), []);
+  const atlas = useMemo(() => glyphAtlas(), []);
+  const matRef = useRef<THREE.ShaderMaterial | null>(null);
+
   const { body, trim } = useMemo(() => {
     const slots: { x: number; z: number; seed: number }[] = [];
     STREETS.forEach((s, si) => {
@@ -154,7 +227,21 @@ export function CityBlocks({ tier }: { tier: 'S' | 'M' | 'L' }) {
     });
     const n = slots.length;
     const geo = new THREE.BoxGeometry(1, 1, 1);
-    const bodyMesh = new THREE.InstancedMesh(geo, new THREE.MeshBasicMaterial({ map: winTex, color: '#93A9D6' }), n);
+    const hue = new Float32Array(n);
+    const seedAttr = new Float32Array(n);
+    const mat = new THREE.ShaderMaterial({
+      vertexShader: BLDG_VERT,
+      fragmentShader: BLDG_FRAG,
+      uniforms: {
+        uAtlas: { value: atlas },
+        uTime: { value: 17.3 },
+        uBase: { value: new THREE.Color('#04050C') },
+        uBlue: { value: new THREE.Color(GX.blueBright) },
+        uViolet: { value: new THREE.Color(GX.violetBright) },
+        uRed: { value: new THREE.Color(GX.redBright) },
+      },
+    });
+    const bodyMesh = new THREE.InstancedMesh(geo, mat, n);
     const trimMesh = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshBasicMaterial({ toneMapped: false }), n);
     const m = new THREE.Matrix4();
     const c = new THREE.Color();
@@ -168,12 +255,28 @@ export function CityBlocks({ tier }: { tier: 'S' | 'M' | 'L' }) {
       trimMesh.setMatrixAt(i, m);
       c.set(NEONS[i % NEONS.length]).multiplyScalar(2.1);
       trimMesh.setColorAt(i, c);
+      // 45% blue · 30% violet · 25% red — matches the weather
+      const hr = rnd(sl.seed + 5);
+      hue[i] = hr < 0.45 ? 0 : hr < 0.75 ? 1 : 2;
+      seedAttr[i] = rnd(sl.seed + 6) * 53;
     });
+    geo.setAttribute('aHue', new THREE.InstancedBufferAttribute(hue, 1));
+    geo.setAttribute('aSeed', new THREE.InstancedBufferAttribute(seedAttr, 1));
     bodyMesh.instanceMatrix.needsUpdate = true;
     trimMesh.instanceMatrix.needsUpdate = true;
     if (trimMesh.instanceColor) trimMesh.instanceColor.needsUpdate = true;
     return { body: bodyMesh, trim: trimMesh };
-  }, [step, winTex]);
+  }, [step, atlas]);
+
+  useEffect(() => {
+    matRef.current = body.material as THREE.ShaderMaterial;
+  }, [body]);
+
+  useFrame((state) => {
+    if (matRef.current && !reduced) {
+      matRef.current.uniforms.uTime.value = state.clock.elapsedTime;
+    }
+  });
 
   const group = useRef<THREE.Group>(null);
   useEffect(() => {
