@@ -70,6 +70,8 @@ uniform float uTime;
 uniform vec3 uBg;
 uniform vec3 uBlueDeep; uniform vec3 uBlue; uniform vec3 uBlueBright;
 uniform vec3 uRedDeep;  uniform vec3 uRed;  uniform vec3 uRedBright;
+uniform vec3 uPurpleDeep; uniform vec3 uPurple; uniform vec3 uPurpleBright;
+uniform vec3 uGreenDeep;  uniform vec3 uGreen;  uniform vec3 uGreenBright;
 uniform vec3 uHead;
 varying vec2 vUv;
 varying float vSpeed;
@@ -94,9 +96,11 @@ void main() {
   float b = max(pow(t1, 7.0), pow(t2, 10.0) * 0.75);
   if (hash(vec2(vSeed, row * 3.3)) < 0.05) b *= 0.12;
 
-  vec3 deep = mix(uBlueDeep, uRedDeep, vHue);
-  vec3 core = mix(uBlue, uRed, vHue);
-  vec3 brt  = mix(uBlueBright, uRedBright, vHue);
+  vec3 deep; vec3 core; vec3 brt;
+  if (vHue < 0.5)      { deep = uBlueDeep;   core = uBlue;   brt = uBlueBright; }
+  else if (vHue < 1.5) { deep = uPurpleDeep; core = uPurple; brt = uPurpleBright; }
+  else if (vHue < 2.5) { deep = uGreenDeep;  core = uGreen;  brt = uGreenBright; }
+  else                 { deep = uRedDeep;    core = uRed;    brt = uRedBright; }
 
   vec3 col;
   if (b < 0.25)      col = mix(uBg, deep, b / 0.25);
@@ -156,7 +160,9 @@ export default function Rain({ tier, reduced }: { tier: Tier; reduced: boolean }
         spd[i] = 0.045 + rnd(k + 4) * 0.09;
         seed[i] = rnd(k + 5) * 113.0;
         shade[i] = sh.shade * (0.7 + rnd(k + 6) * 0.3);
-        hue[i] = rnd(k + 7) < 0.6 ? 0 : 1; // 60% blue, 40% red
+        // neon mix: 35% blue · 25% purple · 20% green · 20% red
+        const hr = rnd(k + 7);
+        hue[i] = hr < 0.35 ? 0 : hr < 0.6 ? 1 : hr < 0.8 ? 2 : 3;
       }
     });
     geo.setAttribute('aOffset', new THREE.InstancedBufferAttribute(offs, 3));
@@ -176,6 +182,12 @@ export default function Rain({ tier, reduced }: { tier: Tier; reduced: boolean }
       uRedDeep: { value: new THREE.Color(GX.redDeep) },
       uRed: { value: new THREE.Color(GX.red) },
       uRedBright: { value: new THREE.Color(GX.redBright) },
+      uPurpleDeep: { value: new THREE.Color(GX.purpleDeep) },
+      uPurple: { value: new THREE.Color(GX.purple) },
+      uPurpleBright: { value: new THREE.Color(GX.purpleBright) },
+      uGreenDeep: { value: new THREE.Color(GX.greenDeep) },
+      uGreen: { value: new THREE.Color(GX.green) },
+      uGreenBright: { value: new THREE.Color(GX.greenBright) },
       uHead: { value: new THREE.Color(GX.white) },
     };
     return { geometry: geo, uniforms: u };

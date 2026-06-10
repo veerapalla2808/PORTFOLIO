@@ -3,8 +3,8 @@
 import { useEffect, useRef, useState } from 'react';
 
 export default function OperatorHud({
-  code, line, progressRef,
-}: { code: string; line: string; progressRef: React.RefObject<HTMLDivElement | null> }) {
+  code, rank, line, progressRef,
+}: { code: string; rank: string; line: string; progressRef: React.RefObject<HTMLDivElement | null> }) {
   const [typed, setTyped] = useState('');
   const timer = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
 
@@ -31,6 +31,7 @@ export default function OperatorHud({
     <div className="mx-hud" aria-live="polite">
       <div className="mx-hud-top">
         <span className="mx-hud-id vt">OPERATOR</span>
+        <span className="mx-hud-rank">{rank}</span>
         <span className="mx-hud-act">{code}</span>
       </div>
       <p className="mx-hud-line">

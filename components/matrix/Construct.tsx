@@ -1,5 +1,5 @@
 'use client';
-// THE GRID — full R3F canvas. One damped offset drives camera, scenes and HUD.
+// NEON GRID — the canvas. One damped offset flies the whole world.
 import { useState } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { PerformanceMonitor } from '@react-three/drei';
@@ -7,19 +7,17 @@ import { GX } from '@/lib/grid';
 import type { Caps } from '@/lib/tier';
 import Rain from './Rain';
 import CameraRig from './CameraRig';
-import Rabbit from './Rabbit';
 import Effects from './Effects';
 import {
-  FloorGrid, HeroRings, IdentityCore, ArsenalRacks, PowerTowers, Anomalies, Pills,
+  CityCanyon, Streets, HeroVortex, SpeedLines, IdentityHolo,
+  NeonSignWall, EraPortals, AnomalyBillboards, Pills, Rabbit,
 } from './scenes';
 
 export default function Construct({
-  caps, zoneIdx, idle, unlocked, booted, onFrame, onBoot, onRed, onBlue,
+  caps, idle, booted, onFrame, onBoot, onRed, onBlue,
 }: {
   caps: Caps;
-  zoneIdx: number;
   idle: boolean;
-  unlocked: Set<string>;
   booted: Set<string>;
   onFrame: (offset: number) => void;
   onBoot: (id: string) => void;
@@ -35,29 +33,31 @@ export default function Construct({
     <Canvas
       className="mx-canvas"
       dpr={dpr}
-      camera={{ fov: 50, near: 0.1, far: 180, position: [0, 1.1, 16] }}
+      camera={{ fov: 52, near: 0.1, far: 320, position: [0, 2, 40] }}
       gl={{ antialias: true, powerPreference: 'high-performance' }}
     >
       <color attach="background" args={[GX.bg]} />
-      <fog attach="fog" args={[GX.bg, 22, 110]} />
+      <fog attach="fog" args={[GX.bg, 30, 190]} />
       <PerformanceMonitor onDecline={() => setDegraded(true)} />
 
-      <ambientLight intensity={0.4} />
-      <directionalLight position={[6, 10, 8]} intensity={0.5} color="#aac8ff" />
-      <directionalLight position={[-6, 4, 6]} intensity={0.25} color="#ff9a9a" />
+      <ambientLight intensity={0.45} />
+      <directionalLight position={[8, 14, 10]} intensity={0.4} color="#aac8ff" />
+      <directionalLight position={[-8, 6, -10]} intensity={0.3} color="#d9a8ff" />
 
       <Rain tier={tier} reduced={reducedMotion} />
-      <FloorGrid />
-      <HeroRings reduced={reducedMotion} />
-      <IdentityCore unlocked={unlocked.has('identity')} />
-      <ArsenalRacks unlocked={unlocked.has('arsenal')} />
-      <PowerTowers unlocked={unlocked.has('timeline')} booted={booted} onBoot={onBoot} />
-      <Anomalies unlocked={unlocked.has('anomalies')} booted={booted} onBoot={onBoot} />
+      <Streets />
+      <CityCanyon tier={tier} />
+      <HeroVortex reduced={reducedMotion} />
+      <IdentityHolo reduced={reducedMotion} />
+      <NeonSignWall reduced={reducedMotion} />
+      <EraPortals />
+      <AnomalyBillboards booted={booted} onBoot={onBoot} />
       <Pills onRed={onRed} onBlue={onBlue} />
       <Rabbit idle={idle} reduced={reducedMotion} />
+      <SpeedLines />
       <CameraRig reduced={reducedMotion} onFrame={onFrame} />
 
-      {post && <Effects tier={tier} reduced={reducedMotion} actIdx={zoneIdx} />}
+      {post && <Effects reduced={reducedMotion} />}
     </Canvas>
   );
 }

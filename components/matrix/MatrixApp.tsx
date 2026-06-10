@@ -1,15 +1,15 @@
 'use client';
-// Orchestrator of THE GRID — jack-in boot, zone/gate state, operator lines,
-// idle detection, terminal mode.
+// Orchestrator of NEON GRID — jack-in, rotating checkpoints + rank, operator
+// lines, idle detection, terminal mode. Nothing is ever locked.
 import { useCallback, useEffect, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { detectCaps, type Caps } from '@/lib/tier';
-import { ZONES, zoneAt } from '@/lib/grid';
+import { ZONES, zoneAt, QUESTION_POOL, RANKS, type Question } from '@/lib/grid';
 import { storyBands } from '@/lib/scrollBus';
 import BootOverlay from './BootOverlay';
 import OperatorHud from './OperatorHud';
 import TerminalResume from './TerminalResume';
-import ActPanels from './ActPanels';
+import ActPanels, { type CheckpointResult } from './ActPanels';
 
 const Construct = dynamic(() => import('./Construct'), { ssr: false });
 
@@ -22,7 +22,8 @@ export default function MatrixApp() {
   const [mode, setMode] = useState<'construct' | 'terminal'>('construct');
   const [zoneIdx, setZoneIdx] = useState(0);
   const [idle, setIdle] = useState(false);
-  const [unlocked, setUnlocked] = useState<Set<string>>(new Set(['gate']));
+  const [questions, setQuestions] = useState<Question[]>([]);
+  const [results, setResults] = useState<Record<number, CheckpointResult>>({});
   const [interacted, setInteracted] = useState<Set<string>>(new Set());
   const [quip, setQuip] = useState<string | null>(null);
 
@@ -35,8 +36,14 @@ export default function MatrixApp() {
   const quipTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- post-mount capability detect (SSR-safe)
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- post-mount detect + per-visit question rotation (SSR-safe)
     setCaps(detectCaps());
+    const pool = [...QUESTION_POOL];
+    for (let i = pool.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [pool[i], pool[j]] = [pool[j], pool[i]];
+    }
+    setQuestions(pool.slice(0, 6));
     lastMove.current = performance.now();
   }, []);
 
@@ -62,10 +69,10 @@ export default function MatrixApp() {
       storyBands.push({
         el,
         o: parseFloat(el.dataset.o ?? '0'),
-        fade: parseFloat(el.dataset.fade ?? '0.05'),
+        fade: parseFloat(el.dataset.fade ?? '0.045'),
       });
     }
-  }, [mode, caps, unlocked, interacted]);
+  }, [mode, caps, questions, results, interacted]);
 
   const onFrame = useCallback((offset: number) => {
     for (const b of storyBands) {
@@ -91,20 +98,16 @@ export default function MatrixApp() {
   const sayQuip = useCallback((text: string) => {
     clearTimeout(quipTimer.current);
     setQuip(text);
-    quipTimer.current = setTimeout(() => setQuip(null), 5000);
+    quipTimer.current = setTimeout(() => setQuip(null), 5200);
   }, []);
 
-  const onUnlock = useCallback((zoneId: string, gateQuip: string) => {
-    setUnlocked(prev => new Set(prev).add(zoneId));
-    sayQuip(gateQuip);
+  const onResult = useCallback((index: number, r: CheckpointResult, line: string) => {
+    setResults(prev => ({ ...prev, [index]: r }));
+    sayQuip(line);
   }, [sayQuip]);
 
   const onBoot = useCallback((id: string) => {
-    setInteracted(prev => {
-      if (prev.has(id)) return prev;
-      const next = new Set(prev).add(id);
-      return next;
-    });
+    setInteracted(prev => (prev.has(id) ? prev : new Set(prev).add(id)));
   }, []);
 
   const goTerminal = useCallback(() => setMode('terminal'), []);
@@ -113,6 +116,8 @@ export default function MatrixApp() {
 
   if (!caps) return <div className="mx-void" aria-hidden="true" />;
 
+  const score = Object.values(results).filter(r => r.state === 'correct').length;
+  const rank = RANKS[Math.min(score, RANKS.length - 1)];
   const zone = ZONES[zoneIdx];
   const line = quip ?? (idle ? IDLE_LINE : zone.line);
 
@@ -122,9 +127,7 @@ export default function MatrixApp() {
         <>
           <Construct
             caps={caps}
-            zoneIdx={zoneIdx}
             idle={idle}
-            unlocked={unlocked}
             booted={interacted}
             onFrame={onFrame}
             onBoot={onBoot}
@@ -134,14 +137,22 @@ export default function MatrixApp() {
           <div className="mx-story" aria-hidden={!booted}>
             <div ref={storyRef} className="mx-story-track">
               <ActPanels
-                unlocked={unlocked}
+                questions={questions}
+                results={results}
+                onResult={onResult}
                 booted={interacted}
-                onUnlock={onUnlock}
                 onBlue={goTerminal}
               />
             </div>
           </div>
-          {booted && <OperatorHud code={zone.code} line={line} progressRef={progressRef} />}
+          {booted && (
+            <OperatorHud
+              code={zone.code}
+              rank={`RANK ${score}/6 · ${rank}`}
+              line={line}
+              progressRef={progressRef}
+            />
+          )}
           {!booted && <BootOverlay onDone={() => setBooted(true)} />}
           <button className="mx-toggle" onClick={goTerminal}>BLUE PILL ▸ TERMINAL</button>
         </>

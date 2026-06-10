@@ -15,8 +15,13 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" className={`${inter.variable} ${jetbrains.variable} ${vt323.variable}`}>
-      <body>{children}</body>
+    <html
+      lang="en"
+      className={`${inter.variable} ${jetbrains.variable} ${vt323.variable}`}
+      style={{ background: '#04050A' }}
+    >
+      {/* inline backgrounds guarantee a dark first paint — no white flash */}
+      <body style={{ background: '#04050A' }}>{children}</body>
     </html>
   );
 }
