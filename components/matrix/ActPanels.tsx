@@ -1,10 +1,9 @@
 'use client';
-// The DOM layer of NEON GRID v3 — bands fade in by 2D proximity to their
-// district on the street grid. Nothing is locked; checkpoints are sport.
+// DOM layer of NEON CHICAGO — outdoor bands fade by street proximity;
+// interior bands live inside landmarks and key off how deep you've walked in.
 import DecodeText from './DecodeText';
 import {
-  SPAWN, IDENTITY_SPOT, ARSENAL_SPOT, PORTAL_XS, PORTAL_Z, ANOM_SPOTS,
-  CREDS_SPOT, TRANS_SPOT, DOCKS_SPOT, OBS_SPOT, PILLS_SPOT, CHECKPOINTS, HUB,
+  SPAWN, HUB, CHECKPOINTS, ERA_FLOORS, LANDMARKS,
   SKIP_LABEL, type Question,
 } from '@/lib/grid';
 import {
@@ -13,16 +12,21 @@ import {
 } from '@/lib/data';
 
 function Sec({
-  x, z, r = 16, align = 'center', children,
-}: { x: number; z: number; r?: number; align?: 'left' | 'right' | 'center'; children: React.ReactNode }) {
+  x = 0, z, r = 16, int, align = 'center', children,
+}: {
+  x?: number; z: number; r?: number; int?: string;
+  align?: 'left' | 'right' | 'center'; children: React.ReactNode;
+}) {
   return (
-    <section className={`mx-sec mx-sec-${align}`} data-x={x} data-z={z} data-r={r}>
+    <section
+      className={`mx-sec mx-sec-${align}`}
+      data-x={x} data-z={z} data-r={r} data-int={int}
+    >
       {children}
     </section>
   );
 }
 
-// tall panels scroll internally; at their edges the wheel drives again
 function stopWheel(e: React.WheelEvent<HTMLElement>) {
   const el = e.currentTarget;
   if (el.scrollHeight <= el.clientHeight + 4) return;
@@ -44,19 +48,17 @@ function Checkpoint({
 }) {
   const done = result?.state === 'correct' || result?.state === 'skipped';
   const wrongPick = result?.state === 'wrong' ? result.picked : undefined;
-
   const pick = (i: number) => {
     if (done) return;
     if (i === q.correct) onResult(index, { state: 'correct' }, q.win);
     else onResult(index, { state: 'wrong', picked: i }, q.sass[i]);
   };
-
   return (
     <article className={`mx-gate${result?.state === 'correct' ? ' is-open' : ''}`}>
       <header className="mx-gate-head">
         <span className="mx-gate-id vt">OPERATOR CHECKPOINT {index + 1}/6</span>
         <span className={`mx-gate-state ${result?.state === 'correct' ? 'ok' : ''}`}>
-          {result?.state === 'correct' ? '+1 RANK' : result?.state === 'skipped' ? 'SKIPPED' : 'OPTIONAL · THE RABBIT IS JUDGING'}
+          {result?.state === 'correct' ? '+1 RANK' : result?.state === 'skipped' ? 'SKIPPED' : 'OPTIONAL · THE PHOENIX IS JUDGING'}
         </span>
       </header>
       {result?.state === 'correct' ? (
@@ -82,7 +84,7 @@ function Checkpoint({
           )}
           <button
             className="mx-gate-skip"
-            onClick={() => onResult(index, { state: 'skipped' }, 'Skipped. The rabbit is updating your file.')}
+            onClick={() => onResult(index, { state: 'skipped' }, 'Skipped. The phoenix is updating your file.')}
           >
             {SKIP_LABEL}
           </button>
@@ -93,47 +95,48 @@ function Checkpoint({
 }
 
 export default function ActPanels({
-  questions, results, onResult, booted, onBlue,
+  questions, results, onResult, booted, onBlue, cine,
 }: {
   questions: Question[];
   results: Record<number, CheckpointResult>;
   onResult: (index: number, r: CheckpointResult, line: string) => void;
   booted: Set<string>;
   onBlue: () => void;
+  cine: boolean;
 }) {
   return (
     <div className="mx-panels">
-      {/* ── city gates — hero ── */}
+      {/* ── hero — name decodes only after the dive lands ── */}
       <Sec x={SPAWN.x} z={SPAWN.z} r={20}>
         <div className="mx-hero">
-          <p className="mx-eyebrow vt">{'>'} jacked in. the city is yours, operator…</p>
-          <h1 className="mx-name"><DecodeText text="VEERA PALLA" speed={20} /></h1>
+          <p className="mx-eyebrow vt">{'>'} jacked in. neon chicago, operator…</p>
+          <h1 className="mx-name"><DecodeText text="VEERA PALLA" speed={16} active={!cine} /></h1>
           <p className="mx-hero-sub">SR. REACT.JS / NODE.JS DEVELOPER · 11 YEARS · A DRIVABLE RÉSUMÉ</p>
           <p className="mx-hero-cue">
-            DRIVE WITH THE ▲▼◀▶ PAD, SCROLL OR WASD · OR JUST HIT “CONTINUE” AND RIDE
+            DRIVE WITH ▲▼◀▶, SCROLL OR WASD · ENTER THE TOWERS · OR HIT “CONTINUE” AND RIDE
           </p>
         </div>
       </Sec>
 
-      {/* hub welcome chip */}
+      {/* hub chip */}
       <Sec x={HUB.x} z={HUB.z} r={11}>
         <p className="mx-junction">
-          CENTRAL HUB <em>· every district is one turn away — check the map ↗</em>
+          BEAN PLAZA <em>· every tower is a chapter — check the map ↖</em>
         </p>
       </Sec>
 
-      {/* checkpoints — optional, rotating questions, on the avenue */}
+      {/* checkpoints */}
       {questions.map((q, i) => (
         <Sec key={`cp-${i}`} x={CHECKPOINTS[i].x} z={CHECKPOINTS[i].z} r={10}>
           <Checkpoint index={i} q={q} result={results[i]} onResult={onResult} />
         </Sec>
       ))}
 
-      {/* ── 01 / identity plaza ── */}
-      <Sec x={IDENTITY_SPOT.x - 12} z={IDENTITY_SPOT.z - 8} r={16} align="left">
+      {/* ── INTERIOR: Lakeside Helix — identity ── */}
+      <Sec int="identity" z={16} r={11} align="left">
         <article className="mx-slab mx-slab-wide mx-scroll" onWheel={stopWheel}>
           <header className="mx-slab-head">
-            <span className="mx-slab-path">~/city/identity_plaza.log</span>
+            <span className="mx-slab-path">~/helix/lobby.log</span>
             <span className="mx-slab-act">01 / IDENTITY</span>
           </header>
           <h2 className="mx-h2"><DecodeText text="IDENTITY" /></h2>
@@ -151,11 +154,11 @@ export default function ActPanels({
         </article>
       </Sec>
 
-      {/* ── 02 / arsenal wall ── */}
-      <Sec x={ARSENAL_SPOT.x + 18} z={ARSENAL_SPOT.z} r={17} align="right">
+      {/* ── INTERIOR: Crossbrace Tower — arsenal ── */}
+      <Sec int="arsenal" z={18} r={13}>
         <article className="mx-slab mx-slab-wide mx-scroll" onWheel={stopWheel}>
           <header className="mx-slab-head">
-            <span className="mx-slab-path">~/city/arsenal_wall.bin</span>
+            <span className="mx-slab-path">~/crossbrace/armory.bin</span>
             <span className="mx-slab-act">02 / ARSENAL</span>
           </header>
           <h2 className="mx-h2"><DecodeText text="THE ARSENAL" /></h2>
@@ -172,19 +175,18 @@ export default function ActPanels({
         </article>
       </Sec>
 
-      {/* ── 03 / time tunnel — era panel just past each portal ── */}
+      {/* ── INTERIOR: Spire of Eras — five floors ── */}
+      <Sec int="timeline" z={4} r={6}>
+        <p className="mx-junction">
+          ELEVATOR ONLINE <em>· drive forward to ascend the floors · back out to exit</em>
+        </p>
+      </Sec>
       {experiences.map((e, i) => (
-        <Sec
-          key={e.company}
-          x={PORTAL_XS[i] + 11}
-          z={PORTAL_Z}
-          r={10}
-          align={i % 2 === 0 ? 'left' : 'right'}
-        >
+        <Sec key={e.company} int="timeline" z={ERA_FLOORS[i].t + 4} r={8} align={i % 2 === 0 ? 'left' : 'right'}>
           <article className="mx-slab mx-slab-door mx-scroll" onWheel={stopWheel}>
             <header className="mx-slab-head">
-              <span className="mx-slab-path">~/time_tunnel/era_0{i + 1}</span>
-              <span className="mx-slab-act">03 / TIME TUNNEL</span>
+              <span className="mx-slab-path">~/spire/floor_{ERA_FLOORS[i].floor}</span>
+              <span className="mx-slab-act">03 / ERA 0{i + 1}</span>
             </header>
             <p className="mx-door-period">{e.period} · {e.location}</p>
             <h2 className="mx-h3"><DecodeText text={e.company.toUpperCase()} /></h2>
@@ -197,18 +199,12 @@ export default function ActPanels({
         </Sec>
       ))}
 
-      {/* ── 04 / anomaly sector ── */}
+      {/* ── anomaly alley (open-air) ── */}
       {projects.map((p, i) => (
-        <Sec
-          key={p.name}
-          x={ANOM_SPOTS[i].x + 14}
-          z={ANOM_SPOTS[i].z + (i === 0 ? 7 : -7)}
-          r={13}
-          align={i === 0 ? 'right' : 'left'}
-        >
+        <Sec key={p.name} x={10 + i * 3} z={-103 - i * 14} r={12} align={i === 0 ? 'left' : 'right'}>
           <article className="mx-slab mx-slab-door mx-slab-anomaly mx-scroll" onWheel={stopWheel}>
             <header className="mx-slab-head">
-              <span className="mx-slab-path">~/anomalies/case_0{i + 1}.rec</span>
+              <span className="mx-slab-path">~/alley/case_0{i + 1}.rec</span>
               <span className="mx-slab-act mx-red">04 / ANOMALIES</span>
             </header>
             <p className="mx-anomaly-status">
@@ -226,11 +222,11 @@ export default function ActPanels({
         </Sec>
       ))}
 
-      {/* ── 05 / credentials court ── */}
-      <Sec x={CREDS_SPOT.x - 16} z={CREDS_SPOT.z + 5} r={15} align="left">
+      {/* ── INTERIOR: The Needle — credentials ── */}
+      <Sec int="creds" z={16} r={11}>
         <article className="mx-slab mx-scroll" onWheel={stopWheel}>
           <header className="mx-slab-head">
-            <span className="mx-slab-path">~/city/credentials.sig</span>
+            <span className="mx-slab-path">~/needle/vault.sig</span>
             <span className="mx-slab-act">05 / CREDENTIALS</span>
           </header>
           <h2 className="mx-h3"><DecodeText text="CREDENTIALS VERIFIED" /></h2>
@@ -243,56 +239,14 @@ export default function ActPanels({
         </article>
       </Sec>
 
-      {/* ── 07 / event docks — messaging & streaming, straight from the resume ── */}
-      <Sec x={DOCKS_SPOT.x - 14} z={DOCKS_SPOT.z + 4} r={15} align="left">
+      {/* ── INTERIOR: Twin Coils — transmissions ── */}
+      <Sec int="transmissions" z={16} r={11}>
         <article className="mx-slab mx-scroll" onWheel={stopWheel}>
           <header className="mx-slab-head">
-            <span className="mx-slab-path">~/city/event_docks.stream</span>
-            <span className="mx-slab-act">07 / EVENT DOCKS</span>
-          </header>
-          <h2 className="mx-h3"><DecodeText text="EVENT DOCKS" /></h2>
-          <p className="mx-body">
-            Real-time, event-driven architectures for time-sensitive systems — low-latency
-            streaming for banking at Comerica and healthcare at UCLA: retry logic,
-            orchestration, DDD workflows and WebSocket fan-out.
-          </p>
-          <p className="mx-chips">
-            {(skillCategories.find(c => c.label === 'Messaging & Streaming')?.skills ?? []).map(t => (
-              <span key={t}>{t}</span>
-            ))}
-          </p>
-        </article>
-      </Sec>
-
-      {/* ── 08 / observatory — monitoring & debugging ── */}
-      <Sec x={OBS_SPOT.x + 16} z={OBS_SPOT.z + 8} r={15} align="right">
-        <article className="mx-slab mx-scroll" onWheel={stopWheel}>
-          <header className="mx-slab-head">
-            <span className="mx-slab-path">~/city/observatory.watch</span>
-            <span className="mx-slab-act">08 / OBSERVATORY</span>
-          </header>
-          <h2 className="mx-h3"><DecodeText text="THE OBSERVATORY" /></h2>
-          <p className="mx-body">
-            If it moves, it gets a dashboard. Observability stacks with Prometheus and
-            Grafana cut MTTR by 40% at Comerica — plus end-to-end tracing and alerting
-            across every cloud he touches.
-          </p>
-          <p className="mx-chips">
-            {(skillCategories.find(c => c.label === 'Monitoring & Debugging')?.skills ?? []).map(t => (
-              <span key={t}>{t}</span>
-            ))}
-          </p>
-        </article>
-      </Sec>
-
-      {/* ── 06 / transmission row ── */}
-      <Sec x={TRANS_SPOT.x + 16} z={TRANS_SPOT.z - 2} r={15} align="right">
-        <article className="mx-slab mx-scroll" onWheel={stopWheel}>
-          <header className="mx-slab-head">
-            <span className="mx-slab-path">~/city/transmissions.feed</span>
+            <span className="mx-slab-path">~/coils/broadcast.feed</span>
             <span className="mx-slab-act">06 / TRANSMISSIONS</span>
           </header>
-          <h2 className="mx-h3"><DecodeText text="TRANSMISSION ROW" /></h2>
+          <h2 className="mx-h3"><DecodeText text="TRANSMISSIONS" /></h2>
           <ul className="mx-creds">
             {blogPosts.map(b => (
               <li key={b.url}>
@@ -307,12 +261,54 @@ export default function ActPanels({
         </article>
       </Sec>
 
-      {/* ── 07 / the choice ── */}
-      <Sec x={PILLS_SPOT.x} z={PILLS_SPOT.z + 14} r={18}>
+      {/* ── INTERIOR: Grand Mart — event docks ── */}
+      <Sec int="docks" z={20} r={13}>
+        <article className="mx-slab mx-scroll" onWheel={stopWheel}>
+          <header className="mx-slab-head">
+            <span className="mx-slab-path">~/mart/stream_floor.log</span>
+            <span className="mx-slab-act">07 / EVENT DOCKS</span>
+          </header>
+          <h2 className="mx-h3"><DecodeText text="THE STREAM FLOOR" /></h2>
+          <p className="mx-body">
+            Real-time, event-driven architectures for time-sensitive systems — low-latency
+            streaming for banking and healthcare: retry logic, orchestration, DDD workflows
+            and WebSocket fan-out.
+          </p>
+          <p className="mx-chips">
+            {(skillCategories.find(c => c.label === 'Messaging & Streaming')?.skills ?? []).map(t => (
+              <span key={t}>{t}</span>
+            ))}
+          </p>
+        </article>
+      </Sec>
+
+      {/* ── INTERIOR: Watchtower — observatory ── */}
+      <Sec int="observatory" z={18} r={12}>
+        <article className="mx-slab mx-scroll" onWheel={stopWheel}>
+          <header className="mx-slab-head">
+            <span className="mx-slab-path">~/watchtower/uplink.watch</span>
+            <span className="mx-slab-act">08 / OBSERVATORY</span>
+          </header>
+          <h2 className="mx-h3"><DecodeText text="THE WATCHTOWER" /></h2>
+          <p className="mx-body">
+            If it moves, it gets a dashboard. Observability stacks with Prometheus and
+            Grafana cut MTTR by 40% — plus end-to-end tracing and alerting across every
+            cloud he touches.
+          </p>
+          <p className="mx-chips">
+            {(skillCategories.find(c => c.label === 'Monitoring & Debugging')?.skills ?? []).map(t => (
+              <span key={t}>{t}</span>
+            ))}
+          </p>
+        </article>
+      </Sec>
+
+      {/* ── the choice — end of Navy Pier ── */}
+      <Sec x={160} z={-110} r={17}>
         <div className="mx-choice">
           <h2 className="mx-h2"><DecodeText text="RED OR BLUE?" /></h2>
           <p className="mx-choice-sub">
-            You drove the whole grid, operator. One question left — and this one has no wrong answer.
+            End of the pier, operator. The wheel turns behind you — and this question has no wrong answer.
           </p>
           <div className="mx-choice-row">
             <a className="mx-pill-btn mx-pill-red" href={`mailto:${personal.email}`}>
@@ -324,6 +320,10 @@ export default function ActPanels({
               <span>wake up in the terminal — read the résumé</span>
             </button>
           </div>
+          <p className="mx-creds-line">
+            {certifications.map(c => `[${c.badge}] ${c.title}`).join(' · ')} ·
+            [B.TECH] {education.field}, {education.year}
+          </p>
           <p className="mx-choice-links">
             <a href={`mailto:${personal.email}`}>{personal.email}</a>
             <span>{personal.phone}</span>
@@ -333,6 +333,9 @@ export default function ActPanels({
           <p className="mx-choice-foot">© 2026 {personal.name} — there is no spoon.</p>
         </div>
       </Sec>
+
+      {/* keep LANDMARKS referenced for tooling */}
+      <span hidden>{LANDMARKS.length}</span>
     </div>
   );
 }

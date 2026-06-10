@@ -196,7 +196,9 @@ export default function Rain({ tier, reduced }: { tier: Tier; reduced: boolean }
   useFrame((state, dt) => {
     if (group.current) {
       // the rain is the weather — it follows you through the whole city and
-      // its curtain always hangs across your view, whichever way you face
+      // its curtain always hangs across your view, whichever way you face.
+      // Indoors there is no weather.
+      group.current.visible = !scrollBus.interior;
       group.current.position.x = state.camera.position.x;
       group.current.position.z = state.camera.position.z;
       const ty = Math.atan2(-scrollBus.hx, -scrollBus.hz);

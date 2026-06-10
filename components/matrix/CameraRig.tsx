@@ -1,28 +1,37 @@
 'use client';
-// Street navigation v4 — wheel/W/S drives, A/D or ◀▶ turns (forgiving
-// junction snap, U-turn anywhere). Touch: horizontal swipe pans the camera
-// smoothly, vertical swipe drives. On-screen D-pad commands and the
-// auto-drive route (Continue button) flow in through scrollBus.
+// Drive engine v6 — POLYLINE streets (curves bend the camera naturally),
+// junction turns, U-turns, and INTERIORS: drive into a landmark's lobby and
+// you're inside it; back out to return to the street. Touch pans/drives,
+// wheel drives, A/D turns, D-pad and autopilot ride the same rails.
 import { useEffect, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
-import { STREETS, LANE_HALF, SPAWN, PORTAL_XS, PORTAL_Z, DISTRICT_PORTALS, HUB } from '@/lib/grid';
+import { STREETS, SPAWN, LANDMARKS, HUB } from '@/lib/grid';
 import { scrollBus } from '@/lib/scrollBus';
 
-function clampToNetwork(x: number, z: number) {
-  let bx = x, bz = z, bd = Infinity;
-  for (const s of STREETS) {
-    const ax = s.a[0], az = s.a[1], dx = s.b[0] - ax, dz = s.b[1] - az;
-    const len2 = dx * dx + dz * dz;
-    const t = Math.max(0, Math.min(1, ((x - ax) * dx + (z - az) * dz) / len2));
-    const px = ax + dx * t, pz = az + dz * t;
-    const d = (x - px) * (x - px) + (z - pz) * (z - pz);
-    if (d < bd) { bd = d; bx = px; bz = pz; }
+interface Seg { ax: number; az: number; bx: number; bz: number; ux: number; uz: number; len: number }
+const SEGS: Seg[] = [];
+for (const s of STREETS) {
+  for (let i = 0; i < s.pts.length - 1; i++) {
+    const [ax, az] = s.pts[i];
+    const [bx, bz] = s.pts[i + 1];
+    const len = Math.hypot(bx - ax, bz - az);
+    SEGS.push({ ax, az, bx, bz, ux: (bx - ax) / len, uz: (bz - az) / len, len });
   }
-  return { x: bx, z: bz, dist: Math.sqrt(bd) };
 }
 
-const onRoad = (x: number, z: number) => clampToNetwork(x, z).dist <= LANE_HALF;
+function clampToNetwork(x: number, z: number) {
+  let bx = x, bz = z, bd = Infinity, seg = SEGS[0], t = 0;
+  for (const s of SEGS) {
+    const tt = Math.max(0, Math.min(s.len, (x - s.ax) * s.ux + (z - s.az) * s.uz));
+    const px = s.ax + s.ux * tt, pz = s.az + s.uz * tt;
+    const d = (x - px) * (x - px) + (z - pz) * (z - pz);
+    if (d < bd) { bd = d; bx = px; bz = pz; seg = s; t = tt; }
+  }
+  return { x: bx, z: bz, dist: Math.sqrt(bd), seg, t };
+}
+
+
 
 export default function CameraRig({
   reduced, onFrame,
@@ -42,79 +51,116 @@ export default function CameraRig({
   const top = useRef(0);
   const flightPos = useRef(new THREE.Vector3());
   const flightLook = useRef(new THREE.Vector3());
+  const savedExt = useRef<{ x: number; z: number; hx: number; hz: number } | null>(null);
+  const enterArmed = useRef(true);
 
   useEffect(() => {
-    const right = (h: { x: number; z: number }) => ({ x: -h.z, z: h.x });
-    const left = (h: { x: number; z: number }) => ({ x: h.z, z: -h.x });
     const cancelRoute = () => { scrollBus.route.length = 0; };
 
-    const tryTurn = (dir: 1 | -1) => {
-      const now = performance.now();
-      if (now - lastTurn.current < 320) return;
-      const h = heading.current;
-      const nh = dir === 1 ? right(h) : left(h);
-      const t = target.current;
-      for (const off of [0, -2, 2, -4, 4, -6, 6, -8, 8]) {
-        const bx = t.x + h.x * off, bz = t.z + h.z * off;
-        if (onRoad(bx + nh.x * 5, bz + nh.z * 5)) {
-          const snap = clampToNetwork(bx + nh.x * 3, bz + nh.z * 3);
-          target.current = { x: snap.x - nh.x * 3, z: snap.z - nh.z * 3 };
-          heading.current = nh;
-          lastTurn.current = now;
-          return;
+    // walk the rails: move d units along the network following `heading`
+    const advance = (d: number) => {
+      if (scrollBus.interior) {
+        const lm = LANDMARKS.find(l => l.id === scrollBus.interior);
+        if (!lm) return;
+        scrollBus.intT = Math.max(0, Math.min(lm.interiorLen, scrollBus.intT + d));
+        return;
+      }
+      let remaining = Math.abs(d);
+      const sign = Math.sign(d);
+      let guard = 4;
+      while (remaining > 0.001 && guard-- > 0) {
+        const c = clampToNetwork(target.current.x, target.current.z);
+        // at a junction several segments are equally close — prefer the one
+        // ALIGNED with our heading, or we can never turn onto a cross street
+        let s = c.seg;
+        let bestAlign = Math.abs(s.ux * heading.current.x + s.uz * heading.current.z);
+        let bestT = c.t;
+        for (const cand of SEGS) {
+          if (cand === c.seg) continue;
+          const tt = Math.max(0, Math.min(cand.len,
+            (target.current.x - cand.ax) * cand.ux + (target.current.z - cand.az) * cand.uz));
+          const px = cand.ax + cand.ux * tt, pz = cand.az + cand.uz * tt;
+          if (Math.hypot(target.current.x - px, target.current.z - pz) > 2.6) continue;
+          const align = Math.abs(cand.ux * heading.current.x + cand.uz * heading.current.z);
+          if (align > bestAlign + 0.1) { bestAlign = align; s = cand; bestT = tt; }
+        }
+        const cT = s === c.seg ? c.t : bestT;
+        const cx = s.ax + s.ux * cT, cz = s.az + s.uz * cT;
+        const cAdj = { x: cx, z: cz, t: cT };
+        // orient tangent with travel direction
+        const dot = s.ux * heading.current.x + s.uz * heading.current.z;
+        const dir = (dot >= 0 ? 1 : -1) * sign;
+        const room = dir > 0 ? s.len - cAdj.t : cAdj.t;
+        const step = Math.min(remaining, Math.max(room, 0));
+        target.current = {
+          x: cAdj.x + s.ux * dir * step,
+          z: cAdj.z + s.uz * dir * step,
+        };
+        if (sign > 0) {
+          heading.current = { x: s.ux * dir, z: s.uz * dir };
+        }
+        remaining -= step;
+        if (remaining > 0.001) {
+          // at a node — find the best continuing segment
+          const nx = target.current.x, nz = target.current.z;
+          const hx = s.ux * dir, hz = s.uz * dir;
+          let best: Seg | null = null, bestDot = 0.25, bestDir = 1;
+          for (const cand of SEGS) {
+            if (cand === s) continue;
+            for (const [ex, ez, cd] of [[cand.ax, cand.az, 1], [cand.bx, cand.bz, -1]] as const) {
+              if (Math.hypot(ex - nx, ez - nz) > 1.5) continue;
+              const ddot = cand.ux * cd * hx + cand.uz * cd * hz;
+              if (ddot > bestDot) { bestDot = ddot; best = cand; bestDir = cd; }
+            }
+          }
+          if (!best) break; // dead end
+          heading.current = { x: best.ux * bestDir * (sign > 0 ? 1 : 1), z: best.uz * bestDir };
+          if (sign < 0) heading.current = { x: -heading.current.x, z: -heading.current.z };
+          target.current = {
+            x: target.current.x + best.ux * bestDir * sign * 0.01,
+            z: target.current.z + best.uz * bestDir * sign * 0.01,
+          };
         }
       }
-      heading.current = { x: -h.x, z: -h.z }; // U-turn anywhere
+    };
+
+    const tryTurn = (turnDir: 1 | -1) => {
+      const now = performance.now();
+      if (now - lastTurn.current < 320 || scrollBus.interior) return;
+      const t = target.current;
+      const h = heading.current;
+      const want = { x: turnDir === 1 ? -h.z : h.z, z: turnDir === 1 ? h.x : -h.x };
+      // find a departing segment near us whose tangent matches the turn
+      let best: { ux: number; uz: number } | null = null, bestDot = 0.55;
+      for (const cand of SEGS) {
+        for (const [ex, ez, cd] of [[cand.ax, cand.az, 1], [cand.bx, cand.bz, -1]] as const) {
+          if (Math.hypot(ex - t.x, ez - t.z) > 9) continue;
+          const tx = cand.ux * cd, tz = cand.uz * cd;
+          const ddot = tx * want.x + tz * want.z;
+          if (ddot > bestDot) {
+            bestDot = ddot;
+            best = { ux: tx, uz: tz };
+            // snap to the junction
+            target.current = { x: ex, z: ez };
+          }
+        }
+      }
+      if (best) {
+        heading.current = { x: best.ux, z: best.uz };
+        lastTurn.current = now;
+        return;
+      }
+      // no branch — U-turn
+      heading.current = { x: -h.x, z: -h.z };
       lastTurn.current = now;
     };
 
-    const advance = (d: number) => {
-      const t = target.current;
-      const h = heading.current;
-      let nx = t.x + h.x * d, nz = t.z + h.z * d;
-      if (onRoad(nx, nz)) {
-        const c = clampToNetwork(nx, nz);
-        // corner wedge: the clamp can snap back onto the street BEHIND us and
-        // eat the motion — when that stalls progress, glide onto the street
-        // we're actually trying to ride
-        const progressed = Math.abs(c.x - t.x) + Math.abs(c.z - t.z);
-        if (progressed < Math.abs(d) * 0.3) {
-          const seek = clampToNetwork(t.x + h.x * 6, t.z + h.z * 6);
-          const vx = seek.x - t.x, vz = seek.z - t.z;
-          const L = Math.hypot(vx, vz);
-          if (L > 0.01) {
-            const s = Math.min(Math.abs(d), L) / L;
-            target.current = { x: t.x + vx * s, z: t.z + vz * s };
-            return;
-          }
-        }
-        target.current = { x: c.x, z: c.z };
-        return;
-      }
-      const r = right(h), l = left(h);
-      const rOk = onRoad(t.x + r.x * 4, t.z + r.z * 4);
-      const lOk = onRoad(t.x + l.x * 4, t.z + l.z * 4);
-      if (rOk !== lOk && d > 0) {
-        heading.current = rOk ? r : l;
-        const nh = heading.current;
-        nx = t.x + nh.x * Math.abs(d); nz = t.z + nh.z * Math.abs(d);
-        if (onRoad(nx, nz)) {
-          const c = clampToNetwork(nx, nz);
-          target.current = { x: c.x, z: c.z };
-        }
-      }
-    };
-
-    // expose for the frame loop (D-pad + autopilot share these)
     rigApi.current = { tryTurn, advance };
 
     const onWheel = (e: WheelEvent) => {
       cancelRoute();
-      if (Math.abs(e.deltaX) > Math.abs(e.deltaY) * 1.4) {
-        tryTurn(e.deltaX > 0 ? 1 : -1);
-      } else {
-        advance(e.deltaY * 0.022);
-      }
+      if (Math.abs(e.deltaX) > Math.abs(e.deltaY) * 1.4) tryTurn(e.deltaX > 0 ? 1 : -1);
+      else advance(e.deltaY * 0.022);
     };
     const kd = (e: KeyboardEvent) => {
       if (['ArrowUp', 'w', 'W'].includes(e.key)) { cancelRoute(); keysFwd.current = 1; }
@@ -138,7 +184,6 @@ export default function CameraRig({
       const dx = e.clientX - drag.current.x;
       const dy = e.clientY - drag.current.y;
       if (drag.current.touch) {
-        // touch: horizontal swipe pans the view smoothly; vertical drives
         cancelRoute();
         lookT.current.yaw = THREE.MathUtils.clamp(lookT.current.yaw - dx * 0.0042, -1.35, 1.35);
         if (Math.abs(dy) > Math.abs(dx) * 0.6) advance(-dy * 0.06);
@@ -170,37 +215,64 @@ export default function CameraRig({
 
   useFrame((state, dt) => {
     const api = rigApi.current;
+    const now = performance.now();
 
-    // keyboard / D-pad cruise
     const moveCmd = keysFwd.current || scrollBus.cmdMove;
-    if (moveCmd !== 0 && api) {
-      api.advance(moveCmd * dt * 26);
-    }
-    // D-pad one-shot turns
+    if (moveCmd !== 0 && api) api.advance(moveCmd * dt * 26);
     if (scrollBus.cmdTurn !== 0 && api) {
       api.tryTurn(scrollBus.cmdTurn as 1 | -1);
       scrollBus.cmdTurn = 0;
     }
-    // auto-drive route
-    if (scrollBus.route.length > 0 && api && moveCmd === 0) {
+    // autopilot
+    if (scrollBus.route.length > 0 && api && moveCmd === 0 && !scrollBus.interior) {
       const wp = scrollBus.route[0];
       const t = target.current;
       const dx = wp.x - t.x, dz = wp.z - t.z;
       const dist = Math.hypot(dx, dz);
-      if (dist < 2.5) {
-        scrollBus.route.shift();
-      } else {
-        // face the waypoint (cardinal), then advance
-        const want = Math.abs(dx) > Math.abs(dz)
-          ? { x: Math.sign(dx), z: 0 }
-          : { x: 0, z: Math.sign(dz) };
-        if (want.x !== heading.current.x || want.z !== heading.current.z) {
-          heading.current = want;
-        }
+      if (dist < 2.5) scrollBus.route.shift();
+      else {
+        const L = Math.hypot(dx, dz);
+        heading.current = { x: dx / L, z: dz / L };
         api.advance(Math.min(dist, dt * 30));
       }
     }
 
+    // ── enter / exit landmarks ──
+    if (!scrollBus.interior) {
+      let nearAny = false;
+      for (const lm of LANDMARKS) {
+        const d = Math.hypot(target.current.x - lm.entrance[0], target.current.z - lm.entrance[1]);
+        if (d < 7) nearAny = true;
+        if (d < 3.4 && enterArmed.current) {
+          savedExt.current = { x: lm.entrance[0] + lm.outDir[0] * 7, z: lm.entrance[1] + lm.outDir[1] * 7, hx: lm.outDir[0], hz: lm.outDir[1] };
+          scrollBus.interior = lm.id;
+          scrollBus.intT = 1.5;
+          scrollBus.route.length = 0;
+          scrollBus.warp = Math.max(scrollBus.warp, 1);
+          enterArmed.current = false;
+          keysFwd.current = 0;
+          scrollBus.cmdMove = 0;
+          break;
+        }
+      }
+      // re-arm only once you've genuinely left the doorway
+      if (!nearAny) enterArmed.current = true;
+    } else if (scrollBus.intT <= 0.2) {
+      // walked back out the door
+      const ext = savedExt.current;
+      if (ext) {
+        target.current = { x: ext.x, z: ext.z };
+        pos.current = { x: ext.x, z: ext.z };
+        heading.current = { x: ext.hx, z: ext.hz };
+      }
+      scrollBus.interior = null;
+      scrollBus.warp = Math.max(scrollBus.warp, 0.9);
+      enterArmed.current = false;
+      keysFwd.current = 0;
+      scrollBus.cmdMove = 0;
+    }
+
+    // damping
     const k = reduced ? 1 : 1 - Math.exp(-dt * 4.2);
     const px = pos.current.x, pz = pos.current.z;
     pos.current.x += (target.current.x - pos.current.x) * k;
@@ -218,79 +290,77 @@ export default function CameraRig({
     look.current.yaw += (lookT.current.yaw - look.current.yaw) * Math.min(1, dt * 7);
     look.current.pitch += (lookT.current.pitch - look.current.pitch) * Math.min(1, dt * 7);
 
-    const targetYaw = Math.atan2(-heading.current.x, -heading.current.z);
-    let dy = targetYaw - yaw.current;
-    while (dy > Math.PI) dy -= Math.PI * 2;
-    while (dy < -Math.PI) dy += Math.PI * 2;
-    yaw.current += dy * Math.min(1, dt * (reduced ? 20 : 3.6));
-
-    // warp: big through era portals, soft through district gates
-    let warp = 0;
-    for (const pxg of PORTAL_XS) {
-      const ddx = pos.current.x - pxg, ddz = pos.current.z - PORTAL_Z;
-      warp = Math.max(warp, Math.exp(-(ddx * ddx + ddz * ddz) / 38));
-    }
-    for (const dp of DISTRICT_PORTALS) {
-      const ddx = pos.current.x - dp.x, ddz = pos.current.z - dp.z;
-      warp = Math.max(warp, 0.55 * Math.exp(-(ddx * ddx + ddz * ddz) / 22));
-    }
-    scrollBus.warp = reduced ? 0 : warp;
+    // warp decay
+    scrollBus.warp = Math.max(0, scrollBus.warp - dt * 1.4);
 
     const cam = state.camera as THREE.PerspectiveCamera;
-    cam.position.set(
-      pos.current.x + (reduced ? 0 : pointer.current.x * 0.4),
-      2.2 + (reduced ? 0 : -pointer.current.y * 0.3),
-      pos.current.z,
-    );
-    const vy = yaw.current + look.current.yaw + (reduced ? 0 : pointer.current.x * 0.06);
-    lookAt.current.set(
-      cam.position.x - Math.sin(vy) * 10,
-      cam.position.y + look.current.pitch * 9 + (reduced ? 0 : -pointer.current.y * 1),
-      cam.position.z - Math.cos(vy) * 10,
-    );
 
-    // free-flight easter egg — soar above the city, then ease back down
-    const flying = !reduced && performance.now() < scrollBus.flightUntil;
-    flight.current += ((flying ? 1 : 0) - flight.current) * Math.min(1, dt * 1.6);
-    if (flight.current > 0.002) {
-      const t = state.clock.elapsedTime * 0.22;
-      const fx = HUB.x + Math.sin(t) * 78;
-      const fz = HUB.z + Math.cos(t) * 78;
-      cam.position.lerp(flightPos.current.set(fx, 135, fz), flight.current);
-      lookAt.current.lerp(flightLook.current.set(HUB.x, 0, HUB.z), flight.current);
-    }
-
-    // drivable TOP VIEW — straight down over the traveler, city as a map
-    top.current += ((scrollBus.topView ? 1 : 0) - top.current) * Math.min(1, dt * 2.2);
-    if (top.current > 0.002) {
-      cam.position.lerp(flightPos.current.set(pos.current.x, 150, pos.current.z + 0.01), top.current);
-      lookAt.current.lerp(flightLook.current.set(pos.current.x, 0, pos.current.z), top.current);
-    }
-
-    // cinematic dive intro — falling out of the sky into the gates
-    const introLeft = scrollBus.introUntil - performance.now();
-    if (introLeft > 0 && !reduced) {
-      const k = 1 - introLeft / 4200;            // 0 → 1 over the dive
-      const e = k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2; // easeInOut
-      flightPos.current.set(
-        Math.sin(k * Math.PI) * 14,
-        170 - 167.8 * e,
-        160 - 118 * e,
+    if (scrollBus.interior) {
+      // inside a landmark: a straight gallery laid out far from the city
+      const idx = LANDMARKS.findIndex(l => l.id === scrollBus.interior);
+      const baseX = 4000 + idx * 300;
+      cam.position.set(
+        baseX + (reduced ? 0 : pointer.current.x * 0.3),
+        2,
+        -scrollBus.intT,
       );
-      cam.position.copy(flightPos.current);
-      flightLook.current.set(0, 4 + (1 - e) * 14, 160 - 118 * e - 30);
-      lookAt.current.copy(flightLook.current);
-      scrollBus.warp = Math.max(scrollBus.warp, Math.sin(k * Math.PI) * 0.95);
+      const vy = look.current.yaw + (reduced ? 0 : pointer.current.x * 0.05);
+      lookAt.current.set(
+        baseX - Math.sin(vy) * 10,
+        2 + look.current.pitch * 8,
+        -scrollBus.intT - Math.cos(vy) * 10,
+      );
+      cam.lookAt(lookAt.current);
+    } else {
+      const targetYaw = Math.atan2(-heading.current.x, -heading.current.z);
+      let dy = targetYaw - yaw.current;
+      while (dy > Math.PI) dy -= Math.PI * 2;
+      while (dy < -Math.PI) dy += Math.PI * 2;
+      yaw.current += dy * Math.min(1, dt * (reduced ? 20 : 3.2));
+
+      cam.position.set(
+        pos.current.x + (reduced ? 0 : pointer.current.x * 0.4),
+        2.2 + (reduced ? 0 : -pointer.current.y * 0.3),
+        pos.current.z,
+      );
+      const vy = yaw.current + look.current.yaw + (reduced ? 0 : pointer.current.x * 0.06);
+      lookAt.current.set(
+        cam.position.x - Math.sin(vy) * 10,
+        cam.position.y + look.current.pitch * 9 + (reduced ? 0 : -pointer.current.y * 1),
+        cam.position.z - Math.cos(vy) * 10,
+      );
+
+      // flight / top view / dive intro
+      const flying = !reduced && now < scrollBus.flightUntil;
+      flight.current += ((flying ? 1 : 0) - flight.current) * Math.min(1, dt * 1.6);
+      if (flight.current > 0.002) {
+        const t = state.clock.elapsedTime * 0.22;
+        cam.position.lerp(flightPos.current.set(HUB.x + Math.sin(t) * 90, 140, HUB.z + Math.cos(t) * 90), flight.current);
+        lookAt.current.lerp(flightLook.current.set(HUB.x, 0, HUB.z), flight.current);
+      }
+      top.current += ((scrollBus.topView ? 1 : 0) - top.current) * Math.min(1, dt * 2.2);
+      if (top.current > 0.002) {
+        cam.position.lerp(flightPos.current.set(pos.current.x, 150, pos.current.z + 0.01), top.current);
+        lookAt.current.lerp(flightLook.current.set(pos.current.x, 0, pos.current.z), top.current);
+      }
+      const introLeft = scrollBus.introUntil - now;
+      if (introLeft > 0 && !reduced) {
+        const kk = 1 - introLeft / 4200;
+        const e = kk < 0.5 ? 2 * kk * kk : 1 - Math.pow(-2 * kk + 2, 2) / 2;
+        flightPos.current.set(-20 + Math.sin(kk * Math.PI) * 14, 170 - 167.8 * e, 170 - 126 * e);
+        cam.position.copy(flightPos.current);
+        flightLook.current.set(-20, 4 + (1 - e) * 14, 170 - 126 * e - 30);
+        lookAt.current.copy(flightLook.current);
+        scrollBus.warp = Math.max(scrollBus.warp, Math.sin(kk * Math.PI) * 0.95);
+      }
+      cam.lookAt(lookAt.current);
     }
 
-    cam.lookAt(lookAt.current);
-    // portal-crossing micro-shake
     if (!reduced && scrollBus.warp > 0.45) {
       const t = state.clock.elapsedTime;
       cam.rotation.z += Math.sin(t * 43) * 0.012 * scrollBus.warp;
       cam.rotation.x += Math.sin(t * 37) * 0.008 * scrollBus.warp;
     }
-
     const fovTarget = 52 + scrollBus.warp * 30;
     if (Math.abs(cam.fov - fovTarget) > 0.05) {
       cam.fov += (fovTarget - cam.fov) * Math.min(1, dt * 7);

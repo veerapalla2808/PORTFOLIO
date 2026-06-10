@@ -5,8 +5,8 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { detectCaps, type Caps } from '@/lib/tier';
 import {
-  ZONES, zoneAt, QUESTION_POOL, RANKS, STREETS, CHECKPOINTS, routeBetween,
-  GX, type Question,
+  ZONES, zoneAt, zoneById, QUESTION_POOL, RANKS, STREETS, CHECKPOINTS,
+  routeBetween, landmarkById, GX, type Question,
 } from '@/lib/grid';
 import { storyBands, scrollBus } from '@/lib/scrollBus';
 import BootOverlay from './BootOverlay';
@@ -23,10 +23,10 @@ interface SaveData { score: number; visited: number[]; interacted: string[] }
 const GLYPH_TITLES = ['ヴィーラ・パッラ', 'VEERA PALLA // 11Y', 'follow the white rabbit'];
 const IDLE_LINE = 'You stopped. The phoenix circles above you, operator…';
 
-// world → mini-map projection (city spans x −105..105, z 52..−292)
-const MAP_W = 132, MAP_H = 172;
-const mapX = (x: number) => ((x + 105) / 210) * MAP_W;
-const mapY = (z: number) => ((52 - z) / 344) * MAP_H;
+// world → mini-map projection (city spans x −145..190, z 56..−210)
+const MAP_W = 170, MAP_H = 136;
+const mapX = (x: number) => ((x + 145) / 335) * MAP_W;
+const mapY = (z: number) => ((56 - z) / 266) * MAP_H;
 
 export default function MatrixApp() {
   const [caps, setCaps] = useState<Caps | null>(null);
@@ -46,6 +46,7 @@ export default function MatrixApp() {
   const restored = useRef(false);
   const burstId = useRef(1);
   const fxPulses = useRef<{ x: number; z: number; color: string; t0: number }[]>([]);
+  const interiorRef = useRef<string | null>(null);
 
   const progressRef = useRef<HTMLDivElement>(null);
   const storyRef = useRef<HTMLDivElement>(null);
@@ -170,6 +171,7 @@ export default function MatrixApp() {
         x: parseFloat(el.dataset.x ?? '0'),
         z: parseFloat(el.dataset.z ?? '0'),
         r: parseFloat(el.dataset.r ?? '16'),
+        int: el.dataset.int || undefined,
       });
     }
   }, [mode, caps, questions, results, interacted]);
@@ -180,15 +182,20 @@ export default function MatrixApp() {
     const ctx = cv.getContext('2d');
     if (!ctx) return;
     ctx.clearRect(0, 0, MAP_W, MAP_H);
-    // streets
+    // streets (polylines — curves included)
     ctx.strokeStyle = 'rgba(102,176,255,0.45)';
     ctx.lineWidth = 2;
     for (const s of STREETS) {
       ctx.beginPath();
-      ctx.moveTo(mapX(s.a[0]), mapY(s.a[1]));
-      ctx.lineTo(mapX(s.b[0]), mapY(s.b[1]));
+      ctx.moveTo(mapX(s.pts[0][0]), mapY(s.pts[0][1]));
+      for (let i = 1; i < s.pts.length; i++) {
+        ctx.lineTo(mapX(s.pts[i][0]), mapY(s.pts[i][1]));
+      }
       ctx.stroke();
     }
+    // the lake
+    ctx.fillStyle = 'rgba(20,50,90,0.25)';
+    ctx.fillRect(mapX(72), 0, MAP_W - mapX(72), MAP_H);
     // districts: hollow = unvisited, filled = visited
     for (const zo of ZONES) {
       if (zo.id === 'gate') continue;
@@ -239,10 +246,18 @@ export default function MatrixApp() {
 
   const onFrame = useCallback((x: number, z: number) => {
     frameNo.current++;
+    const inside = scrollBus.interior;
     for (const b of storyBands) {
-      const d = Math.hypot(x - b.x, z - b.z) / b.r;
-      const op = Math.max(0, 1 - d * d);
-      // only touch the DOM when the value meaningfully changed
+      let op = 0;
+      if (inside) {
+        if (b.int === inside) {
+          const d = Math.abs(scrollBus.intT - b.z) / b.r;
+          op = Math.max(0, 1 - d * d);
+        }
+      } else if (!b.int) {
+        const d = Math.hypot(x - b.x, z - b.z) / b.r;
+        op = Math.max(0, 1 - d * d);
+      }
       if (b.lastOp !== undefined && Math.abs(op - b.lastOp) < 0.012) continue;
       b.lastOp = op;
       b.el.style.opacity = op.toFixed(3);
@@ -250,7 +265,15 @@ export default function MatrixApp() {
     }
     if (warpRef.current) warpRef.current.style.opacity = (scrollBus.warp * 0.55).toFixed(3);
 
-    const zo = zoneAt(x, z);
+    // enter/exit narration
+    if (inside !== interiorRef.current) {
+      const lm = landmarkById(inside ?? interiorRef.current ?? '');
+      interiorRef.current = inside;
+      if (inside && lm) sayQuip(`Inside ${lm.name}. Walk back out whenever you're done.`);
+      else if (lm) sayQuip('Back on the street, operator.');
+    }
+
+    const zo = inside ? zoneById(inside) : zoneAt(x, z);
     if (zo.idx !== zoneRef.current) { zoneRef.current = zo.idx; setZoneIdx(zo.idx); }
     if (!visitedRef.current.has(zo.idx) && Math.hypot(x - zo.x, z - zo.z) < 24) {
       visitedRef.current = new Set(visitedRef.current).add(zo.idx);
@@ -271,7 +294,7 @@ export default function MatrixApp() {
       idleRef.current = true;
       setIdle(true);
     }
-  }, [drawMap, fire]);
+  }, [drawMap, fire, sayQuip]);
 
   const onBurstDone = useCallback((id: number) => {
     setBursts(prev => prev.filter(b => b.id !== id));
@@ -402,9 +425,17 @@ export default function MatrixApp() {
                 onResult={onResult}
                 booted={interacted}
                 onBlue={goTerminal}
+                cine={cine}
               />
             </div>
           </div>
+          {/* dimension-travel pre-roll */}
+          {cine && (
+            <div className="mx-enterflash" aria-hidden="true">
+              <p className="mx-enterflash-text vt">ジャック・イン</p>
+              <p className="mx-enterflash-main">ENTERING THE GRID</p>
+            </div>
+          )}
           <div ref={warpRef} className="mx-warp" aria-hidden="true" />
           {booted && !cine && (
             <>

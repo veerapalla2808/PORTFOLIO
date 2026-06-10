@@ -16,10 +16,13 @@ export const scrollBus = {
   introUntil: 0,
   // drivable overhead camera toggle
   topView: false,
+  // inside a landmark: its zone id + how deep in you are
+  interior: null as string | null,
+  intT: 0,
   // guide's projected screen position (QA + future UI hints)
   rabbitScreen: { x: 0, y: 0 },
 };
 
 // story bands registered for proximity fade (mutated outside React state)
-export interface StoryBand { el: HTMLElement; x: number; z: number; r: number; lastOp?: number }
+export interface StoryBand { el: HTMLElement; x: number; z: number; r: number; int?: string; lastOp?: number }
 export const storyBands: StoryBand[] = [];

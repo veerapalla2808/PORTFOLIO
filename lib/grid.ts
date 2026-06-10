@@ -1,14 +1,15 @@
-// lib/grid.ts — NEON GRID v5: a two-block open-world city.
-// Ring roads + central cross + hub. Every district sits ON a through-road —
-// you never have to backtrack. A route graph powers the mini-map and the
-// auto-drive "Continue" button.
+// lib/grid.ts — NEON GRID v6: neon Chicago.
+// Curved polyline streets (Lake Shore Drive sweeps the lakefront), landmark
+// buildings ARE the sections — drive into a lobby and you're inside. Lake
+// Michigan to the east, Navy Pier runs into it, the Ferris wheel waits at
+// the end. No structures standing in the road.
 
 // ── Palette — darker jewel neons: deep blue / royal indigo / crimson ────────
 export const GX = {
   bg: '#030308',
   blue: '#1E5FE0', blueBright: '#4D8DFF', blueDeep: '#081E5C',
-  violet: '#4B3DF2', violetBright: '#7A6CFF', violetDeep: '#150E66', // royal indigo
-  red: '#C8102E', redBright: '#FF3B52', redDeep: '#4A0814',          // crimson
+  violet: '#4B3DF2', violetBright: '#7A6CFF', violetDeep: '#150E66',
+  red: '#C8102E', redBright: '#FF3B52', redDeep: '#4A0814',
   white: '#F4F7FF',
   text: '#D8E3F8',
   dim: '#76879F',
@@ -16,122 +17,113 @@ export const GX = {
 
 export const NEONS = [GX.blue, GX.violet, GX.red] as const;
 
-// ── Street network — two city blocks (axis-aligned corridors) ───────────────
-// Each street carries ONE lane color on BOTH edges + a dashed center line.
-export interface Street { a: [number, number]; b: [number, number]; name: string; color: string }
+// ── Street network — POLYLINES (curves welcome). Junctions only at street
+// endpoints, so every street runs node-to-node. ─────────────────────────────
+export interface Street { pts: [number, number][]; name: string; color: string }
 
 export const STREETS: Street[] = [
-  { a: [0, 46], b: [0, 0], name: 'GATEWAY', color: GX.violet },
-  { a: [-80, 0], b: [80, 0], name: 'RING SOUTH', color: GX.blue },
-  { a: [-80, 0], b: [-80, -240], name: 'RING WEST', color: GX.red },
-  { a: [80, 0], b: [80, -240], name: 'RING EAST', color: GX.blue },
-  { a: [-80, -240], b: [80, -240], name: 'RING NORTH', color: GX.violet },
-  { a: [0, 0], b: [0, -240], name: 'HUB AVE', color: GX.violet },
-  { a: [-80, -80], b: [80, -80], name: 'HUB CROSS', color: GX.blue },
-  { a: [-80, -160], b: [80, -160], name: 'TIME TUNNEL', color: GX.red },
-  { a: [0, -240], b: [0, -282], name: 'CHOICE SPUR', color: GX.red },
+  // State St (N→S spine)
+  { pts: [[-20, 46], [-20, -40]], name: 'STATE ST', color: GX.violet },
+  { pts: [[-20, -40], [-20, -110]], name: 'STATE ST', color: GX.violet },
+  { pts: [[-20, -110], [-20, -150]], name: 'STATE ST', color: GX.violet },
+  { pts: [[-20, -150], [-20, -200]], name: 'STATE ST', color: GX.violet },
+  // Franklin St (west spine)
+  { pts: [[-70, 20], [-70, -40]], name: 'FRANKLIN ST', color: GX.red },
+  { pts: [[-70, -40], [-70, -80]], name: 'FRANKLIN ST', color: GX.red },
+  { pts: [[-70, -80], [-70, -150]], name: 'FRANKLIN ST', color: GX.red },
+  { pts: [[-70, -150], [-70, -176]], name: 'FRANKLIN ST', color: GX.red },
+  { pts: [[-70, -176], [-70, -200]], name: 'FRANKLIN ST', color: GX.red },
+  // Madison St (E–W)
+  { pts: [[-100, -40], [-70, -40]], name: 'MADISON ST', color: GX.blue },
+  { pts: [[-70, -40], [-20, -40]], name: 'MADISON ST', color: GX.blue },
+  { pts: [[-20, -40], [20, -40]], name: 'MADISON ST', color: GX.blue },
+  { pts: [[20, -40], [44, -40], [64, -40]], name: 'MADISON ST', color: GX.blue },
+  // Monroe St (E–W)
+  { pts: [[-100, -150], [-70, -150]], name: 'MONROE ST', color: GX.blue },
+  { pts: [[-70, -150], [-20, -150]], name: 'MONROE ST', color: GX.blue },
+  { pts: [[-20, -150], [20, -150]], name: 'MONROE ST', color: GX.blue },
+  { pts: [[20, -150], [38, -146], [54, -132]], name: 'MONROE CURVE', color: GX.blue },
+  // Wacker (curved top connector)
+  { pts: [[-20, 46], [0, 38], [22, 34], [40, 30]], name: 'WACKER DR', color: GX.violet },
+  // Lake Shore Drive — the curve along the water
+  { pts: [[40, 30], [50, 16], [57, -2], [60, -18]], name: 'LAKE SHORE DR', color: GX.violetBright },
+  { pts: [[60, -18], [64, -40]], name: 'LAKE SHORE DR', color: GX.violetBright },
+  { pts: [[64, -40], [66, -62], [62, -80]], name: 'LAKE SHORE DR', color: GX.violetBright },
+  { pts: [[62, -80], [58, -96], [56, -110]], name: 'LAKE SHORE DR', color: GX.violetBright },
+  { pts: [[56, -110], [54, -132]], name: 'LAKE SHORE DR', color: GX.violetBright },
+  { pts: [[54, -132], [56, -156], [60, -176], [66, -200]], name: 'LAKE SHORE DR', color: GX.violetBright },
+  // Navy Pier — straight out over the water
+  { pts: [[56, -110], [160, -110]], name: 'NAVY PIER', color: GX.red },
+  // landmark driveways
+  { pts: [[-70, -80], [-92, -80]], name: 'WILLIS PLAZA', color: GX.violet },     // timeline
+  { pts: [[60, -18], [88, -18]], name: 'HANCOCK CT', color: GX.red },            // arsenal
+  { pts: [[62, -80], [92, -80]], name: 'LAKE POINT DR', color: GX.blue },        // identity
+  { pts: [[20, -40], [20, -16]], name: 'TOWER DR', color: GX.blueBright },       // credentials
+  { pts: [[-20, -110], [8, -110]], name: 'ANOMALY ALLEY', color: GX.redBright }, // anomalies (open air)
+  { pts: [[20, -150], [20, -126]], name: 'OBSERVATORY WAY', color: GX.violetBright }, // observatory
+  { pts: [[-100, -40], [-122, -40]], name: 'MART DOCKS', color: GX.blueBright }, // docks
+  { pts: [[-70, -176], [-96, -176]], name: 'MARINA LANE', color: GX.violetBright }, // transmissions
 ];
 
 export const LANE_HALF = 2.4;
-export const SPAWN = { x: 0, z: 42 };
+export const SPAWN = { x: -20, z: 44 };
+export const GATE_ARCH = { x: -20, z: 32 };
+export const HUB = { x: -20, z: -150 };
+export const BEAN = { x: -34, z: -160 };
+export const LAKE_X = 72; // water starts east of this (pier excepted)
 
-// ── Route graph (autopilot + mini-map) ──────────────────────────────────────
-export interface MapNode { id: number; x: number; z: number }
-export const NODES: MapNode[] = [
-  { id: 0, x: 0, z: 42 },     // spawn
-  { id: 1, x: 0, z: 0 },      // gates junction
-  { id: 2, x: 80, z: 0 },     // SE corner — identity
-  { id: 3, x: -80, z: 0 },    // SW corner — arsenal
-  { id: 4, x: 0, z: -80 },    // HUB
-  { id: 5, x: 80, z: -80 },   // E — credentials
-  { id: 6, x: -80, z: -80 },  // W — transmissions
-  { id: 7, x: 0, z: -160 },   // time tunnel center
-  { id: 8, x: 80, z: -160 },  // E — event docks
-  { id: 9, x: -80, z: -160 }, // W — anomalies
-  { id: 10, x: 0, z: -240 },  // N mid
-  { id: 11, x: 80, z: -240 }, // NE corner
-  { id: 12, x: -80, z: -240 },// NW corner — observatory
-  { id: 13, x: 0, z: -282 },  // choice
-];
-export const EDGES: [number, number][] = [
-  [0, 1], [1, 2], [1, 3], [1, 4], [2, 5], [3, 6],
-  [4, 5], [4, 6], [4, 7], [5, 8], [6, 9], [7, 8], [7, 9], [7, 10],
-  [8, 11], [9, 12], [10, 11], [10, 12], [10, 13],
-];
-
-const ADJ: number[][] = NODES.map(() => []);
-for (const [a, b] of EDGES) { ADJ[a].push(b); ADJ[b].push(a); }
-
-function nearestNode(x: number, z: number): number {
-  let best = 0, bd = Infinity;
-  for (const n of NODES) {
-    const d = (n.x - x) ** 2 + (n.z - z) ** 2;
-    if (d < bd) { bd = d; best = n.id; }
-  }
-  return best;
+// ── Landmarks — sections you ENTER ──────────────────────────────────────────
+export interface Landmark {
+  id: string;           // zone id
+  name: string;         // display name (no real-world names)
+  entrance: [number, number];  // lobby door (driveway far end)
+  outDir: [number, number];    // direction facing OUT of the door
+  interiorLen: number;  // walkable interior depth (0 = open-air, no interior)
 }
 
-/** BFS waypoint route from (ax,az) to (bx,bz) along the street graph. */
-export function routeBetween(ax: number, az: number, bx: number, bz: number): { x: number; z: number }[] {
-  const start = nearestNode(ax, az);
-  const goal = nearestNode(bx, bz);
-  const prev = new Array<number>(NODES.length).fill(-1);
-  const seen = new Set<number>([start]);
-  const q = [start];
-  while (q.length) {
-    const cur = q.shift()!;
-    if (cur === goal) break;
-    for (const nb of ADJ[cur]) {
-      if (!seen.has(nb)) { seen.add(nb); prev[nb] = cur; q.push(nb); }
-    }
-  }
-  const path: { x: number; z: number }[] = [];
-  let cur = goal;
-  while (cur !== -1 && cur !== start) {
-    path.unshift({ x: NODES[cur].x, z: NODES[cur].z });
-    cur = prev[cur];
-  }
-  path.push({ x: bx, z: bz });
-  return path;
+export const LANDMARKS: Landmark[] = [
+  { id: 'timeline', name: 'THE SPIRE OF ERAS', entrance: [-92, -80], outDir: [1, 0], interiorLen: 88 },
+  { id: 'arsenal', name: 'CROSSBRACE TOWER', entrance: [88, -18], outDir: [-1, 0], interiorLen: 40 },
+  { id: 'identity', name: 'LAKESIDE HELIX', entrance: [92, -80], outDir: [-1, 0], interiorLen: 36 },
+  { id: 'creds', name: 'THE NEEDLE', entrance: [20, -16], outDir: [0, -1], interiorLen: 36 },
+  { id: 'observatory', name: 'THE WATCHTOWER', entrance: [20, -126], outDir: [0, 1], interiorLen: 40 },
+  { id: 'docks', name: 'GRAND MART', entrance: [-122, -40], outDir: [1, 0], interiorLen: 44 },
+  { id: 'transmissions', name: 'TWIN COILS', entrance: [-96, -176], outDir: [1, 0], interiorLen: 36 },
+];
+
+export function landmarkById(id: string): Landmark | undefined {
+  return LANDMARKS.find(l => l.id === id);
 }
 
-// ── District anchors & set-piece spots ──────────────────────────────────────
-export const GATE_ARCH = { x: 0, z: 8 };
-export const HUB = { x: 0, z: -80 };
-export const IDENTITY_SPOT = { x: 90, y: 4.4, z: 6 };       // off SE corner
-export const ARSENAL_SPOT = { x: -94, y: 9, z: 0 };          // wall faces east
-export const PORTAL_XS = [-50, -25, 0, 25, 50];              // along ring top
-export const PORTAL_Z = -160;
-export const ANOM_SPOTS = [
-  { x: -90, z: -152 },
-  { x: -70, z: -171 },
+// Willis-style era floors (position along the interior, floor label)
+export const ERA_FLOORS = [
+  { t: 12, floor: '034' },
+  { t: 29, floor: '058' },
+  { t: 46, floor: '077' },
+  { t: 63, floor: '095' },
+  { t: 80, floor: '108' },
 ];
-export const CREDS_SPOT = { x: 90, z: -80 };
-export const TRANS_SPOT = { x: -91, z: -80 };
-export const DOCKS_SPOT = { x: 92, z: -160 };
-export const OBS_SPOT = { x: -92, z: -244 };
-export const PILLS_SPOT = { x: 0, y: 2.6, z: -276 };
 
-// ── Zones — themed districts (each with its own atmosphere) ─────────────────
+// ── Zones ───────────────────────────────────────────────────────────────────
 export interface Zone {
   idx: number; id: string; code: string; line: string;
   x: number; z: number;
-  fog: string;          // district fog/sky tint
-  accent: string;       // district signature neon
+  fog: string;
+  accent: string;
 }
 
 export const ZONES: Zone[] = [
-  { idx: 0, id: 'gate', code: '00 / CITY GATES', line: 'Welcome to the grid. Drive the ring, hit every district — the map is yours.', x: 0, z: 36, fog: '#030308', accent: GX.violet },
-  { idx: 1, id: 'hub', code: 'HQ / CENTRAL HUB', line: 'The hub. Every district is one turn away, operator.', x: 0, z: -80, fog: '#070512', accent: GX.white },
-  { idx: 2, id: 'identity', code: '01 / IDENTITY PLAZA', line: 'Identity verified the hard way: eleven years in production.', x: 80, z: 0, fog: '#04101F', accent: GX.blue },
-  { idx: 3, id: 'arsenal', code: '02 / ARSENAL FORGE', line: "An arsenal isn't what you know. It's what you reach for at 3 AM.", x: -80, z: 0, fog: '#160407', accent: GX.red },
-  { idx: 4, id: 'timeline', code: '03 / TIME TUNNEL', line: 'Five portals. Five eras. Drive the tunnel and punch through them.', x: 0, z: -160, fog: '#0D0418', accent: GX.violet },
-  { idx: 5, id: 'anomalies', code: '04 / ANOMALY SECTOR', line: 'Two anomalies reached production. Click the billboards — watch them surrender.', x: -80, z: -160, fog: '#140409', accent: GX.redBright },
-  { idx: 6, id: 'creds', code: '05 / CREDENTIALS COURT', line: 'Stamped, sealed, verified. The machines agree: he is certified.', x: 80, z: -80, fog: '#0A1430', accent: GX.blueBright },
-  { idx: 7, id: 'transmissions', code: '06 / TRANSMISSION ROW', line: 'He also writes. The signal is strong on this one.', x: -80, z: -80, fog: '#0A0620', accent: GX.violetBright },
-  { idx: 8, id: 'docks', code: '07 / EVENT DOCKS', line: 'Kafka. Kinesis. Pub/Sub. The docks never sleep — every system here is a stream.', x: 80, z: -160, fog: '#06122B', accent: GX.blueBright },
-  { idx: 9, id: 'observatory', code: '08 / OBSERVATORY', line: 'Prometheus watches. Grafana paints. MTTR fell 40% under this roof.', x: -80, z: -240, fog: '#0B0A22', accent: GX.violetBright },
-  { idx: 10, id: 'choice', code: '09 / THE CHOICE', line: 'The last rooftop, operator. Red or blue?', x: 0, z: -276, fog: '#0A0512', accent: GX.white },
+  { idx: 0, id: 'gate', code: '00 / CITY GATES', line: 'Neon Chicago, operator. Drive the Drive — the lake is real, the code is realer.', x: -20, z: 40, fog: '#030308', accent: GX.violet },
+  { idx: 1, id: 'hub', code: 'HQ / BEAN PLAZA', line: 'The plaza. Check your reflection — then pick a tower.', x: -20, z: -150, fog: '#070512', accent: GX.white },
+  { idx: 2, id: 'identity', code: '01 / LAKESIDE HELIX', line: 'Identity lives lakeside: eleven years in production.', x: 92, z: -80, fog: '#04101F', accent: GX.blue },
+  { idx: 3, id: 'arsenal', code: '02 / CROSSBRACE TOWER', line: "The arsenal tower. X-braced, like everything he ships.", x: 88, z: -18, fog: '#160407', accent: GX.red },
+  { idx: 4, id: 'timeline', code: '03 / SPIRE OF ERAS', line: 'The tallest tower holds five floors of history. Take the elevator.', x: -92, z: -80, fog: '#0D0418', accent: GX.violet },
+  { idx: 5, id: 'anomalies', code: '04 / ANOMALY ALLEY', line: 'Two anomalies reached production. Click the billboards — watch them surrender.', x: 8, z: -110, fog: '#140409', accent: GX.redBright },
+  { idx: 6, id: 'creds', code: '05 / THE NEEDLE', line: 'Stamped, sealed, verified — filed at the top of the Needle.', x: 20, z: -16, fog: '#0A1430', accent: GX.blueBright },
+  { idx: 7, id: 'transmissions', code: '06 / TWIN COILS', line: 'He also writes. The coils broadcast it nightly.', x: -96, z: -176, fog: '#0A0620', accent: GX.violetBright },
+  { idx: 8, id: 'docks', code: '07 / GRAND MART', line: 'Kafka. Kinesis. Pub/Sub. The Mart never sleeps — every system is a stream.', x: -122, z: -40, fog: '#06122B', accent: GX.blueBright },
+  { idx: 9, id: 'observatory', code: '08 / WATCHTOWER', line: 'Prometheus watches. Grafana paints. MTTR fell 40% under this roof.', x: 20, z: -126, fog: '#0B0A22', accent: GX.violetBright },
+  { idx: 10, id: 'choice', code: '09 / THE WHEEL', line: 'End of the pier, operator. The wheel turns. Red or blue?', x: 160, z: -110, fog: '#0A0512', accent: GX.white },
 ];
 
 export function zoneAt(x: number, z: number): Zone {
@@ -144,46 +136,70 @@ export function zoneAt(x: number, z: number): Zone {
   return best;
 }
 
-// ── District entry portals — every one a different shape ───────────────────
-export type PortalKind = 'hex' | 'industrial' | 'glitch' | 'doublering' | 'arcs' | 'diamond' | 'wave' | 'orrery';
-export interface DistrictPortal { kind: PortalKind; x: number; z: number; rotY: number; color: string }
+export function zoneById(id: string): Zone {
+  return ZONES.find(z => z.id === id) ?? ZONES[0];
+}
 
-// rotY 0 → opening faces ±z travel; Math.PI/2 → faces ±x travel
-export const DISTRICT_PORTALS: DistrictPortal[] = [
-  { kind: 'hex', x: 66, z: 0, rotY: Math.PI / 2, color: GX.blue },          // identity (ring south, heading E)
-  { kind: 'hex', x: 80, z: -14, rotY: 0, color: GX.blue },                  // identity (ring east, heading N)
-  { kind: 'industrial', x: -66, z: 0, rotY: Math.PI / 2, color: GX.red },   // arsenal
-  { kind: 'industrial', x: -80, z: -14, rotY: 0, color: GX.red },
-  { kind: 'doublering', x: 80, z: -64, rotY: 0, color: GX.blueBright },     // credentials
-  { kind: 'doublering', x: 64, z: -80, rotY: Math.PI / 2, color: GX.blueBright },
-  { kind: 'arcs', x: -80, z: -64, rotY: 0, color: GX.violetBright },        // transmissions
-  { kind: 'arcs', x: -64, z: -80, rotY: Math.PI / 2, color: GX.violetBright },
-  { kind: 'glitch', x: -80, z: -144, rotY: 0, color: GX.redBright },        // anomalies
-  { kind: 'glitch', x: -64, z: -160, rotY: Math.PI / 2, color: GX.redBright },
-  { kind: 'wave', x: 80, z: -144, rotY: 0, color: GX.blueBright },          // event docks
-  { kind: 'wave', x: 64, z: -160, rotY: Math.PI / 2, color: GX.blueBright },
-  { kind: 'orrery', x: -80, z: -224, rotY: 0, color: GX.violetBright },     // observatory
-  { kind: 'orrery', x: -64, z: -240, rotY: Math.PI / 2, color: GX.violetBright },
-  { kind: 'diamond', x: 0, z: -254, rotY: 0, color: GX.white },             // choice
-];
+// ── Route graph — built from street endpoints; route waypoints follow the
+// street's actual pts so autopilot drives the curves. ───────────────────────
+interface NodeRec { x: number; z: number; streets: number[] }
+const nodeKey = (x: number, z: number) => `${Math.round(x)}:${Math.round(z)}`;
+const NODE_MAP = new Map<string, NodeRec>();
+STREETS.forEach((s, si) => {
+  for (const end of [s.pts[0], s.pts[s.pts.length - 1]]) {
+    const k = nodeKey(end[0], end[1]);
+    const rec = NODE_MAP.get(k) ?? { x: end[0], z: end[1], streets: [] };
+    rec.streets.push(si);
+    NODE_MAP.set(k, rec);
+  }
+});
+export const NODES: NodeRec[] = [...NODE_MAP.values()];
 
-// ── Junction signposts (big, readable, both directions) ─────────────────────
-export interface SignBoard { text: string; color: string }
-export interface SignPost { x: number; z: number; boards: SignBoard[] }
+function nearestNodeIdx(x: number, z: number): number {
+  let best = 0, bd = Infinity;
+  NODES.forEach((n, i) => {
+    const d = (n.x - x) ** 2 + (n.z - z) ** 2;
+    if (d < bd) { bd = d; best = i; }
+  });
+  return best;
+}
 
-export const SIGNPOSTS: SignPost[] = [
-  { x: 5.4, z: 7, boards: [{ text: '▲ HUB & ALL DISTRICTS', color: GX.white }, { text: 'IDENTITY ▶', color: GX.blue }, { text: '◀ ARSENAL', color: GX.red }] },
-  { x: 74, z: 6, boards: [{ text: 'IDENTITY PLAZA', color: GX.blue }, { text: '▲ CREDENTIALS', color: GX.blueBright }] },
-  { x: -74, z: 6, boards: [{ text: 'ARSENAL FORGE', color: GX.red }, { text: '▲ TRANSMISSIONS', color: GX.violetBright }] },
-  { x: 5.4, z: -73, boards: [{ text: 'CENTRAL HUB', color: GX.white }, { text: 'CREDENTIALS ▶', color: GX.blueBright }, { text: '◀ TRANSMISSIONS', color: GX.violetBright }, { text: '▲ TIME TUNNEL', color: GX.red }] },
-  { x: 74, z: -73, boards: [{ text: 'CREDENTIALS COURT', color: GX.blueBright }, { text: '▲ EVENT DOCKS', color: GX.blue }] },
-  { x: -74, z: -73, boards: [{ text: 'TRANSMISSION ROW', color: GX.violetBright }, { text: '▲ ANOMALIES', color: GX.redBright }] },
-  { x: 5.4, z: -153, boards: [{ text: '◀ TIME TUNNEL ▶', color: GX.red }, { text: '▲ RING NORTH & CHOICE', color: GX.white }] },
-  { x: -74, z: -153, boards: [{ text: 'ANOMALY SECTOR', color: GX.redBright }, { text: '▲ OBSERVATORY', color: GX.violetBright }] },
-  { x: 74, z: -153, boards: [{ text: 'EVENT DOCKS', color: GX.blueBright }, { text: '▲ RING NORTH', color: GX.violet }] },
-  { x: 5.4, z: -233, boards: [{ text: '▲ THE CHOICE', color: GX.white }, { text: '◀ OBSERVATORY', color: GX.violetBright }] },
-  { x: -74, z: -233, boards: [{ text: 'THE OBSERVATORY', color: GX.violetBright }] },
-];
+/** BFS over street graph; returns waypoints INCLUDING curve points. */
+export function routeBetween(ax: number, az: number, bx: number, bz: number): { x: number; z: number }[] {
+  const start = nearestNodeIdx(ax, az);
+  const goal = nearestNodeIdx(bx, bz);
+  const prev = new Array<number>(NODES.length).fill(-1);
+  const prevStreet = new Array<number>(NODES.length).fill(-1);
+  const seen = new Set<number>([start]);
+  const q = [start];
+  while (q.length) {
+    const cur = q.shift()!;
+    if (cur === goal) break;
+    for (const si of NODES[cur].streets) {
+      const s = STREETS[si];
+      for (const end of [s.pts[0], s.pts[s.pts.length - 1]]) {
+        const ni = nearestNodeIdx(end[0], end[1]);
+        if (!seen.has(ni)) { seen.add(ni); prev[ni] = cur; prevStreet[ni] = si; q.push(ni); }
+      }
+    }
+  }
+  // unwind, expanding each street's curve points
+  const path: { x: number; z: number }[] = [];
+  let cur = goal;
+  while (cur !== start && prev[cur] !== -1) {
+    const si = prevStreet[cur];
+    const s = STREETS[si];
+    const from = NODES[prev[cur]];
+    let pts = s.pts.map(p => ({ x: p[0], z: p[1] }));
+    const d0 = (pts[0].x - from.x) ** 2 + (pts[0].z - from.z) ** 2;
+    const dN = (pts[pts.length - 1].x - from.x) ** 2 + (pts[pts.length - 1].z - from.z) ** 2;
+    if (dN < d0) pts = pts.reverse();
+    path.unshift(...pts.slice(1));
+    cur = prev[cur];
+  }
+  path.push({ x: bx, z: bz });
+  return path;
+}
 
 // ── Optional checkpoints — rotating sarcastic question pool ─────────────────
 export interface Question {
@@ -341,14 +357,14 @@ export const QUESTION_POOL: Question[] = [
   },
 ];
 
-// checkpoints on busy through-roads
+// checkpoints sit ON road segments
 export const CHECKPOINTS = [
-  { x: 0, z: -26 },
-  { x: 0, z: -120 },
-  { x: -40, z: -80 },
-  { x: 40, z: -80 },
-  { x: 80, z: -40 },
-  { x: -80, z: -120 },
+  { x: -20, z: -10 },
+  { x: -70, z: -60 },
+  { x: -45, z: -40 },
+  { x: -45, z: -150 },
+  { x: 65, z: -62 },
+  { x: 110, z: -110 },
 ];
 
 export const SKIP_LABEL = '[ skip — the phoenix saw that ]';
@@ -363,3 +379,21 @@ export const RANKS = [
   'ORACLE',
   'THE ONE',
 ] as const;
+
+// ── Junction signposts ──────────────────────────────────────────────────────
+export interface SignBoard { text: string; color: string }
+export interface SignPost { x: number; z: number; boards: SignBoard[] }
+
+export const SIGNPOSTS: SignPost[] = [
+  { x: -14.5, z: 26, boards: [{ text: '▲ STATE ST · ALL DISTRICTS', color: GX.white }, { text: 'WACKER ▶ LAKE SHORE DR', color: GX.violetBright }] },
+  { x: -14.5, z: -34, boards: [{ text: '◀ MADISON ▶', color: GX.blue }, { text: 'THE NEEDLE ▶', color: GX.blueBright }] },
+  { x: -64.5, z: -74, boards: [{ text: '◀ SPIRE OF ERAS', color: GX.violet }] },
+  { x: -14.5, z: -104, boards: [{ text: 'ANOMALY ALLEY ▶', color: GX.redBright }] },
+  { x: -14.5, z: -144, boards: [{ text: 'BEAN PLAZA', color: GX.white }, { text: '◀ MONROE ▶', color: GX.blue }] },
+  { x: 54, z: -24, boards: [{ text: 'CROSSBRACE TOWER ▶', color: GX.red }, { text: 'LAKE SHORE DR ▼', color: GX.violetBright }] },
+  { x: 56, z: -86, boards: [{ text: 'LAKESIDE HELIX ▶', color: GX.blue }, { text: 'NAVY PIER ▼', color: GX.red }] },
+  { x: 62, z: -104, boards: [{ text: 'NAVY PIER & THE WHEEL ▶', color: GX.white }] },
+  { x: 14, z: -144, boards: [{ text: 'WATCHTOWER ▲', color: GX.violetBright }, { text: 'LAKE SHORE ▶', color: GX.blue }] },
+  { x: -94, z: -34, boards: [{ text: '◀ GRAND MART DOCKS', color: GX.blueBright }] },
+  { x: -64.5, z: -170, boards: [{ text: '◀ TWIN COILS', color: GX.violetBright }] },
+];

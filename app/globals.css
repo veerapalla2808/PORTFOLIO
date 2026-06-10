@@ -185,6 +185,30 @@ button { font-family: inherit; }
 }
 .mx-junction em { color: var(--dim); font-style: normal; font-size: 0.6rem; letter-spacing: 0.1em; }
 
+/* dimension-travel pre-roll */
+.mx-enterflash {
+  position: fixed; inset: 0; z-index: 80; pointer-events: none;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.8rem;
+  background: radial-gradient(ellipse at center, rgba(21, 14, 102, 0.35), transparent 70%);
+  animation: mx-enter-fade 4.2s ease-in-out forwards;
+}
+.mx-enterflash-text { color: var(--purple-b); font-size: clamp(1.2rem, 3vw, 2rem); letter-spacing: 0.5em; text-indent: 0.5em; text-shadow: 0 0 18px rgba(122, 108, 255, 0.6); }
+.mx-enterflash-main {
+  font-family: var(--font-zen), var(--mono); font-weight: 400;
+  font-size: clamp(1.6rem, 5vw, 4rem); letter-spacing: 0.14em; text-indent: 0.14em;
+  color: var(--white);
+  text-shadow: -3px 0 rgba(200, 16, 46, 0.55), 3px 0 rgba(30, 95, 224, 0.55), 0 0 34px rgba(122, 108, 255, 0.5);
+  animation: mx-flicker-soft 0.9s steps(2) infinite;
+}
+@keyframes mx-enter-fade {
+  0% { opacity: 0; }
+  8% { opacity: 1; }
+  55% { opacity: 1; }
+  80% { opacity: 0; }
+  100% { opacity: 0; }
+}
+@keyframes mx-flicker-soft { 0%, 88% { opacity: 1; } 94% { opacity: 0.6; } 100% { opacity: 1; } }
+
 /* portal-crossing flash tint */
 .mx-warp {
   position: fixed; inset: 0; z-index: 30; pointer-events: none; opacity: 0;
