@@ -6,8 +6,8 @@ import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import {
   GX, NEONS, STREETS, SIGNPOSTS, GATE_ARCH, HUB, IDENTITY_SPOT, ARSENAL_SPOT,
-  PORTAL_XS, PORTAL_Z, ANOM_SPOTS, CREDS_SPOT, TRANS_SPOT, PILLS_SPOT,
-  DISTRICT_PORTALS, ZONES, zoneAt, type DistrictPortal,
+  PORTAL_XS, PORTAL_Z, ANOM_SPOTS, CREDS_SPOT, TRANS_SPOT, DOCKS_SPOT, OBS_SPOT,
+  PILLS_SPOT, DISTRICT_PORTALS, ZONES, zoneAt, type DistrictPortal,
 } from '@/lib/grid';
 import { scrollBus } from '@/lib/scrollBus';
 import { skillCategories, projects, personal, certifications, education, blogPosts, experiences } from '@/lib/data';
@@ -325,11 +325,14 @@ export function CityBlocks({ tier, reduced }: { tier: 'S' | 'M' | 'L'; reduced: 
   );
 }
 
-// ── streets — ground, grid, neon lane edges ─────────────────────────────────
+// ── streets — dark asphalt, ONE lane color per street (both edges), and a
+// highway-style dashed center line. No grid tiles.
 export function StreetLanes() {
-  const lanes = useMemo(() => {
-    const out: { x: number; z: number; sx: number; sz: number; color: string }[] = [];
-    STREETS.forEach((s, si) => {
+  const { lanes, dashes } = useMemo(() => {
+    const laneList: { x: number; z: number; sx: number; sz: number; color: string }[] = [];
+    const dashList: { x: number; z: number; sx: number; sz: number }[] = [];
+    const DASH = 3.2, GAP = 4.2;
+    STREETS.forEach((s) => {
       const ax = s.a[0], az = s.a[1];
       const dx = s.b[0] - ax, dz = s.b[1] - az;
       const len = Math.hypot(dx, dz);
@@ -337,29 +340,67 @@ export function StreetLanes() {
       const nx = -uz, nz = ux;
       const cx = ax + dx / 2, cz = az + dz / 2;
       const horizontal = Math.abs(ux) > 0.5;
+      // edges — same color on BOTH sides of the street
       for (const side of [-1, 1]) {
-        out.push({
+        laneList.push({
           x: cx + nx * side * 4.6,
           z: cz + nz * side * 4.6,
           sx: horizontal ? len : 0.16,
           sz: horizontal ? 0.16 : len,
-          color: NEONS[(si + (side === 1 ? 1 : 0)) % NEONS.length],
+          color: s.color,
+        });
+      }
+      // dashed center line
+      for (let d = 4; d < len - 3; d += DASH + GAP) {
+        const mx = ax + ux * (d + DASH / 2), mz = az + uz * (d + DASH / 2);
+        dashList.push({
+          x: mx, z: mz,
+          sx: horizontal ? DASH : 0.14,
+          sz: horizontal ? 0.14 : DASH,
         });
       }
     });
-    return out;
+    return { lanes: laneList, dashes: dashList };
   }, []);
+
+  const dashMesh = useMemo(() => {
+    const geo = new THREE.BoxGeometry(1, 0.06, 1);
+    const mesh = new THREE.InstancedMesh(
+      geo,
+      new THREE.MeshBasicMaterial({ color: glow('#ADc4E8'.toUpperCase(), 0.9), toneMapped: false, transparent: true, opacity: 0.55 }),
+      dashes.length,
+    );
+    const m = new THREE.Matrix4();
+    dashes.forEach((d, i) => {
+      m.compose(new THREE.Vector3(d.x, 0.05, d.z), new THREE.Quaternion(), new THREE.Vector3(d.sx, 1, d.sz));
+      mesh.setMatrixAt(i, m);
+    });
+    mesh.instanceMatrix.needsUpdate = true;
+    return mesh;
+  }, [dashes]);
+
+  const group = useRef<THREE.Group>(null);
+  useEffect(() => {
+    const g = group.current;
+    if (!g) return;
+    g.add(dashMesh);
+    return () => {
+      g.remove(dashMesh);
+      dashMesh.geometry.dispose();
+      (dashMesh.material as THREE.Material).dispose();
+    };
+  }, [dashMesh]);
+
   return (
-    <group>
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.05, -80]}>
-        <planeGeometry args={[420, 420]} />
+    <group ref={group}>
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.05, -120]}>
+        <planeGeometry args={[460, 520]} />
         <meshBasicMaterial color={'#04050B'} />
       </mesh>
-      <gridHelper args={[420, 84, '#12224A', '#0A0F24']} position={[0, 0.01, -80]} />
       {lanes.map((l, i) => (
         <mesh key={i} position={[l.x, 0.06, l.z]}>
           <boxGeometry args={[l.sx, 0.1, l.sz]} />
-          <meshBasicMaterial color={glow(l.color, 1.25)} toneMapped={false} />
+          <meshBasicMaterial color={glow(l.color, 1.45)} toneMapped={false} />
         </mesh>
       ))}
     </group>
@@ -611,6 +652,65 @@ function ArcsPortal({ p }: { p: DistrictPortal }) {
   );
 }
 
+function WavePortal({ p }: { p: DistrictPortal }) {
+  const arcs = useRef<(THREE.Mesh | null)[]>([]);
+  useFrame((state) => {
+    const t = state.clock.elapsedTime;
+    arcs.current.forEach((m, i) => {
+      if (!m) return;
+      m.position.y = (i - 1) * 2.5 + Math.sin(t * 1.6 + i * 1.3) * 0.5;
+      (m.material as THREE.MeshBasicMaterial).opacity = 0.6 + Math.sin(t * 1.6 + i * 1.3) * 0.3;
+    });
+  });
+  return (
+    <PortalShell p={p}>
+      {[0, 1, 2].map(i => (
+        <mesh
+          key={i}
+          ref={(m) => { arcs.current[i] = m; }}
+          rotation={[0, 0, i % 2 === 0 ? 0 : Math.PI]}
+        >
+          <torusGeometry args={[3.8, 0.14, 10, 48, Math.PI]} />
+          <meshBasicMaterial color={glow(p.color, 1.8)} toneMapped={false} transparent />
+        </mesh>
+      ))}
+    </PortalShell>
+  );
+}
+
+function OrreryPortal({ p }: { p: DistrictPortal }) {
+  const orbitA = useRef<THREE.Group>(null);
+  const orbitB = useRef<THREE.Group>(null);
+  useFrame((_, dt) => {
+    if (orbitA.current) orbitA.current.rotation.z += dt * 1.1;
+    if (orbitB.current) orbitB.current.rotation.z -= dt * 0.7;
+  });
+  return (
+    <PortalShell p={p}>
+      <mesh>
+        <torusGeometry args={[4.5, 0.14, 10, 72]} />
+        <meshBasicMaterial color={glow(p.color, 1.7)} toneMapped={false} />
+      </mesh>
+      <mesh rotation={[0, 0, 0.6]}>
+        <torusGeometry args={[3.2, 0.06, 8, 64]} />
+        <meshBasicMaterial color={glow(GX.blue, 1.4)} toneMapped={false} transparent opacity={0.7} />
+      </mesh>
+      <group ref={orbitA}>
+        <mesh position={[4.5, 0, 0]}>
+          <sphereGeometry args={[0.34, 12, 12]} />
+          <meshBasicMaterial color={glow(GX.white, 1.9)} toneMapped={false} />
+        </mesh>
+      </group>
+      <group ref={orbitB}>
+        <mesh position={[-3.2, 0, 0]}>
+          <sphereGeometry args={[0.24, 12, 12]} />
+          <meshBasicMaterial color={glow(GX.red, 2)} toneMapped={false} />
+        </mesh>
+      </group>
+    </PortalShell>
+  );
+}
+
 function DiamondPortal({ p }: { p: DistrictPortal }) {
   const ring = useRef<THREE.Mesh>(null);
   useFrame((state) => {
@@ -644,10 +744,100 @@ export function DistrictPortals() {
           case 'glitch': return <GlitchPortal key={i} p={p} />;
           case 'doublering': return <DoubleRingPortal key={i} p={p} />;
           case 'arcs': return <ArcsPortal key={i} p={p} />;
+          case 'wave': return <WavePortal key={i} p={p} />;
+          case 'orrery': return <OrreryPortal key={i} p={p} />;
           case 'diamond': return <DiamondPortal key={i} p={p} />;
         }
       })}
     </>
+  );
+}
+
+// ── event docks — stacked stream containers riding slow waves ───────────────
+export function EventDocks({ reduced }: { reduced: boolean }) {
+  const crates = useMemo(() => {
+    const labels = ['KAFKA', 'RABBITMQ', 'KINESIS', 'PUB/SUB', 'EVENT HUB', 'SQS'];
+    return labels.map((l, i) => ({
+      tex: textTexture([{ text: l, size: 58, color: i % 2 === 0 ? GX.blueBright : GX.violetBright }], 640, 180, i % 2 === 0 ? GX.blue : GX.violet),
+      x: DOCKS_SPOT.x + (i % 2) * 9 - 2,
+      z: DOCKS_SPOT.z + (Math.floor(i / 2) - 1) * 10,
+      y: 1.6 + (i % 3) * 2.9,
+      seed: i * 3.1,
+    }));
+  }, []);
+  const refs = useRef<(THREE.Group | null)[]>([]);
+  useFrame((state) => {
+    if (reduced) return;
+    const t = state.clock.elapsedTime;
+    refs.current.forEach((g, i) => {
+      if (!g) return;
+      g.position.y = crates[i].y + Math.sin(t * 0.9 + crates[i].seed) * 0.35;
+    });
+  });
+  return (
+    <group>
+      {crates.map((c, i) => (
+        <group key={i} ref={(g) => { refs.current[i] = g; }} position={[c.x, c.y, c.z]}>
+          <mesh>
+            <boxGeometry args={[7.4, 2.6, 4]} />
+            <meshStandardMaterial color={'#070A14'} roughness={0.45} metalness={0.6} />
+          </mesh>
+          <mesh position={[-3.71, 0, 0]} rotation={[0, -Math.PI / 2, 0]}>
+            <planeGeometry args={[3.8, 2.2]} />
+            <meshBasicMaterial map={c.tex} transparent side={THREE.DoubleSide} />
+          </mesh>
+        </group>
+      ))}
+    </group>
+  );
+}
+
+// ── the observatory — an orrery of watching instruments ─────────────────────
+export function Observatory({ reduced }: { reduced: boolean }) {
+  const rings = useRef<(THREE.Mesh | null)[]>([]);
+  const dish = useRef<THREE.Mesh>(null);
+  const board = useMemo(() => textTexture([
+    { text: 'OBSERVATORY UPLINK', size: 40, color: GX.violetBright },
+    { text: 'MTTR ▼ 40% · PROMETHEUS + GRAFANA', size: 34, color: GX.white },
+    { text: 'CLOUDWATCH · STACKDRIVER · SENTRY · DATADOG', size: 26, color: GX.blueBright },
+  ], 1000, 420, GX.violet), []);
+  useFrame((state, dt) => {
+    if (reduced) return;
+    rings.current.forEach((r, i) => {
+      if (!r) return;
+      r.rotation.x += dt * (0.2 + i * 0.12);
+      r.rotation.y += dt * (0.14 + i * 0.08);
+    });
+    if (dish.current) dish.current.rotation.y = Math.sin(state.clock.elapsedTime * 0.3) * 0.8;
+  });
+  return (
+    <group position={[OBS_SPOT.x, 0, OBS_SPOT.z]}>
+      {/* observation sphere of nested rings */}
+      <group position={[0, 9, 0]}>
+        {[3.4, 4.4, 5.4].map((r, i) => (
+          <mesh key={r} ref={(m) => { rings.current[i] = m; }}>
+            <torusGeometry args={[r, 0.07, 8, 64]} />
+            <meshBasicMaterial color={glow(NEONS[i % NEONS.length], 1.7)} toneMapped={false} transparent opacity={0.85} />
+          </mesh>
+        ))}
+        <mesh>
+          <icosahedronGeometry args={[1.1, 1]} />
+          <meshBasicMaterial color={glow(GX.white, 1.6)} wireframe toneMapped={false} />
+        </mesh>
+      </group>
+      <mesh position={[0, 3, 0]}>
+        <cylinderGeometry args={[0.4, 0.9, 6, 10]} />
+        <meshStandardMaterial color={'#0A0D16'} roughness={0.5} metalness={0.6} />
+      </mesh>
+      <mesh ref={dish} position={[0, 14.6, 0]} rotation={[0.7, 0, 0]}>
+        <coneGeometry args={[1.6, 0.9, 16, 1, true]} />
+        <meshBasicMaterial color={glow(GX.violetBright, 1.2)} toneMapped={false} transparent opacity={0.5} side={THREE.DoubleSide} />
+      </mesh>
+      <mesh position={[6, 6, 8]} rotation={[0, Math.PI / 2.6, 0]}>
+        <planeGeometry args={[9.4, 4]} />
+        <meshBasicMaterial map={board} transparent side={THREE.DoubleSide} />
+      </mesh>
+    </group>
   );
 }
 
@@ -999,61 +1189,114 @@ export function Pills({ onRed, onBlue }: { onRed: () => void; onBlue: () => void
   );
 }
 
-// ── the white rabbit — click it and it leads you to an unanswered question ──
-export function Rabbit({ idle, reduced, onQuest }: { idle: boolean; reduced: boolean; onQuest: () => void }) {
+// ── the phoenix — a constantly-flying guide in a red→royal→blue gradient.
+// It glides ahead of you (never lands), banks into turns, leaves a fading
+// trail, and — like its rabbit ancestor — clicking it leads you to an
+// unanswered question.
+export function Phoenix({ idle, reduced, onQuest }: { idle: boolean; reduced: boolean; onQuest: () => void }) {
   const group = useRef<THREE.Group>(null);
+  const wingL = useRef<THREE.Mesh>(null);
+  const wingR = useRef<THREE.Mesh>(null);
   const target = useRef(new THREE.Vector3());
   const proj = useRef(new THREE.Vector3());
-  const white = useMemo(() => new THREE.Color(GX.white).multiplyScalar(1.7), []);
+  const trail = useRef<(THREE.Mesh | null)[]>([]);
+  const history = useRef<THREE.Vector3[]>(Array.from({ length: 30 }, () => new THREE.Vector3(0, 3, 30)));
+  const tick = useRef(0);
+  const redC = useMemo(() => glow(GX.redBright, 2), []);
+  const royalC = useMemo(() => glow(GX.violetBright, 2), []);
+  const blueC = useMemo(() => glow(GX.blueBright, 2), []);
+
   useFrame((state) => {
     const g = group.current;
     if (!g) return;
+    const t = state.clock.elapsedTime;
+    // glide ahead of the traveler — always airborne
     target.current.set(
-      scrollBus.x + scrollBus.hx * 9 - scrollBus.hz * 1.6,
-      0.55,
-      scrollBus.z + scrollBus.hz * 9 + scrollBus.hx * 1.6,
+      scrollBus.x + scrollBus.hx * 10 - scrollBus.hz * 1.4,
+      reduced ? 3 : 3 + Math.sin(t * 1.5) * 0.6 + Math.sin(t * 0.6) * 0.3,
+      scrollBus.z + scrollBus.hz * 10 + scrollBus.hx * 1.4,
     );
-    g.position.lerp(target.current, 0.055);
-    if (!reduced) g.position.y += Math.abs(Math.sin(state.clock.elapsedTime * 2.6)) * 0.26;
+    const beforeX = g.position.x;
+    g.position.lerp(target.current, 0.06);
     if (idle) {
       g.lookAt(state.camera.position);
     } else {
       g.lookAt(g.position.x + scrollBus.hx * 4, g.position.y, g.position.z + scrollBus.hz * 4);
+      g.rotateZ(THREE.MathUtils.clamp((g.position.x - beforeX) * 6, -0.6, 0.6)); // bank into turns
     }
+    // wing flap
+    const flap = reduced ? 0.45 : 0.5 + Math.sin(t * (idle ? 3.4 : 7)) * 0.55;
+    if (wingL.current) wingL.current.rotation.z = flap;
+    if (wingR.current) wingR.current.rotation.z = -flap;
+    // fading trail
+    tick.current++;
+    if (tick.current % 3 === 0 && !reduced) {
+      history.current.pop();
+      history.current.unshift(g.position.clone());
+    }
+    trail.current.forEach((m, i) => {
+      if (!m) return;
+      const h = history.current[(i + 1) * 5 - 1];
+      if (h) m.position.copy(h);
+      const k = 1 - (i + 1) / 7;
+      m.scale.setScalar(0.25 * k + 0.05);
+      (m.material as THREE.MeshBasicMaterial).opacity = reduced ? 0 : 0.5 * k;
+    });
     // publish screen position (QA + UI hints)
     proj.current.copy(g.position).project(state.camera);
     scrollBus.rabbitScreen.x = ((proj.current.x + 1) / 2) * state.size.width;
     scrollBus.rabbitScreen.y = ((1 - proj.current.y) / 2) * state.size.height;
   });
+
   return (
-    <group
-      ref={group}
-      scale={0.9}
-      onClick={(e) => { e.stopPropagation(); onQuest(); }}
-      onPointerOver={(e) => { e.stopPropagation(); setCursor(true); }}
-      onPointerOut={() => setCursor(false)}
-    >
-      <mesh position={[0, 0, 0.1]} rotation={[0.5, 0, 0]}>
-        <icosahedronGeometry args={[0.42, 0]} />
-        <meshBasicMaterial color={white} wireframe toneMapped={false} />
-      </mesh>
-      <mesh position={[0, 0.42, -0.28]}>
-        <icosahedronGeometry args={[0.26, 0]} />
-        <meshBasicMaterial color={white} wireframe toneMapped={false} />
-      </mesh>
-      <mesh position={[-0.12, 0.92, -0.3]} rotation={[0.15, 0, 0.18]}>
-        <coneGeometry args={[0.09, 0.62, 4]} />
-        <meshBasicMaterial color={white} wireframe toneMapped={false} />
-      </mesh>
-      <mesh position={[0.12, 0.92, -0.3]} rotation={[0.15, 0, -0.18]}>
-        <coneGeometry args={[0.09, 0.62, 4]} />
-        <meshBasicMaterial color={white} wireframe toneMapped={false} />
-      </mesh>
-      <mesh position={[0, -0.05, 0.52]}>
-        <icosahedronGeometry args={[0.11, 0]} />
-        <meshBasicMaterial color={white} wireframe toneMapped={false} />
-      </mesh>
-    </group>
+    <>
+      <group
+        ref={group}
+        onClick={(e) => { e.stopPropagation(); onQuest(); }}
+        onPointerOver={(e) => { e.stopPropagation(); setCursor(true); }}
+        onPointerOut={() => setCursor(false)}
+      >
+        {/* body — royal core */}
+        <mesh rotation={[Math.PI / 2, 0, 0]}>
+          <coneGeometry args={[0.24, 1.3, 6]} />
+          <meshBasicMaterial color={royalC} wireframe toneMapped={false} />
+        </mesh>
+        {/* head */}
+        <mesh position={[0, 0.12, -0.78]}>
+          <icosahedronGeometry args={[0.18, 0]} />
+          <meshBasicMaterial color={glow(GX.white, 1.8)} wireframe toneMapped={false} />
+        </mesh>
+        {/* crest */}
+        <mesh position={[0, 0.34, -0.7]} rotation={[-0.5, 0, 0]}>
+          <coneGeometry args={[0.07, 0.4, 4]} />
+          <meshBasicMaterial color={redC} toneMapped={false} />
+        </mesh>
+        {/* wings — red port, blue starboard: the gradient in motion */}
+        <mesh ref={wingL} position={[-0.18, 0.08, 0]}>
+          <planeGeometry args={[1.5, 0.62]} />
+          <meshBasicMaterial color={redC} transparent opacity={0.65} blending={THREE.AdditiveBlending} side={THREE.DoubleSide} depthWrite={false} />
+        </mesh>
+        <mesh ref={wingR} position={[0.18, 0.08, 0]}>
+          <planeGeometry args={[1.5, 0.62]} />
+          <meshBasicMaterial color={blueC} transparent opacity={0.65} blending={THREE.AdditiveBlending} side={THREE.DoubleSide} depthWrite={false} />
+        </mesh>
+        {/* tail feathers */}
+        <mesh position={[0, 0, 0.85]} rotation={[Math.PI / 2, 0, 0]}>
+          <coneGeometry args={[0.16, 0.7, 4]} />
+          <meshBasicMaterial color={blueC} wireframe toneMapped={false} />
+        </mesh>
+      </group>
+      {/* trail — red→royal→blue afterimages */}
+      {[0, 1, 2, 3, 4, 5].map(i => (
+        <mesh key={i} ref={(m) => { trail.current[i] = m; }}>
+          <sphereGeometry args={[1, 8, 8]} />
+          <meshBasicMaterial
+            color={i < 2 ? redC : i < 4 ? royalC : blueC}
+            transparent opacity={0} blending={THREE.AdditiveBlending} depthWrite={false} toneMapped={false}
+          />
+        </mesh>
+      ))}
+    </>
   );
 }
 

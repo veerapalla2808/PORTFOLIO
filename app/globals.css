@@ -6,14 +6,14 @@ html { -webkit-text-size-adjust: 100%; }
 
 :root {
   --bg: #030308;
-  --blue: #2D7DFF;
-  --blue-b: #66B0FF;
-  --blue-d: #0C2A66;
-  --red: #FF1F30;
-  --red-b: #FF5C68;
-  --red-d: #660A12;
-  --purple: #7B2FFF;
-  --purple-b: #9D5CFF;
+  --blue: #1E5FE0;
+  --blue-b: #4D8DFF;
+  --blue-d: #081E5C;
+  --red: #C8102E;
+  --red-b: #FF3B52;
+  --red-d: #4A0814;
+  --purple: #4B3DF2;
+  --purple-b: #7A6CFF;
   --white: #F4F7FF;
   --text: #D8E3F8;
   --dim: #76879F;

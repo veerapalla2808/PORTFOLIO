@@ -1,14 +1,14 @@
-// lib/grid.ts — NEON GRID v4: an open-world city map.
-// A ring road + central cross + hub. Every district sits ON a through-road —
+// lib/grid.ts — NEON GRID v5: a two-block open-world city.
+// Ring roads + central cross + hub. Every district sits ON a through-road —
 // you never have to backtrack. A route graph powers the mini-map and the
 // auto-drive "Continue" button.
 
-// ── Palette — neon blue / violet / red on near-black (no green, no pink) ────
+// ── Palette — darker jewel neons: deep blue / royal indigo / crimson ────────
 export const GX = {
   bg: '#030308',
-  blue: '#2D7DFF', blueBright: '#66B0FF', blueDeep: '#0C2A66',
-  violet: '#7B2FFF', violetBright: '#9D5CFF', violetDeep: '#240B5E',
-  red: '#FF1F30', redBright: '#FF5C68', redDeep: '#660A12',
+  blue: '#1E5FE0', blueBright: '#4D8DFF', blueDeep: '#081E5C',
+  violet: '#4B3DF2', violetBright: '#7A6CFF', violetDeep: '#150E66', // royal indigo
+  red: '#C8102E', redBright: '#FF3B52', redDeep: '#4A0814',          // crimson
   white: '#F4F7FF',
   text: '#D8E3F8',
   dim: '#76879F',
@@ -16,18 +16,20 @@ export const GX = {
 
 export const NEONS = [GX.blue, GX.violet, GX.red] as const;
 
-// ── Street network — ring + cross + spurs (axis-aligned corridors) ──────────
-export interface Street { a: [number, number]; b: [number, number]; name: string }
+// ── Street network — two city blocks (axis-aligned corridors) ───────────────
+// Each street carries ONE lane color on BOTH edges + a dashed center line.
+export interface Street { a: [number, number]; b: [number, number]; name: string; color: string }
 
 export const STREETS: Street[] = [
-  { a: [0, 46], b: [0, 0], name: 'GATEWAY' },
-  { a: [-80, 0], b: [80, 0], name: 'RING SOUTH' },
-  { a: [-80, 0], b: [-80, -160], name: 'RING WEST' },
-  { a: [80, 0], b: [80, -160], name: 'RING EAST' },
-  { a: [-80, -160], b: [80, -160], name: 'TIME TUNNEL' },
-  { a: [0, 0], b: [0, -160], name: 'HUB AVE' },
-  { a: [-80, -80], b: [80, -80], name: 'HUB CROSS' },
-  { a: [0, -160], b: [0, -202], name: 'CHOICE SPUR' },
+  { a: [0, 46], b: [0, 0], name: 'GATEWAY', color: GX.violet },
+  { a: [-80, 0], b: [80, 0], name: 'RING SOUTH', color: GX.blue },
+  { a: [-80, 0], b: [-80, -240], name: 'RING WEST', color: GX.red },
+  { a: [80, 0], b: [80, -240], name: 'RING EAST', color: GX.blue },
+  { a: [-80, -240], b: [80, -240], name: 'RING NORTH', color: GX.violet },
+  { a: [0, 0], b: [0, -240], name: 'HUB AVE', color: GX.violet },
+  { a: [-80, -80], b: [80, -80], name: 'HUB CROSS', color: GX.blue },
+  { a: [-80, -160], b: [80, -160], name: 'TIME TUNNEL', color: GX.red },
+  { a: [0, -240], b: [0, -282], name: 'CHOICE SPUR', color: GX.red },
 ];
 
 export const LANE_HALF = 2.4;
@@ -36,21 +38,25 @@ export const SPAWN = { x: 0, z: 42 };
 // ── Route graph (autopilot + mini-map) ──────────────────────────────────────
 export interface MapNode { id: number; x: number; z: number }
 export const NODES: MapNode[] = [
-  { id: 0, x: 0, z: 42 },    // spawn
-  { id: 1, x: 0, z: 0 },     // gates junction
-  { id: 2, x: 80, z: 0 },    // SE corner — identity
-  { id: 3, x: -80, z: 0 },   // SW corner — arsenal
-  { id: 4, x: 0, z: -80 },   // HUB
-  { id: 5, x: 80, z: -80 },  // E mid — credentials
-  { id: 6, x: -80, z: -80 }, // W mid — transmissions
-  { id: 7, x: 0, z: -160 },  // N mid — time tunnel center
-  { id: 8, x: 80, z: -160 }, // NE corner
-  { id: 9, x: -80, z: -160 },// NW corner — anomalies
-  { id: 10, x: 0, z: -202 }, // choice
+  { id: 0, x: 0, z: 42 },     // spawn
+  { id: 1, x: 0, z: 0 },      // gates junction
+  { id: 2, x: 80, z: 0 },     // SE corner — identity
+  { id: 3, x: -80, z: 0 },    // SW corner — arsenal
+  { id: 4, x: 0, z: -80 },    // HUB
+  { id: 5, x: 80, z: -80 },   // E — credentials
+  { id: 6, x: -80, z: -80 },  // W — transmissions
+  { id: 7, x: 0, z: -160 },   // time tunnel center
+  { id: 8, x: 80, z: -160 },  // E — event docks
+  { id: 9, x: -80, z: -160 }, // W — anomalies
+  { id: 10, x: 0, z: -240 },  // N mid
+  { id: 11, x: 80, z: -240 }, // NE corner
+  { id: 12, x: -80, z: -240 },// NW corner — observatory
+  { id: 13, x: 0, z: -282 },  // choice
 ];
 export const EDGES: [number, number][] = [
   [0, 1], [1, 2], [1, 3], [1, 4], [2, 5], [3, 6],
   [4, 5], [4, 6], [4, 7], [5, 8], [6, 9], [7, 8], [7, 9], [7, 10],
+  [8, 11], [9, 12], [10, 11], [10, 12], [10, 13],
 ];
 
 const ADJ: number[][] = NODES.map(() => []);
@@ -102,7 +108,9 @@ export const ANOM_SPOTS = [
 ];
 export const CREDS_SPOT = { x: 90, z: -80 };
 export const TRANS_SPOT = { x: -91, z: -80 };
-export const PILLS_SPOT = { x: 0, y: 2.6, z: -196 };
+export const DOCKS_SPOT = { x: 92, z: -160 };
+export const OBS_SPOT = { x: -92, z: -244 };
+export const PILLS_SPOT = { x: 0, y: 2.6, z: -276 };
 
 // ── Zones — themed districts (each with its own atmosphere) ─────────────────
 export interface Zone {
@@ -121,7 +129,9 @@ export const ZONES: Zone[] = [
   { idx: 5, id: 'anomalies', code: '04 / ANOMALY SECTOR', line: 'Two anomalies reached production. Click the billboards — watch them surrender.', x: -80, z: -160, fog: '#140409', accent: GX.redBright },
   { idx: 6, id: 'creds', code: '05 / CREDENTIALS COURT', line: 'Stamped, sealed, verified. The machines agree: he is certified.', x: 80, z: -80, fog: '#0A1430', accent: GX.blueBright },
   { idx: 7, id: 'transmissions', code: '06 / TRANSMISSION ROW', line: 'He also writes. The signal is strong on this one.', x: -80, z: -80, fog: '#0A0620', accent: GX.violetBright },
-  { idx: 8, id: 'choice', code: '07 / THE CHOICE', line: 'The last rooftop, operator. Red or blue?', x: 0, z: -196, fog: '#0A0512', accent: GX.white },
+  { idx: 8, id: 'docks', code: '07 / EVENT DOCKS', line: 'Kafka. Kinesis. Pub/Sub. The docks never sleep — every system here is a stream.', x: 80, z: -160, fog: '#06122B', accent: GX.blueBright },
+  { idx: 9, id: 'observatory', code: '08 / OBSERVATORY', line: 'Prometheus watches. Grafana paints. MTTR fell 40% under this roof.', x: -80, z: -240, fog: '#0B0A22', accent: GX.violetBright },
+  { idx: 10, id: 'choice', code: '09 / THE CHOICE', line: 'The last rooftop, operator. Red or blue?', x: 0, z: -276, fog: '#0A0512', accent: GX.white },
 ];
 
 export function zoneAt(x: number, z: number): Zone {
@@ -135,7 +145,7 @@ export function zoneAt(x: number, z: number): Zone {
 }
 
 // ── District entry portals — every one a different shape ───────────────────
-export type PortalKind = 'hex' | 'industrial' | 'glitch' | 'doublering' | 'arcs' | 'diamond';
+export type PortalKind = 'hex' | 'industrial' | 'glitch' | 'doublering' | 'arcs' | 'diamond' | 'wave' | 'orrery';
 export interface DistrictPortal { kind: PortalKind; x: number; z: number; rotY: number; color: string }
 
 // rotY 0 → opening faces ±z travel; Math.PI/2 → faces ±x travel
@@ -150,7 +160,11 @@ export const DISTRICT_PORTALS: DistrictPortal[] = [
   { kind: 'arcs', x: -64, z: -80, rotY: Math.PI / 2, color: GX.violetBright },
   { kind: 'glitch', x: -80, z: -144, rotY: 0, color: GX.redBright },        // anomalies
   { kind: 'glitch', x: -64, z: -160, rotY: Math.PI / 2, color: GX.redBright },
-  { kind: 'diamond', x: 0, z: -174, rotY: 0, color: GX.white },             // choice
+  { kind: 'wave', x: 80, z: -144, rotY: 0, color: GX.blueBright },          // event docks
+  { kind: 'wave', x: 64, z: -160, rotY: Math.PI / 2, color: GX.blueBright },
+  { kind: 'orrery', x: -80, z: -224, rotY: 0, color: GX.violetBright },     // observatory
+  { kind: 'orrery', x: -64, z: -240, rotY: Math.PI / 2, color: GX.violetBright },
+  { kind: 'diamond', x: 0, z: -254, rotY: 0, color: GX.white },             // choice
 ];
 
 // ── Junction signposts (big, readable, both directions) ─────────────────────
@@ -161,11 +175,14 @@ export const SIGNPOSTS: SignPost[] = [
   { x: 5.4, z: 7, boards: [{ text: '▲ HUB & ALL DISTRICTS', color: GX.white }, { text: 'IDENTITY ▶', color: GX.blue }, { text: '◀ ARSENAL', color: GX.red }] },
   { x: 74, z: 6, boards: [{ text: 'IDENTITY PLAZA', color: GX.blue }, { text: '▲ CREDENTIALS', color: GX.blueBright }] },
   { x: -74, z: 6, boards: [{ text: 'ARSENAL FORGE', color: GX.red }, { text: '▲ TRANSMISSIONS', color: GX.violetBright }] },
-  { x: 5.4, z: -73, boards: [{ text: 'CENTRAL HUB', color: GX.white }, { text: 'CREDENTIALS ▶', color: GX.blueBright }, { text: '◀ TRANSMISSIONS', color: GX.violetBright }, { text: '▲ TIME TUNNEL', color: GX.violet }] },
-  { x: 74, z: -73, boards: [{ text: 'CREDENTIALS COURT', color: GX.blueBright }, { text: '▲ TIME TUNNEL', color: GX.violet }] },
+  { x: 5.4, z: -73, boards: [{ text: 'CENTRAL HUB', color: GX.white }, { text: 'CREDENTIALS ▶', color: GX.blueBright }, { text: '◀ TRANSMISSIONS', color: GX.violetBright }, { text: '▲ TIME TUNNEL', color: GX.red }] },
+  { x: 74, z: -73, boards: [{ text: 'CREDENTIALS COURT', color: GX.blueBright }, { text: '▲ EVENT DOCKS', color: GX.blue }] },
   { x: -74, z: -73, boards: [{ text: 'TRANSMISSION ROW', color: GX.violetBright }, { text: '▲ ANOMALIES', color: GX.redBright }] },
-  { x: 5.4, z: -153, boards: [{ text: '◀ TIME TUNNEL ▶', color: GX.violet }, { text: '▲ THE CHOICE', color: GX.white }] },
-  { x: -74, z: -153, boards: [{ text: 'ANOMALY SECTOR', color: GX.redBright }, { text: 'TIME TUNNEL ▶', color: GX.violet }] },
+  { x: 5.4, z: -153, boards: [{ text: '◀ TIME TUNNEL ▶', color: GX.red }, { text: '▲ RING NORTH & CHOICE', color: GX.white }] },
+  { x: -74, z: -153, boards: [{ text: 'ANOMALY SECTOR', color: GX.redBright }, { text: '▲ OBSERVATORY', color: GX.violetBright }] },
+  { x: 74, z: -153, boards: [{ text: 'EVENT DOCKS', color: GX.blueBright }, { text: '▲ RING NORTH', color: GX.violet }] },
+  { x: 5.4, z: -233, boards: [{ text: '▲ THE CHOICE', color: GX.white }, { text: '◀ OBSERVATORY', color: GX.violetBright }] },
+  { x: -74, z: -233, boards: [{ text: 'THE OBSERVATORY', color: GX.violetBright }] },
 ];
 
 // ── Optional checkpoints — rotating sarcastic question pool ─────────────────
@@ -334,8 +351,8 @@ export const CHECKPOINTS = [
   { x: -80, z: -120 },
 ];
 
-export const SKIP_LABEL = '[ skip — the rabbit saw that ]';
-export const SKIP_QUIP = 'Skipped. The rabbit is updating your file.';
+export const SKIP_LABEL = '[ skip — the phoenix saw that ]';
+export const SKIP_QUIP = 'Skipped. The phoenix is updating your file.';
 
 export const RANKS = [
   'BLUE-PILL TOURIST',

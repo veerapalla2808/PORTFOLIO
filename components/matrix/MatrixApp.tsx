@@ -21,12 +21,12 @@ const SAVE_KEY = 'vp-grid-save-v1';
 interface SaveData { score: number; visited: number[]; interacted: string[] }
 
 const GLYPH_TITLES = ['ヴィーラ・パッラ', 'VEERA PALLA // 11Y', 'follow the white rabbit'];
-const IDLE_LINE = 'You stopped. The rabbit is watching you, operator…';
+const IDLE_LINE = 'You stopped. The phoenix circles above you, operator…';
 
-// world → mini-map projection
-const MAP_W = 132, MAP_H = 150;
+// world → mini-map projection (city spans x −105..105, z 52..−292)
+const MAP_W = 132, MAP_H = 172;
 const mapX = (x: number) => ((x + 105) / 210) * MAP_W;
-const mapY = (z: number) => ((52 - z) / 264) * MAP_H;
+const mapY = (z: number) => ((52 - z) / 344) * MAP_H;
 
 export default function MatrixApp() {
   const [caps, setCaps] = useState<Caps | null>(null);
@@ -92,6 +92,36 @@ export default function MatrixApp() {
       localStorage.setItem(SAVE_KEY, JSON.stringify(save));
     } catch { /* storage unavailable — no problem */ }
   }, [score, visited, interacted, booted]);
+
+  // viewport watchdog — when the window moves between monitors with different
+  // DPI, Chromium can leave a stale layout viewport (page renders narrower
+  // than the window). Detect size/DPR drift and force a re-layout.
+  useEffect(() => {
+    let w = window.innerWidth, h = window.innerHeight, dpr = window.devicePixelRatio;
+    const nudge = () => {
+      window.dispatchEvent(new Event('resize'));
+      // hard reflow of the fixed shells
+      document.body.style.minHeight = '100.0001vh';
+      requestAnimationFrame(() => { document.body.style.minHeight = ''; });
+    };
+    const tick = setInterval(() => {
+      if (window.innerWidth !== w || window.innerHeight !== h || window.devicePixelRatio !== dpr) {
+        w = window.innerWidth; h = window.innerHeight; dpr = window.devicePixelRatio;
+        nudge();
+      }
+    }, 800);
+    const vv = window.visualViewport;
+    const onVV = () => nudge();
+    vv?.addEventListener('resize', onVV);
+    const mq = window.matchMedia(`(resolution: ${window.devicePixelRatio}dppx)`);
+    const onMq = () => nudge();
+    mq.addEventListener?.('change', onMq);
+    return () => {
+      clearInterval(tick);
+      vv?.removeEventListener('resize', onVV);
+      mq.removeEventListener?.('change', onMq);
+    };
+  }, []);
 
   const sayQuip = useCallback((text: string) => {
     clearTimeout(quipTimer.current);
@@ -265,7 +295,7 @@ export default function MatrixApp() {
     });
   }, [fire]);
 
-  // the rabbit leads you to the nearest unanswered question
+  // the phoenix leads you to the nearest unanswered question
   const onQuest = useCallback(() => {
     const open = CHECKPOINTS
       .map((c, i) => ({ ...c, i }))
@@ -274,7 +304,7 @@ export default function MatrixApp() {
         return !r || r.state === 'wrong';
       });
     if (open.length === 0) {
-      sayQuip('Nothing left to ask you. The rabbit bows, operator.');
+      sayQuip('Nothing left to ask you. The phoenix dips a wing, operator.');
       return;
     }
     open.sort((a, b) =>
@@ -283,7 +313,7 @@ export default function MatrixApp() {
     const route = routeBetween(scrollBus.x, scrollBus.z, t.x, t.z);
     scrollBus.route.length = 0;
     scrollBus.route.push(...route);
-    sayQuip('The rabbit knows a question you haven’t answered. Follow it.');
+    sayQuip('The phoenix knows a question you haven’t answered. Follow it.');
   }, [sayQuip]);
 
   // easter egg: type N-E-O (or ↑↑↓↓) → 5 seconds of free flight

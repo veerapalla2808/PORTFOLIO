@@ -4,7 +4,7 @@
 import DecodeText from './DecodeText';
 import {
   SPAWN, IDENTITY_SPOT, ARSENAL_SPOT, PORTAL_XS, PORTAL_Z, ANOM_SPOTS,
-  CREDS_SPOT, TRANS_SPOT, PILLS_SPOT, CHECKPOINTS, HUB,
+  CREDS_SPOT, TRANS_SPOT, DOCKS_SPOT, OBS_SPOT, PILLS_SPOT, CHECKPOINTS, HUB,
   SKIP_LABEL, type Question,
 } from '@/lib/grid';
 import {
@@ -240,6 +240,48 @@ export default function ActPanels({
             ))}
             <li><b>[B.TECH]</b> {education.degree}, {education.field} — {education.institution} ({education.year}) ✓</li>
           </ul>
+        </article>
+      </Sec>
+
+      {/* ── 07 / event docks — messaging & streaming, straight from the resume ── */}
+      <Sec x={DOCKS_SPOT.x - 14} z={DOCKS_SPOT.z + 4} r={15} align="left">
+        <article className="mx-slab mx-scroll" onWheel={stopWheel}>
+          <header className="mx-slab-head">
+            <span className="mx-slab-path">~/city/event_docks.stream</span>
+            <span className="mx-slab-act">07 / EVENT DOCKS</span>
+          </header>
+          <h2 className="mx-h3"><DecodeText text="EVENT DOCKS" /></h2>
+          <p className="mx-body">
+            Real-time, event-driven architectures for time-sensitive systems — low-latency
+            streaming for banking at Comerica and healthcare at UCLA: retry logic,
+            orchestration, DDD workflows and WebSocket fan-out.
+          </p>
+          <p className="mx-chips">
+            {(skillCategories.find(c => c.label === 'Messaging & Streaming')?.skills ?? []).map(t => (
+              <span key={t}>{t}</span>
+            ))}
+          </p>
+        </article>
+      </Sec>
+
+      {/* ── 08 / observatory — monitoring & debugging ── */}
+      <Sec x={OBS_SPOT.x + 16} z={OBS_SPOT.z + 8} r={15} align="right">
+        <article className="mx-slab mx-scroll" onWheel={stopWheel}>
+          <header className="mx-slab-head">
+            <span className="mx-slab-path">~/city/observatory.watch</span>
+            <span className="mx-slab-act">08 / OBSERVATORY</span>
+          </header>
+          <h2 className="mx-h3"><DecodeText text="THE OBSERVATORY" /></h2>
+          <p className="mx-body">
+            If it moves, it gets a dashboard. Observability stacks with Prometheus and
+            Grafana cut MTTR by 40% at Comerica — plus end-to-end tracing and alerting
+            across every cloud he touches.
+          </p>
+          <p className="mx-chips">
+            {(skillCategories.find(c => c.label === 'Monitoring & Debugging')?.skills ?? []).map(t => (
+              <span key={t}>{t}</span>
+            ))}
+          </p>
         </article>
       </Sec>
 
