@@ -12,7 +12,11 @@ export const scrollBus = {
   route: [] as { x: number; z: number }[],
   // free-flight easter egg — camera orbits the city until this timestamp
   flightUntil: 0,
-  // rabbit's projected screen position (QA + future UI hints)
+  // cinematic dive intro — camera plunges into the city until this timestamp
+  introUntil: 0,
+  // drivable overhead camera toggle
+  topView: false,
+  // guide's projected screen position (QA + future UI hints)
   rabbitScreen: { x: 0, y: 0 },
 };
 

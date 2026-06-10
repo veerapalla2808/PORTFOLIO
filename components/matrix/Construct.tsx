@@ -9,9 +9,10 @@ import Rain from './Rain';
 import CameraRig from './CameraRig';
 import Effects from './Effects';
 import {
-  CityBlocks, StreetLanes, GateArch, Signposts, IdentityHolo, NeonSignWall,
-  EraPortals, SpeedLines, AnomalyBillboards, CredsCourt, TransmissionRow,
-  Pills, Phoenix, HubBeacon, DistrictPortals, ZoneAmbience, GlyphBurst,
+  CityBlocks, StreetLanes, StreetLights, GateArch, Signposts, IdentityHolo,
+  NeonSignWall, EraPortals, SpeedLines, AnomalyBillboards, CredsCourt,
+  TransmissionRow, Pills, Phoenix, HubBeacon, DistrictPortals, ZoneAmbience,
+  GlyphBurst, SkyTraffic, Searchlights,
 } from './scenes';
 
 export interface Burst { id: number; x: number; z: number; color: string }
@@ -53,6 +54,9 @@ export default function Construct({
       <Rain tier={degraded ? 'S' : tier} reduced={reducedMotion} />
       <ZoneAmbience />
       <StreetLanes />
+      <StreetLights />
+      {tier !== 'S' && !degraded && <SkyTraffic reduced={reducedMotion} />}
+      {tier !== 'S' && !degraded && <Searchlights reduced={reducedMotion} />}
       <CityBlocks tier={degraded ? 'S' : tier} reduced={reducedMotion} />
       <GateArch />
       <HubBeacon reduced={reducedMotion} />

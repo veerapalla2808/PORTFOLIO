@@ -39,6 +39,7 @@ export default function CameraRig({
   const lastTurn = useRef(0);
   const lookAt = useRef(new THREE.Vector3());
   const flight = useRef(0);
+  const top = useRef(0);
   const flightPos = useRef(new THREE.Vector3());
   const flightLook = useRef(new THREE.Vector3());
 
@@ -258,14 +259,44 @@ export default function CameraRig({
       cam.position.lerp(flightPos.current.set(fx, 135, fz), flight.current);
       lookAt.current.lerp(flightLook.current.set(HUB.x, 0, HUB.z), flight.current);
     }
+
+    // drivable TOP VIEW — straight down over the traveler, city as a map
+    top.current += ((scrollBus.topView ? 1 : 0) - top.current) * Math.min(1, dt * 2.2);
+    if (top.current > 0.002) {
+      cam.position.lerp(flightPos.current.set(pos.current.x, 150, pos.current.z + 0.01), top.current);
+      lookAt.current.lerp(flightLook.current.set(pos.current.x, 0, pos.current.z), top.current);
+    }
+
+    // cinematic dive intro — falling out of the sky into the gates
+    const introLeft = scrollBus.introUntil - performance.now();
+    if (introLeft > 0 && !reduced) {
+      const k = 1 - introLeft / 4200;            // 0 → 1 over the dive
+      const e = k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2; // easeInOut
+      flightPos.current.set(
+        Math.sin(k * Math.PI) * 14,
+        170 - 167.8 * e,
+        160 - 118 * e,
+      );
+      cam.position.copy(flightPos.current);
+      flightLook.current.set(0, 4 + (1 - e) * 14, 160 - 118 * e - 30);
+      lookAt.current.copy(flightLook.current);
+      scrollBus.warp = Math.max(scrollBus.warp, Math.sin(k * Math.PI) * 0.95);
+    }
+
     cam.lookAt(lookAt.current);
+    // portal-crossing micro-shake
+    if (!reduced && scrollBus.warp > 0.45) {
+      const t = state.clock.elapsedTime;
+      cam.rotation.z += Math.sin(t * 43) * 0.012 * scrollBus.warp;
+      cam.rotation.x += Math.sin(t * 37) * 0.008 * scrollBus.warp;
+    }
 
     const fovTarget = 52 + scrollBus.warp * 30;
     if (Math.abs(cam.fov - fovTarget) > 0.05) {
       cam.fov += (fovTarget - cam.fov) * Math.min(1, dt * 7);
       cam.updateProjectionMatrix();
     }
-    state.gl.toneMappingExposure = 1 + scrollBus.warp * 1.15;
+    state.gl.toneMappingExposure = 1 + scrollBus.warp * 1.3;
     onFrame(pos.current.x, pos.current.z);
   });
 

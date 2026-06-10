@@ -202,6 +202,13 @@ button { font-family: inherit; }
 .mx-map::before { content: ""; position: absolute; top: -1px; left: -1px; width: 10px; height: 10px; border-top: 2px solid var(--blue-b); border-left: 2px solid var(--blue-b); }
 .mx-map canvas { display: block; }
 .mx-map-label { margin-top: 0.3rem; font-size: 0.52rem; letter-spacing: 0.16em; color: var(--blue-b); text-align: center; }
+.mx-topview {
+  margin-top: 0.4rem; width: 100%; cursor: pointer;
+  background: rgba(30, 95, 224, 0.14); border: 1px solid var(--line);
+  color: var(--blue-b); padding: 0.4rem 0.4rem;
+  font-size: 0.56rem; letter-spacing: 0.16em;
+}
+.mx-topview:hover { color: var(--white); box-shadow: 0 0 14px rgba(77, 141, 255, 0.3); }
 
 /* ── on-screen drive controls — visible, labeled, no hidden gestures ───────── */
 .mx-dpad {
@@ -232,8 +239,8 @@ button { font-family: inherit; }
 .mx-hero { text-align: center; width: 100%; max-width: 1100px; }
 .mx-eyebrow { color: var(--blue-b); font-size: clamp(1.05rem, 2.6vw, 1.5rem); letter-spacing: 0.12em; text-indent: 0.12em; margin-bottom: 1.1rem; text-shadow: 0 0 14px rgba(77, 159, 255, 0.5); }
 .mx-name {
-  font-family: var(--mono); font-weight: 800;
-  font-size: clamp(2.5rem, 10vw, 8.6rem); letter-spacing: -0.02em; line-height: 0.98;
+  font-family: var(--font-zen), var(--mono); font-weight: 400;
+  font-size: clamp(2.4rem, 9.4vw, 8.2rem); letter-spacing: 0.05em; line-height: 1.02;
   padding: 0.04em 0.1em; overflow-wrap: break-word;
   color: var(--white);
   text-shadow:

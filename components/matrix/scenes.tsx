@@ -1,7 +1,7 @@
 'use client';
 // NEON GRID v4 set pieces — an open-world map. Each district has a UNIQUE
 // entry portal and its own atmosphere; the hub ties the map together.
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import {
@@ -59,8 +59,26 @@ function glyphAtlas(): THREE.CanvasTexture {
   return t;
 }
 
+// resolved Zen Tokyo Zoo family name (next/font hashes it) — for canvas text
+function zenFamily(): string {
+  if (typeof document === 'undefined') return '"JetBrains Mono", monospace';
+  const v = getComputedStyle(document.documentElement).getPropertyValue('--font-zen').trim();
+  return v || '"JetBrains Mono", monospace';
+}
+
+// re-render canvas textures once webfonts are actually loaded
+function useFontsReady(): number {
+  const [ready, setReady] = useState(0);
+  useEffect(() => {
+    let on = true;
+    document.fonts?.ready.then(() => { if (on) setReady(1); });
+    return () => { on = false; };
+  }, []);
+  return ready;
+}
+
 function textTexture(
-  lines: { text: string; size: number; color: string; font?: string }[],
+  lines: { text: string; size: number; color: string; font?: string; family?: string }[],
   w: number, h: number, border?: string,
 ): THREE.CanvasTexture {
   const cv = document.createElement('canvas');
@@ -80,7 +98,7 @@ function textTexture(
   ctx.textBaseline = 'middle';
   let y = h / (lines.length + 1);
   for (const l of lines) {
-    ctx.font = `${l.font ?? '700'} ${l.size}px "JetBrains Mono", monospace`;
+    ctx.font = `${l.font ?? '700'} ${l.size}px ${l.family ?? '"JetBrains Mono", monospace'}`;
     ctx.fillStyle = l.color;
     ctx.shadowColor = l.color;
     ctx.shadowBlur = 20;
@@ -113,7 +131,8 @@ function stripesTexture(): THREE.CanvasTexture {
   return t;
 }
 
-// ── per-district atmosphere: fog tint follows the zone you're in ────────────
+// ── per-district atmosphere: fog tint follows the zone you're in.
+// In TOP VIEW the fog opens right up so the whole city reads like a map.
 export function ZoneAmbience() {
   const tmp = useMemo(() => new THREE.Color(), []);
   useFrame((state, dt) => {
@@ -122,6 +141,10 @@ export function ZoneAmbience() {
     if (fog) {
       tmp.set(zo.fog);
       fog.color.lerp(tmp, Math.min(1, dt * 1.4));
+      const farT = scrollBus.topView ? 420 : 150;
+      const nearT = scrollBus.topView ? 120 : 24;
+      fog.far += (farT - fog.far) * Math.min(1, dt * 2);
+      fog.near += (nearT - fog.near) * Math.min(1, dt * 2);
     }
   });
   return (
@@ -214,7 +237,7 @@ export function CityBlocks({ tier, reduced }: { tier: 'S' | 'M' | 'L'; reduced: 
   const matRef = useRef<THREE.ShaderMaterial | null>(null);
   const timeRef = useRef(17.3);
 
-  const { body, trim, surgeAttr } = useMemo(() => {
+  const { body, trims, surgeAttr } = useMemo(() => {
     const slots: { x: number; z: number; seed: number }[] = [];
     STREETS.forEach((s, si) => {
       const ax = s.a[0], az = s.a[1];
@@ -250,19 +273,32 @@ export function CityBlocks({ tier, reduced }: { tier: 'S' | 'M' | 'L'; reduced: 
       },
     });
     const bodyMesh = new THREE.InstancedMesh(geo, mat, n);
-    const trimMesh = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshBasicMaterial({ toneMapped: false }), n);
+    // rooftop trim as a hollow FRAME (4 edge strips) — from above the roofs
+    // read as outlined blocks, not glowing slabs
+    const trimMat = new THREE.MeshBasicMaterial({ toneMapped: false });
+    const trims = [0, 1, 2, 3].map(() =>
+      new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), trimMat, n));
     const m = new THREE.Matrix4();
     const c = new THREE.Color();
+    const q = new THREE.Quaternion();
     slots.forEach((sl, i) => {
       const w = 7 + rnd(sl.seed + 2) * 8;
       const h = 16 + rnd(sl.seed + 3) * 36;
       const dpt = 7 + rnd(sl.seed + 4) * 8;
-      m.compose(new THREE.Vector3(sl.x, h / 2, sl.z), new THREE.Quaternion(), new THREE.Vector3(w, h, dpt));
+      m.compose(new THREE.Vector3(sl.x, h / 2, sl.z), q, new THREE.Vector3(w, h, dpt));
       bodyMesh.setMatrixAt(i, m);
-      m.compose(new THREE.Vector3(sl.x, h + 0.1, sl.z), new THREE.Quaternion(), new THREE.Vector3(w * 1.02, 0.2, dpt * 1.02));
-      trimMesh.setMatrixAt(i, m);
+      const y = h + 0.1;
+      // north/south strips (full width), east/west strips (full depth)
+      m.compose(new THREE.Vector3(sl.x, y, sl.z - dpt / 2), q, new THREE.Vector3(w * 1.02, 0.2, 0.34));
+      trims[0].setMatrixAt(i, m);
+      m.compose(new THREE.Vector3(sl.x, y, sl.z + dpt / 2), q, new THREE.Vector3(w * 1.02, 0.2, 0.34));
+      trims[1].setMatrixAt(i, m);
+      m.compose(new THREE.Vector3(sl.x - w / 2, y, sl.z), q, new THREE.Vector3(0.34, 0.2, dpt * 1.02));
+      trims[2].setMatrixAt(i, m);
+      m.compose(new THREE.Vector3(sl.x + w / 2, y, sl.z), q, new THREE.Vector3(0.34, 0.2, dpt * 1.02));
+      trims[3].setMatrixAt(i, m);
       c.set(NEONS[i % NEONS.length]).multiplyScalar(2.1);
-      trimMesh.setColorAt(i, c);
+      trims.forEach(tm => tm.setColorAt(i, c));
       // 45% blue · 30% violet · 25% red — matches the weather
       const hr = rnd(sl.seed + 5);
       hue[i] = hr < 0.45 ? 0 : hr < 0.75 ? 1 : 2;
@@ -275,9 +311,11 @@ export function CityBlocks({ tier, reduced }: { tier: 'S' | 'M' | 'L'; reduced: 
     geo.setAttribute('aSeed', new THREE.InstancedBufferAttribute(seedAttr, 1));
     geo.setAttribute('aSurge', surgeAttr);
     bodyMesh.instanceMatrix.needsUpdate = true;
-    trimMesh.instanceMatrix.needsUpdate = true;
-    if (trimMesh.instanceColor) trimMesh.instanceColor.needsUpdate = true;
-    return { body: bodyMesh, trim: trimMesh, surgeAttr };
+    trims.forEach(tm => {
+      tm.instanceMatrix.needsUpdate = true;
+      if (tm.instanceColor) tm.instanceColor.needsUpdate = true;
+    });
+    return { body: bodyMesh, trims, surgeAttr };
   }, [step, atlas]);
 
   const surgeRef = useRef<THREE.InstancedBufferAttribute | null>(null);
@@ -297,15 +335,15 @@ export function CityBlocks({ tier, reduced }: { tier: 'S' | 'M' | 'L'; reduced: 
   useEffect(() => {
     const g = group.current;
     if (!g) return;
-    g.add(body, trim);
+    g.add(body, ...trims);
     return () => {
-      g.remove(body, trim);
+      g.remove(body, ...trims);
       body.geometry.dispose();
-      trim.geometry.dispose();
       (body.material as THREE.Material).dispose();
-      (trim.material as THREE.Material).dispose();
+      trims.forEach(tm => tm.geometry.dispose());
+      (trims[0].material as THREE.Material).dispose();
     };
-  }, [body, trim]);
+  }, [body, trims]);
 
   // click a tower → its code stream floods for a moment
   return (
@@ -395,24 +433,168 @@ export function StreetLanes() {
     <group ref={group}>
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.05, -120]}>
         <planeGeometry args={[460, 520]} />
-        <meshBasicMaterial color={'#04050B'} />
+        <meshBasicMaterial color={'#020207'} />
       </mesh>
       {lanes.map((l, i) => (
         <mesh key={i} position={[l.x, 0.06, l.z]}>
           <boxGeometry args={[l.sx, 0.1, l.sz]} />
-          <meshBasicMaterial color={glow(l.color, 1.45)} toneMapped={false} />
+          <meshBasicMaterial color={glow(l.color, 1.3)} toneMapped={false} />
         </mesh>
       ))}
     </group>
   );
 }
 
+// ── streetlights — instanced lamps at regular intervals on every road ───────
+export function StreetLights() {
+  const lamps = useMemo(() => {
+    const out: { x: number; z: number }[] = [];
+    STREETS.forEach((s) => {
+      const ax = s.a[0], az = s.a[1];
+      const dx = s.b[0] - ax, dz = s.b[1] - az;
+      const len = Math.hypot(dx, dz);
+      const ux = dx / len, uz = dz / len;
+      const nx = -uz, nz = ux;
+      for (let d = 10; d < len - 6; d += 19) {
+        for (const side of [-1, 1]) {
+          const X = ax + ux * d + nx * side * 5.4;
+          const Z = az + uz * d + nz * side * 5.4;
+          // keep junctions clear
+          let nearNode = false;
+          for (const st of STREETS) {
+            for (const end of [st.a, st.b]) {
+              if (Math.hypot(X - end[0], Z - end[1]) < 9) { nearNode = true; break; }
+            }
+            if (nearNode) break;
+          }
+          if (!nearNode) out.push({ x: X, z: Z });
+        }
+      }
+    });
+    return out;
+  }, []);
+
+  const meshes = useMemo(() => {
+    const n = lamps.length;
+    const pole = new THREE.InstancedMesh(
+      new THREE.CylinderGeometry(0.07, 0.1, 5.6, 6),
+      new THREE.MeshBasicMaterial({ color: '#0B0E1A' }), n);
+    const head = new THREE.InstancedMesh(
+      new THREE.SphereGeometry(0.17, 8, 8),
+      new THREE.MeshBasicMaterial({ color: glow('#CFE0FF', 1.9), toneMapped: false }), n);
+    const pool = new THREE.InstancedMesh(
+      new THREE.CircleGeometry(2.6, 20),
+      new THREE.MeshBasicMaterial({ color: '#27314F', transparent: true, opacity: 0.32, blending: THREE.AdditiveBlending, depthWrite: false }), n);
+    const m = new THREE.Matrix4();
+    const q = new THREE.Quaternion();
+    const qFlat = new THREE.Quaternion().setFromEuler(new THREE.Euler(-Math.PI / 2, 0, 0));
+    lamps.forEach((l, i) => {
+      m.compose(new THREE.Vector3(l.x, 2.8, l.z), q, new THREE.Vector3(1, 1, 1));
+      pole.setMatrixAt(i, m);
+      m.compose(new THREE.Vector3(l.x, 5.65, l.z), q, new THREE.Vector3(1, 1, 1));
+      head.setMatrixAt(i, m);
+      m.compose(new THREE.Vector3(l.x, 0.04, l.z), qFlat, new THREE.Vector3(1, 1, 1));
+      pool.setMatrixAt(i, m);
+    });
+    pole.instanceMatrix.needsUpdate = true;
+    head.instanceMatrix.needsUpdate = true;
+    pool.instanceMatrix.needsUpdate = true;
+    return [pole, head, pool];
+  }, [lamps]);
+
+  const group = useRef<THREE.Group>(null);
+  useEffect(() => {
+    const g = group.current;
+    if (!g) return;
+    meshes.forEach(m => g.add(m));
+    return () => {
+      meshes.forEach(m => {
+        g.remove(m);
+        m.geometry.dispose();
+        (m.material as THREE.Material).dispose();
+      });
+    };
+  }, [meshes]);
+  return <group ref={group} />;
+}
+
+// ── sky traffic — light streams crossing high above the city ────────────────
+export function SkyTraffic({ reduced }: { reduced: boolean }) {
+  const COUNT = 14;
+  const craft = useMemo(() => Array.from({ length: COUNT }, (_, i) => ({
+    lane: i % 3,
+    off: rnd(i * 7 + 1) * 400,
+    speed: 26 + rnd(i * 7 + 2) * 30,
+    red: rnd(i * 7 + 3) > 0.6,
+    y: 58 + (i % 3) * 14 + rnd(i * 7 + 4) * 6,
+  })), []);
+  const refs = useRef<(THREE.Mesh | null)[]>([]);
+  useFrame((state) => {
+    if (reduced) return;
+    const t = state.clock.elapsedTime;
+    refs.current.forEach((m, i) => {
+      if (!m) return;
+      const c = craft[i];
+      const p = ((t * c.speed + c.off) % 460) - 230;
+      if (c.lane === 0) m.position.set(p, c.y, -52);
+      else if (c.lane === 1) m.position.set(-p, c.y, -198);
+      else m.position.set(p, c.y, -310);
+    });
+  });
+  return (
+    <>
+      {craft.map((c, i) => (
+        <mesh key={i} ref={(m) => { refs.current[i] = m; }} position={[0, c.y, 0]}>
+          <boxGeometry args={[3.2, 0.09, 0.09]} />
+          <meshBasicMaterial color={glow(c.red ? GX.redBright : GX.blueBright, 2)} toneMapped={false} />
+        </mesh>
+      ))}
+    </>
+  );
+}
+
+// ── searchlights — slow sweeping beams over the skyline ─────────────────────
+export function Searchlights({ reduced }: { reduced: boolean }) {
+  const beams = useRef<(THREE.Group | null)[]>([]);
+  const spots = useMemo(() => [
+    { x: -60, z: -40, color: GX.violet, speed: 0.16, tilt: 0.5 },
+    { x: 70, z: -120, color: GX.blue, speed: -0.11, tilt: 0.42 },
+    { x: -50, z: -210, color: GX.red, speed: 0.13, tilt: 0.55 },
+  ], []);
+  useFrame((state) => {
+    if (reduced) return;
+    const t = state.clock.elapsedTime;
+    beams.current.forEach((g, i) => {
+      if (!g) return;
+      g.rotation.y = t * spots[i].speed * Math.PI;
+    });
+  });
+  return (
+    <>
+      {spots.map((s, i) => (
+        <group key={i} position={[s.x, 0, s.z]} ref={(g) => { beams.current[i] = g; }}>
+          <group rotation={[0, 0, s.tilt]}>
+            <mesh position={[0, 60, 0]}>
+              <coneGeometry args={[7, 120, 16, 1, true]} />
+              <meshBasicMaterial
+                color={glow(s.color, 0.6)} transparent opacity={0.05}
+                blending={THREE.AdditiveBlending} side={THREE.DoubleSide} depthWrite={false}
+              />
+            </mesh>
+          </group>
+        </group>
+      ))}
+    </>
+  );
+}
+
 // ── city gates — neon arch (hero backdrop) ──────────────────────────────────
 export function GateArch() {
+  const fontsReady = useFontsReady();
   const tex = useMemo(() => textTexture([
-    { text: 'VEERA PALLA', size: 110, color: GX.white },
-    { text: 'THE NEON GRID · 11 YEARS IN PRODUCTION', size: 36, color: GX.blueBright },
-  ], 1280, 320, GX.violet), []);
+    { text: 'VEERA PALLA', size: 116, color: GX.white, family: zenFamily(), font: '400' },
+    { text: 'THE NEON GRID · 11 YEARS IN PRODUCTION', size: 34, color: GX.blueBright },
+  ], 1280, 320, GX.violet), [fontsReady]); // eslint-disable-line react-hooks/exhaustive-deps
   return (
     <group position={[GATE_ARCH.x, 0, GATE_ARCH.z]}>
       {[-9, 9].map(x => (
@@ -923,7 +1105,9 @@ function EraPortal({ index }: { index: number }) {
   const x = PORTAL_XS[index];
   const color = NEONS[index % NEONS.length];
   const film = useRef<THREE.Mesh>(null);
+  const film2 = useRef<THREE.Mesh>(null);
   const ring = useRef<THREE.Mesh>(null);
+  const sparks = useRef<(THREE.Mesh | null)[]>([]);
   const tex = useMemo(() => filmTexture(color), [color]);
   const label = useMemo(() => textTexture([
     { text: `ERA 0${index + 1}`, size: 54, color: GX.white },
@@ -934,12 +1118,27 @@ function EraPortal({ index }: { index: number }) {
     if (film.current) {
       const s = 1 + Math.sin(t * 1.8 + index) * 0.045;
       film.current.scale.setScalar(s);
-      (film.current.material as THREE.MeshBasicMaterial).opacity = 0.55 + Math.sin(t * 2.3 + index * 2) * 0.15;
+      film.current.rotation.z = t * 0.18;
+      (film.current.material as THREE.MeshBasicMaterial).opacity = 0.5 + Math.sin(t * 2.3 + index * 2) * 0.13 + scrollBus.warp * 0.3;
+    }
+    if (film2.current) {
+      film2.current.rotation.z = -t * 0.27;
+      film2.current.scale.setScalar(0.92 + Math.sin(t * 1.4 + index * 3) * 0.05);
     }
     if (ring.current) {
       const m = ring.current.material as THREE.MeshStandardMaterial;
-      m.emissiveIntensity = 1.9 + Math.sin(t * 2 + index) * 0.5 + scrollBus.warp * 1.6;
+      m.emissiveIntensity = 1.9 + Math.sin(t * 2 + index) * 0.5 + scrollBus.warp * 2.2;
     }
+    // energy sparks spiralling INTO the surface — the portal is feeding
+    sparks.current.forEach((m, i) => {
+      if (!m) return;
+      const k = ((t * (0.4 + (i % 4) * 0.1) + i / 12) % 1);
+      const a = i * 2.4 + t * 0.7;
+      const r = 4.4 * (1 - k * 0.85);
+      m.position.set(Math.cos(a) * r, Math.sin(a) * r, 0); // in the portal's disc plane
+      m.scale.setScalar(0.16 * (1 - k) + 0.03);
+      (m.material as THREE.MeshBasicMaterial).opacity = 0.85 * (1 - k);
+    });
   });
   return (
     <group position={[x, 4.6, PORTAL_Z]} rotation={[0, Math.PI / 2, 0]}>
@@ -949,8 +1148,18 @@ function EraPortal({ index }: { index: number }) {
       </mesh>
       <mesh ref={film}>
         <circleGeometry args={[4.22, 48]} />
-        <meshBasicMaterial map={tex} transparent opacity={0.6} blending={THREE.AdditiveBlending} side={THREE.DoubleSide} depthWrite={false} />
+        <meshBasicMaterial map={tex} transparent opacity={0.55} blending={THREE.AdditiveBlending} side={THREE.DoubleSide} depthWrite={false} />
       </mesh>
+      <mesh ref={film2}>
+        <circleGeometry args={[3.6, 48]} />
+        <meshBasicMaterial map={tex} transparent opacity={0.3} blending={THREE.AdditiveBlending} side={THREE.DoubleSide} depthWrite={false} />
+      </mesh>
+      {Array.from({ length: 12 }, (_, i) => (
+        <mesh key={i} ref={(m) => { sparks.current[i] = m; }}>
+          <sphereGeometry args={[1, 6, 6]} />
+          <meshBasicMaterial color={glow(color, 2.2)} toneMapped={false} transparent opacity={0} depthWrite={false} />
+        </mesh>
+      ))}
       <mesh position={[0, 6.4, 0]}>
         <planeGeometry args={[5.4, 1.7]} />
         <meshBasicMaterial map={label} transparent side={THREE.DoubleSide} />
@@ -1212,8 +1421,10 @@ function makeWing(dir: 1 | -1, tip: THREE.Color, royal: THREE.Color): THREE.Buff
   for (const i of tris) {
     const p = pts[i];
     pos.push(p[0], p[1], p[2]);
-    const k = Math.min(1, Math.abs(p[0]) / 1.85);
-    c.copy(royal).lerp(tip, k);
+    // HSL hue sweep (royal → tip) — passes through vivid magentas/cyans
+    // instead of muddy RGB midpoints
+    const k = Math.pow(Math.min(1, Math.abs(p[0]) / 1.85), 0.8);
+    c.copy(royal).lerpHSL(tip, k);
     col.push(c.r, c.g, c.b);
   }
   const g = new THREE.BufferGeometry();
@@ -1236,9 +1447,11 @@ export function Phoenix({ idle, reduced, onQuest }: { idle: boolean; reduced: bo
   const tick = useRef(0);
   const bank = useRef(0);
 
-  const redC = useMemo(() => glow(GX.redBright, 1.9), []);
-  const royalC = useMemo(() => glow(GX.violetBright, 1.7), []);
-  const blueC = useMemo(() => glow(GX.blueBright, 1.9), []);
+  // kept just under the bloom threshold so the gradient stays SATURATED
+  // (overdriven colors bloom to white and eat the hue)
+  const redC = useMemo(() => glow(GX.redBright, 1.35), []);
+  const royalC = useMemo(() => glow(GX.violetBright, 1.25), []);
+  const blueC = useMemo(() => glow(GX.blueBright, 1.35), []);
   const wingGeoL = useMemo(() => makeWing(-1, redC, royalC), [redC, royalC]);
   const wingGeoR = useMemo(() => makeWing(1, blueC, royalC), [blueC, royalC]);
 
@@ -1306,16 +1519,33 @@ export function Phoenix({ idle, reduced, onQuest }: { idle: boolean; reduced: bo
         onPointerOver={(e) => { e.stopPropagation(); setCursor(true); }}
         onPointerOut={() => setCursor(false)}
       >
-        {/* fuselage — sleek royal diamond */}
+        {/* fuselage — sleek royal teardrop */}
         <mesh scale={[0.16, 0.14, 0.62]}>
-          <octahedronGeometry args={[1, 0]} />
+          <sphereGeometry args={[1, 12, 10]} />
           <meshBasicMaterial color={royalC} toneMapped={false} />
         </mesh>
-        {/* head — bright beak point */}
-        <mesh position={[0, 0.02, -0.66]} rotation={[-Math.PI / 2, 0, 0]} scale={[0.09, 0.22, 0.09]}>
-          <coneGeometry args={[1, 1, 6]} />
-          <meshBasicMaterial color={glow(GX.white, 2)} toneMapped={false} />
+        {/* neck — smooth taper into the head */}
+        <mesh position={[0, 0.045, -0.5]} rotation={[-1.25, 0, 0]} scale={[0.085, 0.2, 0.08]}>
+          <cylinderGeometry args={[0.7, 1, 1, 10]} />
+          <meshBasicMaterial color={royalC} toneMapped={false} />
         </mesh>
+        {/* head — small rounded skull */}
+        <mesh position={[0, 0.11, -0.66]} scale={[0.085, 0.08, 0.105]}>
+          <sphereGeometry args={[1, 12, 10]} />
+          <meshBasicMaterial color={glow(GX.white, 1.7)} toneMapped={false} />
+        </mesh>
+        {/* beak — short, pointed, slightly down-turned */}
+        <mesh position={[0, 0.09, -0.79]} rotation={[-Math.PI / 2 - 0.18, 0, 0]} scale={[0.04, 0.13, 0.04]}>
+          <coneGeometry args={[1, 1, 8]} />
+          <meshBasicMaterial color={glow('#FFD9A0', 1.9)} toneMapped={false} />
+        </mesh>
+        {/* eyes — two crimson points */}
+        {[-0.045, 0.045].map(ex => (
+          <mesh key={ex} position={[ex, 0.13, -0.71]} scale={0.018}>
+            <sphereGeometry args={[1, 6, 6]} />
+            <meshBasicMaterial color={glow(GX.redBright, 2.4)} toneMapped={false} />
+          </mesh>
+        ))}
         {/* wings — shoulder-pivoted, gradient royal→red / royal→blue */}
         <mesh ref={wingL} geometry={wingGeoL} position={[-0.12, 0.04, -0.05]}>
           <meshBasicMaterial vertexColors toneMapped={false} transparent opacity={0.92} side={THREE.DoubleSide} depthWrite={false} />

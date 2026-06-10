@@ -41,6 +41,8 @@ export default function MatrixApp() {
   const [visited, setVisited] = useState<Set<number>>(new Set([0]));
   const [score, setScore] = useState(0);
   const [bursts, setBursts] = useState<Burst[]>([]);
+  const [cine, setCine] = useState(false);       // dive intro in progress
+  const [topView, setTopView] = useState(false);
   const restored = useRef(false);
   const burstId = useRef(1);
   const fxPulses = useRef<{ x: number; z: number; color: string; t0: number }[]>([]);
@@ -246,7 +248,7 @@ export default function MatrixApp() {
       b.el.style.opacity = op.toFixed(3);
       b.el.style.visibility = op <= 0.01 ? 'hidden' : 'visible';
     }
-    if (warpRef.current) warpRef.current.style.opacity = (scrollBus.warp * 0.4).toFixed(3);
+    if (warpRef.current) warpRef.current.style.opacity = (scrollBus.warp * 0.55).toFixed(3);
 
     const zo = zoneAt(x, z);
     if (zo.idx !== zoneRef.current) { zoneRef.current = zo.idx; setZoneIdx(zo.idx); }
@@ -350,6 +352,26 @@ export default function MatrixApp() {
   const goConstruct = useCallback(() => setMode('construct'), []);
   const onRed = useCallback(() => { window.location.href = 'mailto:veerapalla.work28@gmail.com'; }, []);
 
+  // ENTER → cinematic dive from the sky into the city gates
+  const onEnter = useCallback(() => {
+    setBooted(true);
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduced) return;
+    scrollBus.introUntil = performance.now() + 4200;
+    setCine(true);
+    setTimeout(() => {
+      setCine(false);
+      sayQuip('Touchdown. The city is yours, operator.');
+    }, 4300);
+  }, [sayQuip]);
+
+  const toggleTop = useCallback(() => {
+    setTopView(v => {
+      scrollBus.topView = !v;
+      return !v;
+    });
+  }, []);
+
   if (!caps) return <div className="mx-void" aria-hidden="true" />;
 
   const rank = RANKS[Math.min(score, RANKS.length - 1)];
@@ -384,7 +406,7 @@ export default function MatrixApp() {
             </div>
           </div>
           <div ref={warpRef} className="mx-warp" aria-hidden="true" />
-          {booted && (
+          {booted && !cine && (
             <>
               <OperatorHud
                 code={zone.code}
@@ -396,6 +418,9 @@ export default function MatrixApp() {
               <div className="mx-map" aria-label="City map">
                 <canvas ref={mapRef} width={MAP_W} height={MAP_H} />
                 <p className="mx-map-label">{zone.code}</p>
+                <button className="mx-topview" onClick={toggleTop}>
+                  {topView ? '◉ STREET VIEW' : '▣ TOP VIEW'}
+                </button>
               </div>
               {/* big labeled controls — no hidden gestures */}
               <div className="mx-dpad" aria-label="Drive controls">
@@ -434,7 +459,7 @@ export default function MatrixApp() {
               </div>
             </>
           )}
-          {!booted && <BootOverlay onDone={() => setBooted(true)} />}
+          {!booted && <BootOverlay onDone={onEnter} />}
           <button className="mx-toggle" onClick={goTerminal}>BLUE PILL ▸ TERMINAL</button>
         </>
       ) : (
