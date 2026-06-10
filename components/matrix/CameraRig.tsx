@@ -6,7 +6,7 @@
 import { useEffect, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
-import { STREETS, LANE_HALF, SPAWN, PORTAL_XS, PORTAL_Z, DISTRICT_PORTALS } from '@/lib/grid';
+import { STREETS, LANE_HALF, SPAWN, PORTAL_XS, PORTAL_Z, DISTRICT_PORTALS, HUB } from '@/lib/grid';
 import { scrollBus } from '@/lib/scrollBus';
 
 function clampToNetwork(x: number, z: number) {
@@ -38,6 +38,9 @@ export default function CameraRig({
   const keysFwd = useRef(0);
   const lastTurn = useRef(0);
   const lookAt = useRef(new THREE.Vector3());
+  const flight = useRef(0);
+  const flightPos = useRef(new THREE.Vector3());
+  const flightLook = useRef(new THREE.Vector3());
 
   useEffect(() => {
     const right = (h: { x: number; z: number }) => ({ x: -h.z, z: h.x });
@@ -244,6 +247,17 @@ export default function CameraRig({
       cam.position.y + look.current.pitch * 9 + (reduced ? 0 : -pointer.current.y * 1),
       cam.position.z - Math.cos(vy) * 10,
     );
+
+    // free-flight easter egg — soar above the city, then ease back down
+    const flying = !reduced && performance.now() < scrollBus.flightUntil;
+    flight.current += ((flying ? 1 : 0) - flight.current) * Math.min(1, dt * 1.6);
+    if (flight.current > 0.002) {
+      const t = state.clock.elapsedTime * 0.22;
+      const fx = HUB.x + Math.sin(t) * 78;
+      const fz = HUB.z + Math.cos(t) * 78;
+      cam.position.lerp(flightPos.current.set(fx, 135, fz), flight.current);
+      lookAt.current.lerp(flightLook.current.set(HUB.x, 0, HUB.z), flight.current);
+    }
     cam.lookAt(lookAt.current);
 
     const fovTarget = 52 + scrollBus.warp * 30;

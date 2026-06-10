@@ -25,8 +25,15 @@ html { -webkit-text-size-adjust: 100%; }
 
 html { background: #030308; }
 
+html, body {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: clip; /* belt-and-braces: no horizontal scroll, ever */
+}
+
 body {
   min-height: 100vh;
+  min-height: 100dvh;
   background: var(--bg);
   color: var(--text);
   font-family: var(--mono);

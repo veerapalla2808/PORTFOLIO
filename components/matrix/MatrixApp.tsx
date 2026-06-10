@@ -5,15 +5,20 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { detectCaps, type Caps } from '@/lib/tier';
 import {
-  ZONES, zoneAt, QUESTION_POOL, RANKS, STREETS, routeBetween, type Question,
+  ZONES, zoneAt, QUESTION_POOL, RANKS, STREETS, CHECKPOINTS, routeBetween,
+  GX, type Question,
 } from '@/lib/grid';
 import { storyBands, scrollBus } from '@/lib/scrollBus';
 import BootOverlay from './BootOverlay';
 import OperatorHud from './OperatorHud';
 import TerminalResume from './TerminalResume';
 import ActPanels, { type CheckpointResult } from './ActPanels';
+import type { Burst } from './Construct';
 
 const Construct = dynamic(() => import('./Construct'), { ssr: false });
+
+const SAVE_KEY = 'vp-grid-save-v1';
+interface SaveData { score: number; visited: number[]; interacted: string[] }
 
 const GLYPH_TITLES = ['ヴィーラ・パッラ', 'VEERA PALLA // 11Y', 'follow the white rabbit'];
 const IDLE_LINE = 'You stopped. The rabbit is watching you, operator…';
@@ -34,6 +39,11 @@ export default function MatrixApp() {
   const [interacted, setInteracted] = useState<Set<string>>(new Set());
   const [quip, setQuip] = useState<string | null>(null);
   const [visited, setVisited] = useState<Set<number>>(new Set([0]));
+  const [score, setScore] = useState(0);
+  const [bursts, setBursts] = useState<Burst[]>([]);
+  const restored = useRef(false);
+  const burstId = useRef(1);
+  const fxPulses = useRef<{ x: number; z: number; color: string; t0: number }[]>([]);
 
   const progressRef = useRef<HTMLDivElement>(null);
   const storyRef = useRef<HTMLDivElement>(null);
@@ -49,7 +59,7 @@ export default function MatrixApp() {
   useEffect(() => {
     // dev/QA hook — lets E2E checks read the nav bus
     (window as unknown as { __bus?: typeof scrollBus }).__bus = scrollBus;
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- post-mount detect + per-visit question rotation (SSR-safe)
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- post-mount detect + question rotation + save restore (SSR-safe)
     setCaps(detectCaps());
     const pool = [...QUESTION_POOL];
     for (let i = pool.length - 1; i > 0; i--) {
@@ -58,7 +68,53 @@ export default function MatrixApp() {
     }
     setQuestions(pool.slice(0, 6));
     lastMove.current = performance.now();
+    // restore persistent progress
+    try {
+      const raw = localStorage.getItem(SAVE_KEY);
+      if (raw) {
+        const save = JSON.parse(raw) as SaveData;
+        if (typeof save.score === 'number') setScore(save.score);
+        if (Array.isArray(save.visited) && save.visited.length > 0) {
+          visitedRef.current = new Set(save.visited);
+          setVisited(visitedRef.current);
+        }
+        if (Array.isArray(save.interacted)) setInteracted(new Set(save.interacted));
+        restored.current = true;
+      }
+    } catch { /* fresh start */ }
   }, []);
+
+  // persist progress across visits
+  useEffect(() => {
+    if (!booted && !restored.current) return;
+    try {
+      const save: SaveData = { score, visited: [...visited], interacted: [...interacted] };
+      localStorage.setItem(SAVE_KEY, JSON.stringify(save));
+    } catch { /* storage unavailable — no problem */ }
+  }, [score, visited, interacted, booted]);
+
+  const sayQuip = useCallback((text: string) => {
+    clearTimeout(quipTimer.current);
+    setQuip(text);
+    quipTimer.current = setTimeout(() => setQuip(null), 5200);
+  }, []);
+
+  // celebration: 3D glyph burst + mini-map pulse
+  const fire = useCallback((x: number, z: number, color: string) => {
+    const id = burstId.current++;
+    setBursts(prev => [...prev.slice(-3), { id, x, z, color }]);
+    fxPulses.current.push({ x, z, color, t0: performance.now() });
+    if (fxPulses.current.length > 6) fxPulses.current.shift();
+  }, []);
+
+  // welcome back, operator
+  useEffect(() => {
+    if (booted && restored.current) {
+      const rk = RANKS[Math.min(score, RANKS.length - 1)];
+      sayQuip(`Welcome back, ${rk}. The grid remembered you.`);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [booted]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -116,6 +172,19 @@ export default function MatrixApp() {
         ctx.stroke();
       }
     }
+    // celebration pulses — expanding rings where something just happened
+    const now = performance.now();
+    for (const fx of fxPulses.current) {
+      const age = (now - fx.t0) / 1400;
+      if (age > 1) continue;
+      ctx.beginPath();
+      ctx.arc(mapX(fx.x), mapY(fx.z), 4 + age * 12, 0, Math.PI * 2);
+      ctx.strokeStyle = fx.color;
+      ctx.globalAlpha = 1 - age;
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+    }
     // player arrow
     const px = mapX(x), py = mapY(z);
     const ang = Math.atan2(scrollBus.hx, -scrollBus.hz);
@@ -154,6 +223,7 @@ export default function MatrixApp() {
     if (!visitedRef.current.has(zo.idx) && Math.hypot(x - zo.x, z - zo.z) < 24) {
       visitedRef.current = new Set(visitedRef.current).add(zo.idx);
       setVisited(visitedRef.current);
+      fire(zo.x, zo.z, zo.accent); // first arrival — light it up
     }
     if (progressRef.current) {
       progressRef.current.style.width = `${(visitedRef.current.size / ZONES.length) * 100}%`;
@@ -169,22 +239,72 @@ export default function MatrixApp() {
       idleRef.current = true;
       setIdle(true);
     }
-  }, [drawMap]);
+  }, [drawMap, fire]);
 
-  const sayQuip = useCallback((text: string) => {
-    clearTimeout(quipTimer.current);
-    setQuip(text);
-    quipTimer.current = setTimeout(() => setQuip(null), 5200);
+  const onBurstDone = useCallback((id: number) => {
+    setBursts(prev => prev.filter(b => b.id !== id));
   }, []);
+
+  const resultsRef = useRef(results);
+  useEffect(() => { resultsRef.current = results; }, [results]);
 
   const onResult = useCallback((index: number, r: CheckpointResult, line: string) => {
     setResults(prev => ({ ...prev, [index]: r }));
+    if (r.state === 'correct') {
+      setScore(s => s + 1);
+      fire(scrollBus.x, scrollBus.z, GX.violetBright);
+    }
     sayQuip(line);
-  }, [sayQuip]);
+  }, [sayQuip, fire]);
 
   const onBoot = useCallback((id: string) => {
-    setInteracted(prev => (prev.has(id) ? prev : new Set(prev).add(id)));
-  }, []);
+    setInteracted(prev => {
+      if (prev.has(id)) return prev;
+      fire(scrollBus.x, scrollBus.z, GX.blueBright);
+      return new Set(prev).add(id);
+    });
+  }, [fire]);
+
+  // the rabbit leads you to the nearest unanswered question
+  const onQuest = useCallback(() => {
+    const open = CHECKPOINTS
+      .map((c, i) => ({ ...c, i }))
+      .filter(c => {
+        const r = (resultsRef.current ?? {})[c.i];
+        return !r || r.state === 'wrong';
+      });
+    if (open.length === 0) {
+      sayQuip('Nothing left to ask you. The rabbit bows, operator.');
+      return;
+    }
+    open.sort((a, b) =>
+      Math.hypot(a.x - scrollBus.x, a.z - scrollBus.z) - Math.hypot(b.x - scrollBus.x, b.z - scrollBus.z));
+    const t = open[0];
+    const route = routeBetween(scrollBus.x, scrollBus.z, t.x, t.z);
+    scrollBus.route.length = 0;
+    scrollBus.route.push(...route);
+    sayQuip('The rabbit knows a question you haven’t answered. Follow it.');
+  }, [sayQuip]);
+
+  // easter egg: type N-E-O (or ↑↑↓↓) → 5 seconds of free flight
+  useEffect(() => {
+    const st = { seq: [] as string[], lastT: 0 };
+    const onKey = (e: KeyboardEvent) => {
+      const now = performance.now();
+      if (now - st.lastT > 1600) st.seq.length = 0;
+      st.lastT = now;
+      st.seq.push(e.key.toLowerCase());
+      while (st.seq.length > 4) st.seq.shift();
+      const s = st.seq.join(',');
+      if (s.endsWith('n,e,o') || s === 'arrowup,arrowup,arrowdown,arrowdown') {
+        st.seq.length = 0;
+        scrollBus.flightUntil = performance.now() + 5200;
+        sayQuip('There is no spoon. Enjoy the view, operator.');
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [sayQuip]);
 
   // CONTINUE — auto-drive to the next unvisited district (or the choice)
   const nextTarget = ZONES.find(z => z.idx !== 0 && !visited.has(z.idx)) ?? ZONES[ZONES.length - 1];
@@ -202,7 +322,6 @@ export default function MatrixApp() {
 
   if (!caps) return <div className="mx-void" aria-hidden="true" />;
 
-  const score = Object.values(results).filter(r => r.state === 'correct').length;
   const rank = RANKS[Math.min(score, RANKS.length - 1)];
   const zone = ZONES[zoneIdx];
   const line = quip ?? (idle ? IDLE_LINE : zone.line);
@@ -215,10 +334,13 @@ export default function MatrixApp() {
             caps={caps}
             idle={idle}
             booted={interacted}
+            bursts={bursts}
             onFrame={onFrame}
             onBoot={onBoot}
             onRed={onRed}
             onBlue={goTerminal}
+            onQuest={onQuest}
+            onBurstDone={onBurstDone}
           />
           <div className="mx-story" aria-hidden={!booted}>
             <div ref={storyRef} className="mx-story-track">

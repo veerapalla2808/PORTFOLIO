@@ -141,13 +141,16 @@ export function ZoneAmbience() {
 const BLDG_VERT = /* glsl */ `
 attribute float aHue;
 attribute float aSeed;
+attribute float aSurge;
 varying vec3 vWorld;
 varying float vNy;
 varying float vHue;
 varying float vSeed;
+varying float vSurge;
 void main() {
   vHue = aHue;
   vSeed = aSeed;
+  vSurge = aSurge;
   vNy = normal.y;
   vec4 mp = vec4(position, 1.0);
   #ifdef USE_INSTANCING
@@ -167,12 +170,15 @@ varying vec3 vWorld;
 varying float vNy;
 varying float vHue;
 varying float vSeed;
+varying float vSurge;
 
 float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
 
 void main() {
   // roofs stay matte — the rain lives on the faces
   if (vNy > 0.5) { gl_FragColor = vec4(uBase * 0.6, 1.0); return; }
+  // click surge — the whole tower floods for a moment
+  float surge = clamp(1.0 - (uTime - vSurge) * 0.65, 0.0, 1.0);
 
   // planar glyph grid in world units (x+z collapses each face to a line)
   float u = vWorld.x + vWorld.z + vSeed * 7.0;
@@ -197,6 +203,7 @@ void main() {
   vec3 neon = vHue < 0.5 ? uBlue : (vHue < 1.5 ? uViolet : uRed);
   vec3 c = uBase + neon * (glyph * (0.10 + b * 1.7));
   if (t > 0.962) c += (neon * 1.1 + vec3(0.4)) * glyph; // bright stream head
+  c += (neon * 2.2 + vec3(0.5)) * glyph * surge;        // click surge flood
   c += (hash(gl_FragCoord.xy * 0.7) - 0.5) * 0.04;      // dither
   gl_FragColor = vec4(c, 1.0);
 }`;
@@ -205,8 +212,9 @@ export function CityBlocks({ tier, reduced }: { tier: 'S' | 'M' | 'L'; reduced: 
   const step = tier === 'S' ? 24 : tier === 'M' ? 16 : 12;
   const atlas = useMemo(() => glyphAtlas(), []);
   const matRef = useRef<THREE.ShaderMaterial | null>(null);
+  const timeRef = useRef(17.3);
 
-  const { body, trim } = useMemo(() => {
+  const { body, trim, surgeAttr } = useMemo(() => {
     const slots: { x: number; z: number; seed: number }[] = [];
     STREETS.forEach((s, si) => {
       const ax = s.a[0], az = s.a[1];
@@ -260,19 +268,26 @@ export function CityBlocks({ tier, reduced }: { tier: 'S' | 'M' | 'L'; reduced: 
       hue[i] = hr < 0.45 ? 0 : hr < 0.75 ? 1 : 2;
       seedAttr[i] = rnd(sl.seed + 6) * 53;
     });
+    const surge = new Float32Array(n).fill(-100);
+    const surgeAttr = new THREE.InstancedBufferAttribute(surge, 1);
+    surgeAttr.setUsage(THREE.DynamicDrawUsage);
     geo.setAttribute('aHue', new THREE.InstancedBufferAttribute(hue, 1));
     geo.setAttribute('aSeed', new THREE.InstancedBufferAttribute(seedAttr, 1));
+    geo.setAttribute('aSurge', surgeAttr);
     bodyMesh.instanceMatrix.needsUpdate = true;
     trimMesh.instanceMatrix.needsUpdate = true;
     if (trimMesh.instanceColor) trimMesh.instanceColor.needsUpdate = true;
-    return { body: bodyMesh, trim: trimMesh };
+    return { body: bodyMesh, trim: trimMesh, surgeAttr };
   }, [step, atlas]);
 
+  const surgeRef = useRef<THREE.InstancedBufferAttribute | null>(null);
   useEffect(() => {
     matRef.current = body.material as THREE.ShaderMaterial;
-  }, [body]);
+    surgeRef.current = surgeAttr;
+  }, [body, surgeAttr]);
 
   useFrame((state) => {
+    timeRef.current = state.clock.elapsedTime;
     if (matRef.current && !reduced) {
       matRef.current.uniforms.uTime.value = state.clock.elapsedTime;
     }
@@ -291,7 +306,23 @@ export function CityBlocks({ tier, reduced }: { tier: 'S' | 'M' | 'L'; reduced: 
       (trim.material as THREE.Material).dispose();
     };
   }, [body, trim]);
-  return <group ref={group} />;
+
+  // click a tower → its code stream floods for a moment
+  return (
+    <group
+      ref={group}
+      onClick={(e) => {
+        const hit = e.intersections.find(i => i.object === body);
+        if (hit?.instanceId === undefined) return;
+        e.stopPropagation();
+        const attr = surgeRef.current;
+        if (attr) {
+          attr.setX(hit.instanceId, timeRef.current);
+          attr.needsUpdate = true;
+        }
+      }}
+    />
+  );
 }
 
 // ── streets — ground, grid, neon lane edges ─────────────────────────────────
@@ -968,10 +999,11 @@ export function Pills({ onRed, onBlue }: { onRed: () => void; onBlue: () => void
   );
 }
 
-// ── the white rabbit ────────────────────────────────────────────────────────
-export function Rabbit({ idle, reduced }: { idle: boolean; reduced: boolean }) {
+// ── the white rabbit — click it and it leads you to an unanswered question ──
+export function Rabbit({ idle, reduced, onQuest }: { idle: boolean; reduced: boolean; onQuest: () => void }) {
   const group = useRef<THREE.Group>(null);
   const target = useRef(new THREE.Vector3());
+  const proj = useRef(new THREE.Vector3());
   const white = useMemo(() => new THREE.Color(GX.white).multiplyScalar(1.7), []);
   useFrame((state) => {
     const g = group.current;
@@ -988,9 +1020,19 @@ export function Rabbit({ idle, reduced }: { idle: boolean; reduced: boolean }) {
     } else {
       g.lookAt(g.position.x + scrollBus.hx * 4, g.position.y, g.position.z + scrollBus.hz * 4);
     }
+    // publish screen position (QA + UI hints)
+    proj.current.copy(g.position).project(state.camera);
+    scrollBus.rabbitScreen.x = ((proj.current.x + 1) / 2) * state.size.width;
+    scrollBus.rabbitScreen.y = ((1 - proj.current.y) / 2) * state.size.height;
   });
   return (
-    <group ref={group} scale={0.9}>
+    <group
+      ref={group}
+      scale={0.9}
+      onClick={(e) => { e.stopPropagation(); onQuest(); }}
+      onPointerOver={(e) => { e.stopPropagation(); setCursor(true); }}
+      onPointerOut={() => setCursor(false)}
+    >
       <mesh position={[0, 0, 0.1]} rotation={[0.5, 0, 0]}>
         <icosahedronGeometry args={[0.42, 0]} />
         <meshBasicMaterial color={white} wireframe toneMapped={false} />
@@ -1012,5 +1054,47 @@ export function Rabbit({ idle, reduced }: { idle: boolean; reduced: boolean }) {
         <meshBasicMaterial color={white} wireframe toneMapped={false} />
       </mesh>
     </group>
+  );
+}
+
+// ── celebration glyph burst (district completed / answer correct) ───────────
+export function GlyphBurst({ x, z, color, onDone }: { x: number; z: number; color: string; onDone: () => void }) {
+  const N = 26;
+  const points = useRef<THREE.Points>(null);
+  const start = useRef<number | null>(null);
+  const done = useRef(false);
+  const { geo, vels } = useMemo(() => {
+    const pos = new Float32Array(N * 3);
+    const v: { x: number; y: number; z: number }[] = [];
+    for (let i = 0; i < N; i++) {
+      const a = (i / N) * Math.PI * 2;
+      const sp = 5 + rnd(i * 3 + 1) * 7;
+      v.push({ x: Math.cos(a) * sp * 0.6, y: 6 + rnd(i * 3 + 2) * 6, z: Math.sin(a) * sp * 0.6 });
+    }
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    return { geo: g, vels: v };
+  }, []);
+  useFrame((state) => {
+    const p = points.current;
+    if (!p) return;
+    if (start.current === null) start.current = state.clock.elapsedTime;
+    const t = state.clock.elapsedTime - start.current;
+    const attr = p.geometry.getAttribute('position') as THREE.BufferAttribute;
+    for (let i = 0; i < N; i++) {
+      attr.setXYZ(i, vels[i].x * t, 6 + vels[i].y * t - 9 * t * t * 0.55, vels[i].z * t);
+    }
+    attr.needsUpdate = true;
+    const m = p.material as THREE.PointsMaterial;
+    m.opacity = Math.max(0, 1 - t / 1.6);
+    if (t > 1.7 && !done.current) { done.current = true; onDone(); }
+  });
+  return (
+    <points ref={points} position={[x, 0, z]} geometry={geo}>
+      <pointsMaterial
+        size={0.7} sizeAttenuation transparent depthWrite={false}
+        color={glow(color, 2)} blending={THREE.AdditiveBlending}
+      />
+    </points>
   );
 }

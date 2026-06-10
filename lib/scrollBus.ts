@@ -10,6 +10,10 @@ export const scrollBus = {
   cmdTurn: 0,         // -1 | 0 | 1 — one-shot turn request
   // auto-drive waypoints (set by the Continue button; cleared by user input)
   route: [] as { x: number; z: number }[],
+  // free-flight easter egg — camera orbits the city until this timestamp
+  flightUntil: 0,
+  // rabbit's projected screen position (QA + future UI hints)
+  rabbitScreen: { x: 0, y: 0 },
 };
 
 // story bands registered for proximity fade (mutated outside React state)

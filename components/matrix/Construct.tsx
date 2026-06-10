@@ -11,19 +11,24 @@ import Effects from './Effects';
 import {
   CityBlocks, StreetLanes, GateArch, Signposts, IdentityHolo, NeonSignWall,
   EraPortals, SpeedLines, AnomalyBillboards, CredsCourt, TransmissionRow,
-  Pills, Rabbit, HubBeacon, DistrictPortals, ZoneAmbience,
+  Pills, Rabbit, HubBeacon, DistrictPortals, ZoneAmbience, GlyphBurst,
 } from './scenes';
 
+export interface Burst { id: number; x: number; z: number; color: string }
+
 export default function Construct({
-  caps, idle, booted, onFrame, onBoot, onRed, onBlue,
+  caps, idle, booted, bursts, onFrame, onBoot, onRed, onBlue, onQuest, onBurstDone,
 }: {
   caps: Caps;
   idle: boolean;
   booted: Set<string>;
+  bursts: Burst[];
   onFrame: (x: number, z: number) => void;
   onBoot: (id: string) => void;
   onRed: () => void;
   onBlue: () => void;
+  onQuest: () => void;
+  onBurstDone: (id: number) => void;
 }) {
   const [degraded, setDegraded] = useState(false);
   const { tier, reducedMotion } = caps;
@@ -60,7 +65,10 @@ export default function Construct({
       <CredsCourt reduced={reducedMotion} />
       <TransmissionRow />
       <Pills onRed={onRed} onBlue={onBlue} />
-      <Rabbit idle={idle} reduced={reducedMotion} />
+      <Rabbit idle={idle} reduced={reducedMotion} onQuest={onQuest} />
+      {bursts.map(b => (
+        <GlyphBurst key={b.id} x={b.x} z={b.z} color={b.color} onDone={() => onBurstDone(b.id)} />
+      ))}
       <SpeedLines />
       <CameraRig reduced={reducedMotion} onFrame={onFrame} />
 
