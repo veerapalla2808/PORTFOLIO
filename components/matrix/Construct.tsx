@@ -9,16 +9,17 @@ import Rain from './Rain';
 import CameraRig from './CameraRig';
 import Effects from './Effects';
 import {
-  RainMatDriver, ZoneAmbience, StreetLanes, StreetLights, CityBlocks,
-  Lake, River, Bridges, TheL, Theatre, CivicIcons, NavyPier, BeanPlaza,
-  Landmarks, Interiors, GateArch, Signposts, AnomalyBillboards, Pills,
-  Phoenix, SpeedLines, GlyphBurst, SkyTraffic, Searchlights,
+  RainMatDriver, ZoneAmbience, StreetLanes, Podiums, DistantSkyline,
+  StreetLights, CityBlocks, Lake, River, Bridges, TheL, Theatre, CivicIcons,
+  NavyPier, BeanPlaza, Landmarks, Interiors, GateArch, Signposts,
+  AnomalyBillboards, Pills, Phoenix, SpeedLines, GlyphBurst, SkyTraffic,
+  Searchlights, Shards,
 } from './scenes';
 
 export interface Burst { id: number; x: number; z: number; color: string }
 
 export default function Construct({
-  caps, idle, booted, bursts, onFrame, onBoot, onRed, onBlue, onQuest, onBurstDone,
+  caps, idle, booted, bursts, onFrame, onBoot, onRed, onBlue, onQuest, onBurstDone, shards, onShard,
 }: {
   caps: Caps;
   idle: boolean;
@@ -30,6 +31,8 @@ export default function Construct({
   onBlue: () => void;
   onQuest: () => void;
   onBurstDone: (id: number) => void;
+  shards: Set<number>;
+  onShard: (i: number) => void;
 }) {
   const [degraded, setDegraded] = useState(false);
   const { tier, reducedMotion } = caps;
@@ -55,6 +58,8 @@ export default function Construct({
       <Rain tier={degraded ? 'S' : tier} reduced={reducedMotion} />
       <ZoneAmbience />
       <StreetLanes />
+      <Podiums />
+      <DistantSkyline />
       <StreetLights />
       {tier !== 'S' && !degraded && <SkyTraffic reduced={reducedMotion} />}
       {tier !== 'S' && !degraded && <Searchlights reduced={reducedMotion} />}
@@ -74,6 +79,7 @@ export default function Construct({
       <AnomalyBillboards booted={booted} onBoot={onBoot} />
       <Pills onRed={onRed} onBlue={onBlue} />
       <Phoenix idle={idle} reduced={reducedMotion} onQuest={onQuest} />
+      <Shards collected={shards} onCollect={onShard} reduced={reducedMotion} />
       {bursts.map(b => (
         <GlyphBurst key={b.id} x={b.x} z={b.z} color={b.color} onDone={() => onBurstDone(b.id)} />
       ))}

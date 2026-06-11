@@ -243,10 +243,10 @@ export default function ActPanels({
       <Sec int="transmissions" z={16} r={11}>
         <article className="mx-slab mx-scroll" onWheel={stopWheel}>
           <header className="mx-slab-head">
-            <span className="mx-slab-path">~/coils/broadcast.feed</span>
+            <span className="mx-slab-path">~/theatre/tonights_bill.feed</span>
             <span className="mx-slab-act">06 / TRANSMISSIONS</span>
           </header>
-          <h2 className="mx-h3"><DecodeText text="TRANSMISSIONS" /></h2>
+          <h2 className="mx-h3"><DecodeText text="TONIGHT’S TRANSMISSIONS" /></h2>
           <ul className="mx-creds">
             {blogPosts.map(b => (
               <li key={b.url}>

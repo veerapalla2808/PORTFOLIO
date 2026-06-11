@@ -24,8 +24,11 @@ export interface Street { pts: [number, number][]; name: string; color: string }
 export const STREETS: Street[] = [
   // State St (N→S spine)
   { pts: [[-20, 46], [-20, -40]], name: 'STATE ST', color: GX.violet },
-  { pts: [[-20, -40], [-20, -110]], name: 'STATE ST', color: GX.violet },
+  { pts: [[-20, -40], [-20, -66]], name: 'STATE ST', color: GX.violet },
+  { pts: [[-20, -66], [-20, -110]], name: 'STATE ST', color: GX.violet },
   { pts: [[-20, -110], [-20, -150]], name: 'STATE ST', color: GX.violet },
+  // the theatre fronts right onto State
+  { pts: [[-20, -66], [-26, -66]], name: 'THEATRE ALLEY', color: GX.redBright },
   { pts: [[-20, -150], [-20, -200]], name: 'STATE ST', color: GX.violet },
   // Franklin St (west spine)
   { pts: [[-70, 20], [-70, -40]], name: 'FRANKLIN ST', color: GX.red },
@@ -94,7 +97,7 @@ export const LANDMARKS: Landmark[] = [
   { id: 'creds', name: 'THE NEEDLE', entrance: [20, -16], outDir: [0, -1], interiorLen: 36 },
   { id: 'observatory', name: 'THE WATCHTOWER', entrance: [20, -126], outDir: [0, 1], interiorLen: 40 },
   { id: 'docks', name: 'GRAND MART', entrance: [-122, -40], outDir: [1, 0], interiorLen: 44 },
-  { id: 'transmissions', name: 'TWIN COILS', entrance: [-96, -176], outDir: [1, 0], interiorLen: 36 },
+  { id: 'transmissions', name: 'THE GRID THEATRE', entrance: [-26, -66], outDir: [1, 0], interiorLen: 34 },
 ];
 
 export function landmarkById(id: string): Landmark | undefined {
@@ -126,7 +129,7 @@ export const ZONES: Zone[] = [
   { idx: 4, id: 'timeline', code: '03 / SPIRE OF ERAS', line: 'The tallest tower holds five floors of history. Take the elevator.', x: -92, z: -80, fog: '#0D0418', accent: GX.violet },
   { idx: 5, id: 'anomalies', code: '04 / ANOMALY ALLEY', line: 'Two anomalies reached production. Click the billboards — watch them surrender.', x: 8, z: -110, fog: '#140409', accent: GX.redBright },
   { idx: 6, id: 'creds', code: '05 / THE NEEDLE', line: 'Stamped, sealed, verified — filed at the top of the Needle.', x: 20, z: -16, fog: '#0A1430', accent: GX.blueBright },
-  { idx: 7, id: 'transmissions', code: '06 / TWIN COILS', line: 'He also writes. The coils broadcast it nightly.', x: -96, z: -176, fog: '#0A0620', accent: GX.violetBright },
+  { idx: 7, id: 'transmissions', code: '06 / GRID THEATRE', line: 'He also writes. Tonight only — every transmission, on the big stage.', x: -26, z: -66, fog: '#16040C', accent: GX.redBright },
   { idx: 8, id: 'docks', code: '07 / GRAND MART', line: 'Kafka. Kinesis. Pub/Sub. The Mart never sleeps — every system is a stream.', x: -122, z: -40, fog: '#06122B', accent: GX.blueBright },
   { idx: 9, id: 'observatory', code: '08 / WATCHTOWER', line: 'Prometheus watches. Grafana paints. MTTR fell 40% under this roof.', x: 20, z: -126, fog: '#0B0A22', accent: GX.violetBright },
   { idx: 10, id: 'choice', code: '09 / THE WHEEL', line: 'End of the pier, operator. The wheel turns. Red or blue?', x: 160, z: -110, fog: '#0A0512', accent: GX.white },

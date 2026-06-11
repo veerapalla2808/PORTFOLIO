@@ -17,13 +17,34 @@ const glow = (hex: string, k: number) => new THREE.Color(hex).multiplyScalar(k);
 const setCursor = (on: boolean) => { document.body.style.cursor = on ? 'pointer' : ''; };
 
 // every street segment, flattened (for clamps/exclusions/generators)
-const SEGS: { ax: number; az: number; bx: number; bz: number; ux: number; uz: number; len: number; color: string }[] = [];
-for (const s of STREETS) {
-  for (let i = 0; i < s.pts.length - 1; i++) {
-    const [ax, az] = s.pts[i];
-    const [bx, bz] = s.pts[i + 1];
-    const len = Math.hypot(bx - ax, bz - az);
-    SEGS.push({ ax, az, bx, bz, ux: (bx - ax) / len, uz: (bz - az) / len, len, color: s.color });
+interface Seg {
+  ax: number; az: number; bx: number; bz: number;
+  ux: number; uz: number; len: number; color: string;
+  trimA: number; trimB: number; // junction clearance at each end
+}
+const SEGS: Seg[] = [];
+{
+  // junctions = street endpoints shared by 2+ streets
+  const key = (x: number, z: number) => `${Math.round(x)}:${Math.round(z)}`;
+  const counts = new Map<string, number>();
+  for (const s of STREETS) {
+    for (const p of [s.pts[0], s.pts[s.pts.length - 1]]) {
+      const k = key(p[0], p[1]);
+      counts.set(k, (counts.get(k) ?? 0) + 1);
+    }
+  }
+  const isJunction = (x: number, z: number) => (counts.get(key(x, z)) ?? 0) >= 2;
+  for (const s of STREETS) {
+    for (let i = 0; i < s.pts.length - 1; i++) {
+      const [ax, az] = s.pts[i];
+      const [bx, bz] = s.pts[i + 1];
+      const len = Math.hypot(bx - ax, bz - az);
+      SEGS.push({
+        ax, az, bx, bz, ux: (bx - ax) / len, uz: (bz - az) / len, len, color: s.color,
+        trimA: i === 0 && isJunction(ax, az) ? 5.6 : 0,
+        trimB: i === s.pts.length - 2 && isJunction(bx, bz) ? 5.6 : 0,
+      });
+    }
   }
 }
 
@@ -265,24 +286,31 @@ export function ZoneAmbience() {
   );
 }
 
-// ── streets — asphalt, single-color edges, dashed center lines ──────────────
+// ── streets — asphalt, single-color edges, dashed center lines. Edge strips,
+// curbs and dashes all STOP at junctions: nothing crosses an intersection. ──
 export function StreetLanes() {
-  const { lanes, dashes } = useMemo(() => {
+  const { lanes, dashes, curbs } = useMemo(() => {
     const laneList: { x: number; z: number; rot: number; len: number; color: string }[] = [];
     const dashList: { x: number; z: number; rot: number }[] = [];
+    const curbList: { x: number; z: number; rot: number; len: number }[] = [];
     const DASH = 3.2, GAP = 4.2;
     for (const s of SEGS) {
       const rot = Math.atan2(s.ux, s.uz);
       const nx = -s.uz, nz = s.ux;
-      const cx = (s.ax + s.bx) / 2, cz = (s.az + s.bz) / 2;
+      const start = s.trimA, end = s.len - s.trimB;
+      const segLen = end - start;
+      if (segLen <= 1) continue;
+      const mid = start + segLen / 2;
+      const cx = s.ax + s.ux * mid, cz = s.az + s.uz * mid;
       for (const side of [-1, 1]) {
-        laneList.push({ x: cx + nx * side * 4.6, z: cz + nz * side * 4.6, rot, len: s.len + 1.2, color: s.color });
+        laneList.push({ x: cx + nx * side * 4.6, z: cz + nz * side * 4.6, rot, len: segLen, color: s.color });
+        curbList.push({ x: cx + nx * side * 6.1, z: cz + nz * side * 6.1, rot, len: segLen });
       }
-      for (let d = 3; d < s.len - 2; d += DASH + GAP) {
+      for (let d = start + 2; d < end - 3; d += DASH + GAP) {
         dashList.push({ x: s.ax + s.ux * (d + DASH / 2), z: s.az + s.uz * (d + DASH / 2), rot });
       }
     }
-    return { lanes: laneList, dashes: dashList };
+    return { lanes: laneList, dashes: dashList, curbs: curbList };
   }, []);
 
   const dashMesh = useMemo(() => {
@@ -327,8 +355,131 @@ export function StreetLanes() {
           <meshBasicMaterial color={glow(l.color, 1.3)} toneMapped={false} />
         </mesh>
       ))}
+      {/* raised sidewalk curbs — the street has structure now */}
+      {curbs.map((c, i) => (
+        <mesh key={`c${i}`} position={[c.x, 0.07, c.z]} rotation={[0, c.rot, 0]}>
+          <boxGeometry args={[2.4, 0.16, c.len]} />
+          <meshStandardMaterial color={'#0C101D'} roughness={0.55} metalness={0.45} />
+        </mesh>
+      ))}
     </group>
   );
+}
+
+// ── storefront podiums — continuous low street-walls with neon trim, so the
+// street level never reads empty. Instanced; gaps only at junctions, doors,
+// the river and the landmarks. ──────────────────────────────────────────────
+export function Podiums() {
+  const { body, trim } = useMemo(() => {
+    const slots: { x: number; z: number; rot: number; w: number; h: number; d: number; seed: number }[] = [];
+    SEGS.forEach((s, si) => {
+      const nx = -s.uz, nz = s.ux;
+      const rot = Math.atan2(s.ux, s.uz);
+      for (let d = s.trimA + 4; d < s.len - s.trimB - 6; d += 9) {
+        for (const side of [-1, 1]) {
+          const seed = si * 727 + d * 17 + side * 11;
+          if (rnd(seed) > 0.88) continue; // occasional alley gap
+          const X = s.ax + s.ux * d + nx * side * 10.8;
+          const Z = s.az + s.uz * d + nz * side * 10.8;
+          if (X > LAKE_X - 8) continue;
+          if (distToRoads(X, Z) < 7.4) continue;   // don't sit on a crossing street
+          if (nearLandmark(X, Z)) continue;
+          let nearDoor = false;
+          for (const lm of LANDMARKS) {
+            if (Math.hypot(X - lm.entrance[0], Z - lm.entrance[1]) < 14) { nearDoor = true; break; }
+          }
+          if (nearDoor) continue;
+          slots.push({
+            x: X, z: Z, rot,
+            w: 8.4, h: 3.2 + rnd(seed + 2) * 3.4, d: 5 + rnd(seed + 3) * 3,
+            seed,
+          });
+        }
+      }
+    });
+    const n = slots.length;
+    const geo = new THREE.BoxGeometry(1, 1, 1);
+    const hue = new Float32Array(n);
+    const seedAttr = new Float32Array(n);
+    const surge = new Float32Array(n).fill(-100);
+    const body = new THREE.InstancedMesh(geo, getRainMat(), n);
+    const trim = new THREE.InstancedMesh(
+      new THREE.BoxGeometry(1, 1, 1),
+      new THREE.MeshBasicMaterial({ toneMapped: false, transparent: true, opacity: 0.9 }), n);
+    const m = new THREE.Matrix4();
+    const q = new THREE.Quaternion();
+    const c = new THREE.Color();
+    slots.forEach((sl, i) => {
+      q.setFromEuler(new THREE.Euler(0, sl.rot, 0));
+      m.compose(new THREE.Vector3(sl.x, sl.h / 2, sl.z), q, new THREE.Vector3(sl.d, sl.h, sl.w));
+      body.setMatrixAt(i, m);
+      m.compose(new THREE.Vector3(sl.x, sl.h + 0.08, sl.z), q, new THREE.Vector3(sl.d * 1.03, 0.14, sl.w * 1.03));
+      trim.setMatrixAt(i, m);
+      c.set(NEONS[i % NEONS.length]).multiplyScalar(1.7);
+      trim.setColorAt(i, c);
+      hue[i] = i % 3;
+      seedAttr[i] = rnd(sl.seed + 5) * 47;
+    });
+    geo.setAttribute('aHue', new THREE.InstancedBufferAttribute(hue, 1));
+    geo.setAttribute('aSeed', new THREE.InstancedBufferAttribute(seedAttr, 1));
+    geo.setAttribute('aSurge', new THREE.InstancedBufferAttribute(surge, 1));
+    body.instanceMatrix.needsUpdate = true;
+    trim.instanceMatrix.needsUpdate = true;
+    if (trim.instanceColor) trim.instanceColor.needsUpdate = true;
+    return { body, trim };
+  }, []);
+
+  const group = useRef<THREE.Group>(null);
+  useEffect(() => {
+    const g = group.current;
+    if (!g) return;
+    g.add(body, trim);
+    return () => {
+      g.remove(body, trim);
+      body.geometry.dispose();
+      trim.geometry.dispose();
+      (trim.material as THREE.Material).dispose();
+    };
+  }, [body, trim]);
+  return <group ref={group} />;
+}
+
+// ── distant skyline — silhouette towers past the playable edge ──────────────
+export function DistantSkyline() {
+  const mesh = useMemo(() => {
+    const slots: { x: number; z: number; w: number; h: number }[] = [];
+    for (let i = 0; i < 130; i++) {
+      const a = rnd(i * 13 + 1) * Math.PI * 2;
+      const r = 150 + rnd(i * 13 + 2) * 90;
+      const X = -40 + Math.cos(a) * r;
+      const Z = -80 + Math.sin(a) * r * 0.85;
+      if (X > LAKE_X - 10) continue; // not in the lake
+      slots.push({ x: X, z: Z, w: 9 + rnd(i * 13 + 3) * 14, h: 22 + rnd(i * 13 + 4) * 52 });
+    }
+    const m4 = new THREE.Matrix4();
+    const q = new THREE.Quaternion();
+    const mesh = new THREE.InstancedMesh(
+      new THREE.BoxGeometry(1, 1, 1),
+      new THREE.MeshBasicMaterial({ color: '#06070F' }), slots.length);
+    slots.forEach((sl, i) => {
+      m4.compose(new THREE.Vector3(sl.x, sl.h / 2, sl.z), q, new THREE.Vector3(sl.w, sl.h, sl.w));
+      mesh.setMatrixAt(i, m4);
+    });
+    mesh.instanceMatrix.needsUpdate = true;
+    return mesh;
+  }, []);
+  const group = useRef<THREE.Group>(null);
+  useEffect(() => {
+    const g = group.current;
+    if (!g) return;
+    g.add(mesh);
+    return () => {
+      g.remove(mesh);
+      mesh.geometry.dispose();
+      (mesh.material as THREE.Material).dispose();
+    };
+  }, [mesh]);
+  return <group ref={group} />;
 }
 
 // ── streetlights along every segment ────────────────────────────────────────
@@ -732,16 +883,17 @@ export function Bridges() {
 interface LSeg { ax: number; az: number; ux: number; uz: number; len: number; cum: number }
 interface LLine { name: string; pts: [number, number][]; color: string; off: number; y: number; speed: number; start: number; deck: boolean }
 
-const LOOP_PTS: [number, number][] = [[-70, -44], [-24, -44], [-24, -146], [-70, -146], [-70, -44]];
+// tracks run BETWEEN the streets — columns never stand on a roadway
+const LOOP_PTS: [number, number][] = [[-62, -32], [-28, -32], [-28, -158], [-62, -158], [-62, -32]];
 
 const L_LINES: LLine[] = [
   { name: 'brown', pts: LOOP_PTS, color: '#9A5B2D', off: -1.6, y: 10.2, speed: 9, start: 0, deck: true },
   { name: 'orange', pts: LOOP_PTS, color: '#FF7A1A', off: -0.55, y: 10.2, speed: 10.5, start: 0.35, deck: false },
   { name: 'green', pts: LOOP_PTS, color: '#27B05A', off: 0.55, y: 10.2, speed: 8.4, start: 0.6, deck: false },
   { name: 'pink', pts: LOOP_PTS, color: '#FF6FB5', off: 1.6, y: 10.2, speed: 11.4, start: 0.82, deck: false },
-  { name: 'red', pts: [[-15, 46], [-15, -200]], color: '#E03131', off: 0, y: 13.6, speed: 13, start: 0.2, deck: true },
-  { name: 'blue', pts: [[-100, -35], [64, -35]], color: '#2D7DFF', off: 0, y: 12.2, speed: 12, start: 0.5, deck: true },
-  { name: 'yellow', pts: [[-25, 42], [0, 36], [22, 31], [44, 26]], color: '#F2C81E', off: 0, y: 12.8, speed: 7, start: 0, deck: true },
+  { name: 'red', pts: [[-12, 46], [-12, -200]], color: '#E03131', off: 0, y: 13.6, speed: 13, start: 0.2, deck: true },
+  { name: 'blue', pts: [[-100, -48], [64, -48]], color: '#2D7DFF', off: 0, y: 12.4, speed: 12, start: 0.5, deck: true },
+  { name: 'yellow', pts: [[-26, 50], [0, 43], [24, 39], [46, 35]], color: '#F2C81E', off: 0, y: 12.8, speed: 7, start: 0, deck: true },
 ];
 
 function lineSegs(pts: [number, number][], off: number): { segs: LSeg[]; total: number } {
@@ -919,11 +1071,8 @@ export function Theatre({ reduced }: { reduced: boolean }) {
         <planeGeometry args={[9, 0.16]} />
         <meshBasicMaterial color={glow('#FFE8C0', 2)} toneMapped={false} />
       </mesh>
-      {/* lobby door glow */}
-      <mesh position={[0.15, 2, 0]} rotation={[0, Math.PI / 2, 0]}>
-        <planeGeometry args={[7, 4]} />
-        <meshBasicMaterial color={glow('#FF3B52', 0.7)} transparent opacity={0.25} blending={THREE.AdditiveBlending} depthWrite={false} side={THREE.DoubleSide} />
-      </mesh>
+      {/* the theatre is a SECTION — its portal entrance faces State St */}
+      <Entrance x={3} z={0} outDir={[1, 0]} color={GX.redBright} label="THE GRID THEATRE" />
     </group>
   );
 }
@@ -1334,7 +1483,7 @@ export function Landmarks() {
             ))}
           </group>
         ))}
-        <Entrance x={-96} z={-176} outDir={[1, 0]} color={GX.violetBright} label="TWIN COILS" />
+        {/* pure skyline now — transmissions moved to the Grid Theatre */}
       </group>
     </group>
   );
@@ -1654,7 +1803,7 @@ export function Interiors({ reduced }: { reduced: boolean }) {
     <group>
       {LANDMARKS.map((lm, idx) => (
         <InteriorShell key={lm.id} idx={idx} len={lm.interiorLen} accent={
-          lm.id === 'arsenal' ? GX.redBright : lm.id === 'timeline' ? GX.violetBright : GX.blueBright
+          lm.id === 'arsenal' || lm.id === 'transmissions' ? GX.redBright : lm.id === 'timeline' ? GX.violetBright : GX.blueBright
         } />
       ))}
 
@@ -1732,14 +1881,108 @@ export function Interiors({ reduced }: { reduced: boolean }) {
         </group>
       ))}
 
-      {/* COILS — broadcast boards */}
-      {blogTexes.map((tex, i) => (
-        <mesh key={i} position={[INT_BASE(transIdx) + (i - 1) * 3.6, 4.2, -10 - i * 8]} rotation={[0, (i - 1) * -0.25, 0]}>
-          <planeGeometry args={[6.8, 2.7]} />
-          <meshBasicMaterial map={tex} transparent side={THREE.DoubleSide} />
+      {/* GRID THEATRE — auditorium: seat rows, glowing stage, transmissions on the marquee wall */}
+      <group position={[INT_BASE(transIdx), 0, 0]}>
+        {/* seat rows */}
+        {Array.from({ length: 5 }, (_, row) => (
+          Array.from({ length: 6 }, (_, col) => (
+            <mesh key={`${row}-${col}`} position={[-4 + col * 1.6, 0.55, -7 - row * 2.6]}>
+              <boxGeometry args={[1.1, 1.1, 0.9]} />
+              <meshStandardMaterial color={'#27060E'} roughness={0.6} metalness={0.3} />
+            </mesh>
+          ))
+        ))}
+        {/* aisle light strips */}
+        {[-5.4, 5.4].map(ox => (
+          <mesh key={ox} position={[ox, 0.06, -12]} rotation={[-Math.PI / 2, 0, 0]}>
+            <planeGeometry args={[0.25, 16]} />
+            <meshBasicMaterial color={glow(GX.redBright, 1.4)} toneMapped={false} transparent opacity={0.8} />
+          </mesh>
+        ))}
+        {/* the stage */}
+        <mesh position={[0, 0.7, -27]}>
+          <boxGeometry args={[11.6, 1.4, 7]} />
+          <meshStandardMaterial color={'#170609'} roughness={0.4} metalness={0.5} />
         </mesh>
-      ))}
+        <mesh position={[0, 1.46, -25]}>
+          <boxGeometry args={[11.6, 0.12, 0.3]} />
+          <meshBasicMaterial color={glow('#FFD9A0', 1.9)} toneMapped={false} />
+        </mesh>
+        {/* curtains framing the stage */}
+        {[-5.4, 5.4].map(ox => (
+          <mesh key={`cur${ox}`} position={[ox, 5.2, -27]}>
+            <boxGeometry args={[1.2, 8, 6.4]} />
+            <meshStandardMaterial color={'#4A0814'} roughness={0.75} metalness={0.1} emissive={'#C8102E'} emissiveIntensity={0.25} />
+          </mesh>
+        ))}
+        {/* transmissions, top of the bill */}
+        {blogTexes.map((tex, i) => (
+          <mesh key={i} position={[(i - 1) * 3.9, 5 + (i % 2) * 0.4, -29.5]} rotation={[0, (i - 1) * -0.12, 0]}>
+            <planeGeometry args={[3.7, 1.6]} />
+            <meshBasicMaterial map={tex} transparent side={THREE.DoubleSide} />
+          </mesh>
+        ))}
+        {/* footlights */}
+        {[-4, -2, 0, 2, 4].map(ox => (
+          <mesh key={`fl${ox}`} position={[ox, 1.6, -23.8]}>
+            <sphereGeometry args={[0.12, 6, 6]} />
+            <meshBasicMaterial color={glow('#FFE8C0', 2.2)} toneMapped={false} />
+          </mesh>
+        ))}
+        <pointLight position={[0, 7, -26]} intensity={60} color={'#FF6B7E'} />
+      </group>
     </group>
+  );
+}
+
+// ── DATA SHARDS — collectibles scattered across the streets ─────────────────
+export const SHARD_SPOTS: { x: number; z: number }[] = [
+  { x: -20, z: 8 }, { x: -20, z: -88 }, { x: -20, z: -178 },
+  { x: -70, z: -20 }, { x: -70, z: -118 },
+  { x: -45, z: -40 }, { x: -45, z: -150 },
+  { x: 20, z: -75 }, { x: 20, z: -140 },
+  { x: 50, z: 16 }, { x: 65, z: -56 }, { x: 110, z: -110 },
+];
+
+export function Shards({ collected, onCollect, reduced }: {
+  collected: Set<number>;
+  onCollect: (i: number) => void;
+  reduced: boolean;
+}) {
+  const refs = useRef<(THREE.Group | null)[]>([]);
+  useFrame((state) => {
+    const t = state.clock.elapsedTime;
+    refs.current.forEach((g, i) => {
+      if (!g) return;
+      const got = collected.has(i);
+      g.visible = !got && !scrollBus.interior;
+      if (got || reduced) return;
+      g.position.y = 1.7 + Math.sin(t * 2 + i * 1.7) * 0.35;
+      g.rotation.y = t * 1.6 + i;
+      // drive-through pickup
+      const s = SHARD_SPOTS[i];
+      if (Math.hypot(scrollBus.x - s.x, scrollBus.z - s.z) < 3.2) onCollect(i);
+    });
+  });
+  return (
+    <>
+      {SHARD_SPOTS.map((s, i) => (
+        <group key={i} ref={(g) => { refs.current[i] = g; }} position={[s.x, 1.7, s.z]}>
+          <mesh>
+            <octahedronGeometry args={[0.55, 0]} />
+            <meshBasicMaterial color={glow(GX.white, 1.8)} toneMapped={false} transparent opacity={0.95} />
+          </mesh>
+          <mesh scale={1.45}>
+            <octahedronGeometry args={[0.55, 0]} />
+            <meshBasicMaterial color={glow(NEONS[i % NEONS.length], 1.6)} wireframe toneMapped={false} transparent opacity={0.7} />
+          </mesh>
+          <mesh position={[0, -1.55, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+            <ringGeometry args={[0.7, 0.85, 24]} />
+            <meshBasicMaterial color={glow(NEONS[i % NEONS.length], 1.5)} toneMapped={false} transparent opacity={0.6} side={THREE.DoubleSide} />
+          </mesh>
+        </group>
+      ))}
+    </>
   );
 }
 

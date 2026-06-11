@@ -18,7 +18,7 @@ import type { Burst } from './Construct';
 const Construct = dynamic(() => import('./Construct'), { ssr: false });
 
 const SAVE_KEY = 'vp-grid-save-v1';
-interface SaveData { score: number; visited: number[]; interacted: string[] }
+interface SaveData { score: number; visited: number[]; interacted: string[]; shards?: number[] }
 
 const GLYPH_TITLES = ['ヴィーラ・パッラ', 'VEERA PALLA // 11Y', 'follow the white rabbit'];
 const IDLE_LINE = 'You stopped. The phoenix circles above you, operator…';
@@ -44,6 +44,7 @@ export default function MatrixApp() {
   const [cine, setCine] = useState(false);       // dive intro in progress
   const [topView, setTopView] = useState(false);
   const [insideId, setInsideId] = useState<string | null>(null);
+  const [shards, setShards] = useState<Set<number>>(new Set());
   const restored = useRef(false);
   const burstId = useRef(1);
   const fxPulses = useRef<{ x: number; z: number; color: string; t0: number }[]>([]);
@@ -83,6 +84,7 @@ export default function MatrixApp() {
           setVisited(visitedRef.current);
         }
         if (Array.isArray(save.interacted)) setInteracted(new Set(save.interacted));
+        if (Array.isArray(save.shards)) setShards(new Set(save.shards));
         restored.current = true;
       }
     } catch { /* fresh start */ }
@@ -92,10 +94,10 @@ export default function MatrixApp() {
   useEffect(() => {
     if (!booted && !restored.current) return;
     try {
-      const save: SaveData = { score, visited: [...visited], interacted: [...interacted] };
+      const save: SaveData = { score, visited: [...visited], interacted: [...interacted], shards: [...shards] };
       localStorage.setItem(SAVE_KEY, JSON.stringify(save));
     } catch { /* storage unavailable — no problem */ }
-  }, [score, visited, interacted, booted]);
+  }, [score, visited, interacted, shards, booted]);
 
   // viewport watchdog — when the window moves between monitors with different
   // DPI, Chromium can leave a stale layout viewport (page renders narrower
@@ -354,6 +356,19 @@ export default function MatrixApp() {
     });
   }, [fire]);
 
+  // drive-through shard pickup
+  const onShard = useCallback((i: number) => {
+    setShards(prev => {
+      if (prev.has(i)) return prev;
+      const next = new Set(prev).add(i);
+      fire(scrollBus.x, scrollBus.z, GX.white);
+      sayQuip(next.size >= 12
+        ? 'All 12 shards. The grid has nothing left to hide from you.'
+        : `Data shard secured — ${next.size}/12.`);
+      return next;
+    });
+  }, [fire, sayQuip]);
+
   // the phoenix leads you to the nearest unanswered question
   const onQuest = useCallback(() => {
     const open = CHECKPOINTS
@@ -451,6 +466,8 @@ export default function MatrixApp() {
             onBlue={goTerminal}
             onQuest={onQuest}
             onBurstDone={onBurstDone}
+            shards={shards}
+            onShard={onShard}
           />
           <div className="mx-story" aria-hidden={!booted}>
             <div ref={storyRef} className="mx-story-track">
@@ -476,7 +493,7 @@ export default function MatrixApp() {
             <>
               <OperatorHud
                 code={zone.code}
-                rank={`DISTRICTS ${visited.size}/${ZONES.length} · RANK ${score}/6 · ${rank}`}
+                rank={`DISTRICTS ${visited.size}/${ZONES.length} · SHARDS ${shards.size}/12 · RANK ${score}/6 · ${rank}`}
                 line={line}
                 progressRef={progressRef}
               />
