@@ -27,10 +27,10 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
     <html
       lang="en"
       className={`${inter.variable} ${jetbrains.variable} ${vt323.variable} ${zen.variable}`}
-      style={{ background: '#04050A' }}
+      style={{ background: '#101B38' }}
     >
       {/* inline backgrounds guarantee a dark first paint — no white flash */}
-      <body style={{ background: '#04050A' }}>{children}</body>
+      <body style={{ background: '#101B38' }}>{children}</body>
     </html>
   );
 }

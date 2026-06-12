@@ -5,7 +5,7 @@
 html { -webkit-text-size-adjust: 100%; }
 
 :root {
-  --bg: #030308;
+  --bg: #101B38;
   --blue: #1E5FE0;
   --blue-b: #4D8DFF;
   --blue-d: #081E5C;
@@ -17,13 +17,13 @@ html { -webkit-text-size-adjust: 100%; }
   --white: #F4F7FF;
   --text: #D8E3F8;
   --dim: #76879F;
-  --panel: rgba(4, 5, 12, 0.94);
+  --panel: rgba(13, 20, 42, 0.92);
   --line: rgba(45, 125, 255, 0.5);
   --mono: var(--font-jetbrains), 'JetBrains Mono', monospace;
   --vt: var(--font-vt), 'VT323', monospace;
 }
 
-html { background: #030308; }
+html { background: #101B38; }
 
 html, body {
   width: 100%;
@@ -60,7 +60,7 @@ button { font-family: inherit; }
   background:
     repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.12) 0 1px, transparent 1px 3px),
     radial-gradient(ellipse at 50% 50%, transparent 64%, rgba(2, 3, 8, 0.5) 100%);
-  opacity: 0.38;
+  opacity: 0.2;
   mix-blend-mode: multiply;
 }
 
@@ -233,6 +233,62 @@ button { font-family: inherit; }
   font-size: 0.56rem; letter-spacing: 0.16em;
 }
 .mx-topview:hover { color: var(--white); box-shadow: 0 0 14px rgba(77, 141, 255, 0.3); }
+.mx-map-open { display: block; padding: 0; border: 0; background: none; cursor: pointer; }
+.mx-mapbtn {
+  margin-top: 0.4rem; width: 100%; cursor: pointer;
+  background: rgba(63, 168, 200, 0.12); border: 1px solid rgba(63, 168, 200, 0.5);
+  color: #7FD4F0; padding: 0.4rem 0.4rem;
+  font-size: 0.56rem; letter-spacing: 0.16em;
+}
+.mx-mapbtn:hover { color: var(--white); box-shadow: 0 0 14px rgba(63, 168, 200, 0.35); }
+
+/* ── the city map — GTA-style full-screen overlay ──────────────────────────── */
+.mx-bigmap {
+  position: fixed; inset: 0; z-index: 98;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(6, 10, 24, 0.82);
+  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  animation: mx-map-in 0.22s ease;
+}
+@keyframes mx-map-in { from { opacity: 0; transform: scale(1.04); } to { opacity: 1; transform: scale(1); } }
+.mx-bigmap-frame {
+  width: min(1060px, 94vw);
+  border: 1px solid rgba(77, 141, 255, 0.45);
+  background: var(--panel);
+  box-shadow: 0 0 60px rgba(30, 95, 224, 0.25);
+}
+.mx-bigmap-head {
+  display: flex; align-items: center; gap: 1rem;
+  padding: 0.7rem 1rem; border-bottom: 1px solid rgba(77, 141, 255, 0.3);
+}
+.mx-bigmap-title { font-family: var(--font-zen), var(--mono); color: var(--white); font-size: 0.95rem; letter-spacing: 0.12em; }
+.mx-bigmap-hint { margin-left: auto; color: var(--dim); font-size: 0.56rem; letter-spacing: 0.16em; }
+.mx-bigmap-close {
+  background: none; border: 1px solid rgba(255, 59, 82, 0.5); color: var(--red-b);
+  width: 1.9rem; height: 1.9rem; cursor: pointer; font-size: 0.8rem;
+}
+.mx-bigmap-close:hover { background: rgba(200, 16, 46, 0.2); }
+.mx-bigmap-board { position: relative; }
+.mx-bigmap-board canvas { display: block; width: 100%; height: auto; max-height: 76vh; object-fit: contain; }
+.mx-bigmap-pin {
+  position: absolute; transform: translate(-50%, -50%);
+  display: flex; flex-direction: column; align-items: center; gap: 0.1rem;
+  background: none; border: 0; cursor: pointer; padding: 0.3rem;
+}
+.mx-bigmap-pin i {
+  font-style: normal; font-size: 1.15rem; line-height: 1;
+  text-shadow: 0 0 12px currentColor;
+  transition: transform 0.15s ease;
+}
+.mx-bigmap-pin em {
+  font-style: normal; font-family: var(--mono); font-size: 0.5rem; letter-spacing: 0.1em;
+  color: var(--text); background: rgba(10, 16, 34, 0.85);
+  padding: 0.1rem 0.3rem; border: 1px solid rgba(110, 140, 190, 0.35);
+  white-space: nowrap;
+}
+.mx-bigmap-pin:hover i { transform: scale(1.5); }
+.mx-bigmap-pin:hover em { color: var(--white); border-color: currentColor; }
+.mx-bigmap-pin.is-visited em::after { content: " ✓"; color: #7FD4F0; }
 
 /* exit-building — front and center while you're inside */
 .mx-exit {

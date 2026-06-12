@@ -6,7 +6,7 @@ import dynamic from 'next/dynamic';
 import { detectCaps, type Caps } from '@/lib/tier';
 import {
   ZONES, zoneAt, zoneById, QUESTION_POOL, RANKS, STREETS, CHECKPOINTS,
-  routeBetween, landmarkById, GX, type Question,
+  routeBetween, landmarkById, GX, LAKE_X, RIVER_SX, RIVER_MZ, type Question,
 } from '@/lib/grid';
 import { storyBands, scrollBus } from '@/lib/scrollBus';
 import BootOverlay from './BootOverlay';
@@ -45,6 +45,9 @@ export default function MatrixApp() {
   const [topView, setTopView] = useState(false);
   const [insideId, setInsideId] = useState<string | null>(null);
   const [shards, setShards] = useState<Set<number>>(new Set());
+  const [bigMap, setBigMap] = useState(false);
+  const bigMapRef = useRef(false);
+  useEffect(() => { bigMapRef.current = bigMap; }, [bigMap]);
   const restored = useRef(false);
   const burstId = useRef(1);
   const fxPulses = useRef<{ x: number; z: number; color: string; t0: number }[]>([]);
@@ -145,7 +148,11 @@ export default function MatrixApp() {
   useEffect(() => {
     const onPop = () => { if (scrollBus.interior) scrollBus.intT = 0; };
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && scrollBus.interior) scrollBus.intT = 0;
+      if (e.key === 'Escape') {
+        if (bigMapRef.current) setBigMap(false);
+        else if (scrollBus.interior) scrollBus.intT = 0;
+      }
+      if ((e.key === 'm' || e.key === 'M') && !e.repeat) setBigMap(v => !v);
     };
     window.addEventListener('popstate', onPop);
     window.addEventListener('keydown', onKey);
@@ -168,6 +175,18 @@ export default function MatrixApp() {
     fxPulses.current.push({ x, z, color, t0: performance.now() });
     if (fxPulses.current.length > 6) fxPulses.current.shift();
   }, []);
+
+  // GTA-style city map: click a landmark → smooth auto-drive (never a teleport)
+  const navigateTo = useCallback((zoneIdx2: number) => {
+    const t = ZONES[zoneIdx2];
+    if (!t) return;
+    setBigMap(false);
+    if (scrollBus.interior) scrollBus.intT = 0; // step out first, then drive
+    const route = routeBetween(scrollBus.x, scrollBus.z, t.x, t.z);
+    scrollBus.route.length = 0;
+    scrollBus.route.push(...route);
+    sayQuip(`Routing to ${t.code.split('/')[1]?.trim() ?? t.id.toUpperCase()} — sit back, the grid is driving.`);
+  }, [sayQuip]);
 
   // welcome back, operator
   useEffect(() => {
@@ -305,6 +324,7 @@ export default function MatrixApp() {
       const lm = landmarkById(inside ?? interiorRef.current ?? '');
       interiorRef.current = inside;
       setInsideId(inside);
+      setTopView(false); // the rig already cleared scrollBus.topView
       if (inside && lm) sayQuip(`Inside ${lm.name}. Back out, Esc, or ⏏ to leave.`);
       else if (lm) sayQuip('Back on the street, operator.');
     }
@@ -499,11 +519,16 @@ export default function MatrixApp() {
               />
               {/* live mini-map — where you are, where you've been, where to go */}
               <div className="mx-map" aria-label="City map">
-                <canvas ref={mapRef} width={MAP_W} height={MAP_H} />
-                <p className="mx-map-label">{zone.code}</p>
-                <button className="mx-topview" onClick={toggleTop}>
-                  {topView ? '◉ STREET VIEW' : '▣ TOP VIEW'}
+                <button className="mx-map-open" onClick={() => setBigMap(true)} aria-label="Open city map">
+                  <canvas ref={mapRef} width={MAP_W} height={MAP_H} />
                 </button>
+                <p className="mx-map-label">{zone.code}</p>
+                <button className="mx-mapbtn" onClick={() => setBigMap(true)}>🗺 CITY MAP · M</button>
+                {!insideId && (
+                  <button className="mx-topview" onClick={toggleTop}>
+                    {topView ? '◉ STREET VIEW' : '▣ TOP VIEW'}
+                  </button>
+                )}
               </div>
               {/* big labeled controls — no hidden gestures */}
               <div className="mx-dpad" aria-label="Drive controls">
@@ -556,7 +581,155 @@ export default function MatrixApp() {
           <button className="mx-toggle" onClick={goConstruct}>RED PILL ▸ THE GRID</button>
         </>
       )}
+      {bigMap && mode === 'construct' && (
+        <BigCityMap visited={visited} onClose={() => setBigMap(false)} onNavigate={navigateTo} />
+      )}
       <div className="mx-crt" aria-hidden="true" />
+    </div>
+  );
+}
+
+// ── the city map — full-screen, landmarks highlighted, click to auto-drive ──
+const BM_W = 1000, BM_H = 760;
+const bmX = (x: number) => ((x + 150) / 350) * BM_W;
+const bmY = (z: number) => ((60 - z) / 280) * BM_H;
+
+const ZONE_ICONS: Record<string, string> = {
+  gate: '⌂', hub: '⊙', identity: '◆', arsenal: '◆', timeline: '◆',
+  anomalies: '⚠', creds: '◆', transmissions: '★', docks: '◆',
+  observatory: '◆', choice: '☸', harbor: '✦',
+};
+
+function BigCityMap({ visited, onClose, onNavigate }: {
+  visited: Set<number>;
+  onClose: () => void;
+  onNavigate: (idx: number) => void;
+}) {
+  const cvRef = useRef<HTMLCanvasElement>(null);
+
+  useEffect(() => {
+    const cv = cvRef.current;
+    const ctx = cv?.getContext('2d');
+    if (!cv || !ctx) return;
+    // paper
+    ctx.fillStyle = '#0C1A36';
+    ctx.fillRect(0, 0, BM_W, BM_H);
+    ctx.strokeStyle = 'rgba(110,140,190,0.07)';
+    ctx.lineWidth = 1;
+    for (let gx = 0; gx <= BM_W; gx += 50) {
+      ctx.beginPath(); ctx.moveTo(gx, 0); ctx.lineTo(gx, BM_H); ctx.stroke();
+    }
+    for (let gy = 0; gy <= BM_H; gy += 50) {
+      ctx.beginPath(); ctx.moveTo(0, gy); ctx.lineTo(BM_W, gy); ctx.stroke();
+    }
+    // water — lake + the river Y
+    ctx.fillStyle = '#1C4A78';
+    ctx.fillRect(bmX(LAKE_X), 0, BM_W - bmX(LAKE_X), BM_H);
+    ctx.fillRect(bmX(RIVER_SX - 6), bmY(RIVER_MZ + 6), bmX(LAKE_X) - bmX(RIVER_SX - 6), bmY(RIVER_MZ - 6) - bmY(RIVER_MZ + 6));
+    ctx.fillRect(bmX(RIVER_SX - 6), bmY(RIVER_MZ + 6), bmX(RIVER_SX + 6) - bmX(RIVER_SX - 6), BM_H - bmY(RIVER_MZ + 6));
+    ctx.fillStyle = 'rgba(120,180,230,0.16)';
+    ctx.font = '700 30px "JetBrains Mono", monospace';
+    ctx.save();
+    ctx.translate(bmX(130), bmY(-150));
+    ctx.rotate(-Math.PI / 2);
+    ctx.fillText('L A K E   M I C H I G A N', -120, 0);
+    ctx.restore();
+    // streets
+    for (const s of STREETS) {
+      const water = !!s.water;
+      ctx.beginPath();
+      ctx.moveTo(bmX(s.pts[0][0]), bmY(s.pts[0][1]));
+      for (let i = 1; i < s.pts.length; i++) ctx.lineTo(bmX(s.pts[i][0]), bmY(s.pts[i][1]));
+      if (water) {
+        ctx.setLineDash([8, 7]);
+        ctx.strokeStyle = '#3FA8C8';
+        ctx.lineWidth = 3;
+      } else {
+        ctx.setLineDash([]);
+        ctx.strokeStyle = '#5A6E96';
+        ctx.lineWidth = s.name.includes('ALLEY') || s.name.includes('DOCK') ? 4 : 9;
+      }
+      ctx.lineCap = 'round';
+      ctx.stroke();
+    }
+    ctx.setLineDash([]);
+    // road centerlines
+    for (const s of STREETS) {
+      if (s.water) continue;
+      ctx.beginPath();
+      ctx.moveTo(bmX(s.pts[0][0]), bmY(s.pts[0][1]));
+      for (let i = 1; i < s.pts.length; i++) ctx.lineTo(bmX(s.pts[i][0]), bmY(s.pts[i][1]));
+      ctx.strokeStyle = 'rgba(13,26,54,0.85)';
+      ctx.lineWidth = 1.4;
+      ctx.stroke();
+    }
+    // the elevated Loop
+    ctx.strokeStyle = 'rgba(214,166,80,0.75)';
+    ctx.lineWidth = 2.4;
+    ctx.strokeRect(bmX(-62), bmY(-32), bmX(-28) - bmX(-62), bmY(-158) - bmY(-32));
+    // street names
+    ctx.fillStyle = 'rgba(170,190,225,0.62)';
+    ctx.font = '600 13px "JetBrains Mono", monospace';
+    const names: [string, number, number, number][] = [
+      ['STATE ST', -20, -95, -Math.PI / 2], ['FRANKLIN ST', -70, -112, -Math.PI / 2],
+      ['MICHIGAN AVE', 20, -78, -Math.PI / 2], ['MADISON ST', -45, -40, 0],
+      ['MONROE ST', -45, -150, 0], ['LAKE SHORE DR', 61, -130, -Math.PI / 2.15],
+      ['WACKER DR', 8, 37, -0.18], ['NAVY PIER', 108, -110, 0],
+      ['CHICAGO RIVER', 2, 22, 0],
+    ];
+    for (const [name, wx, wz, rot] of names) {
+      ctx.save();
+      ctx.translate(bmX(wx), bmY(wz) - 6);
+      ctx.rotate(rot);
+      ctx.textAlign = 'center';
+      ctx.fillText(name, 0, 0);
+      ctx.restore();
+    }
+    // player
+    const px = bmX(scrollBus.x), py = bmY(scrollBus.z);
+    const ang = Math.atan2(scrollBus.hx, -scrollBus.hz);
+    ctx.save();
+    ctx.translate(px, py);
+    ctx.rotate(ang);
+    ctx.fillStyle = '#F4F7FF';
+    ctx.shadowColor = '#F4F7FF';
+    ctx.shadowBlur = 12;
+    ctx.beginPath();
+    ctx.moveTo(0, -11);
+    ctx.lineTo(7, 8);
+    ctx.lineTo(-7, 8);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+  }, []);
+
+  return (
+    <div className="mx-bigmap" role="dialog" aria-label="City map">
+      <div className="mx-bigmap-frame">
+        <header className="mx-bigmap-head">
+          <span className="mx-bigmap-title">NEON CHICAGO — CITY MAP</span>
+          <span className="mx-bigmap-hint">CLICK A LANDMARK TO AUTO-DRIVE · M / ESC TO CLOSE</span>
+          <button className="mx-bigmap-close" onClick={onClose}>✕</button>
+        </header>
+        <div className="mx-bigmap-board">
+          <canvas ref={cvRef} width={BM_W} height={BM_H} />
+          {ZONES.map(z => (
+            <button
+              key={z.id}
+              className={`mx-bigmap-pin${visited.has(z.idx) ? ' is-visited' : ''}`}
+              style={{
+                left: `${(bmX(z.x) / BM_W) * 100}%`,
+                top: `${(bmY(z.z) / BM_H) * 100}%`,
+                color: z.accent,
+              }}
+              onClick={() => onNavigate(z.idx)}
+            >
+              <i>{ZONE_ICONS[z.id] ?? '◆'}</i>
+              <em>{z.code.split('/')[1]?.trim() ?? z.id.toUpperCase()}</em>
+            </button>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }

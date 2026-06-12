@@ -11,7 +11,7 @@ import Effects from './Effects';
 import {
   RainMatDriver, ZoneAmbience, StreetLanes, Podiums, DistantSkyline,
   StreetLights, CityBlocks, Lake, River, Bridges, TheL, Theatre, CivicIcons,
-  NavyPier, BeanPlaza, Landmarks, Interiors, GateArch, Signposts,
+  NavyPier, Harbor, BeanPlaza, Landmarks, Interiors, GateArch, Signposts,
   AnomalyBillboards, Pills, Phoenix, SpeedLines, GlyphBurst, SkyTraffic,
   Searchlights, Shards,
 } from './scenes';
@@ -50,9 +50,11 @@ export default function Construct({
       <fog attach="fog" args={[GX.bg, 24, 170]} />
       <PerformanceMonitor onDecline={() => setDegraded(true)} />
 
-      <ambientLight intensity={0.42} />
-      <directionalLight position={[8, 16, 10]} intensity={0.38} color="#9CC2FF" />
-      <directionalLight position={[-8, 10, -10]} intensity={0.3} color="#C9A8FF" />
+      {/* blue-hour Chicago: bright twilight, not a void */}
+      <ambientLight intensity={0.85} color="#BCD0F2" />
+      <directionalLight position={[8, 16, 10]} intensity={0.6} color="#A8CCFF" />
+      <directionalLight position={[-8, 10, -10]} intensity={0.45} color="#D0B8FF" />
+      <hemisphereLight args={['#2A3C6E', '#141A30', 0.55]} />
 
       <RainMatDriver reduced={reducedMotion} />
       <Rain tier={degraded ? 'S' : tier} reduced={reducedMotion} />
@@ -71,6 +73,7 @@ export default function Construct({
       <Theatre reduced={reducedMotion} />
       <CivicIcons reduced={reducedMotion} />
       <NavyPier reduced={reducedMotion} />
+      <Harbor reduced={reducedMotion} />
       <BeanPlaza reduced={reducedMotion} />
       <Landmarks />
       <Interiors reduced={reducedMotion} />

@@ -249,6 +249,7 @@ export default function CameraRig({
           scrollBus.intT = 1.5;
           scrollBus.route.length = 0;
           scrollBus.warp = Math.max(scrollBus.warp, 1);
+          scrollBus.topView = false; // interiors are street-level — always
           enterArmed.current = false;
           keysFwd.current = 0;
           scrollBus.cmdMove = 0;
@@ -267,6 +268,8 @@ export default function CameraRig({
       }
       scrollBus.interior = null;
       scrollBus.warp = Math.max(scrollBus.warp, 0.9);
+      scrollBus.topView = false; // exit ALWAYS returns to street view
+      top.current = 0;
       enterArmed.current = false;
       keysFwd.current = 0;
       scrollBus.cmdMove = 0;

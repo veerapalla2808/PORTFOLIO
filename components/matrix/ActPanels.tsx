@@ -303,6 +303,27 @@ export default function ActPanels({
         </article>
       </Sec>
 
+      {/* ── INTERIOR: The Beacon — harbor contact log ── */}
+      <Sec int="harbor" z={12} r={9}>
+        <article className="mx-slab mx-scroll" onWheel={stopWheel}>
+          <header className="mx-slab-head">
+            <span className="mx-slab-path">~/beacon/harbor.log</span>
+            <span className="mx-slab-act">0A / THE BEACON</span>
+          </header>
+          <h2 className="mx-h3"><DecodeText text="DISTRESS LINE" /></h2>
+          <p className="mx-body">
+            You sailed all the way out here. Respect. The lighthouse keeper takes messages —
+            response time well under one business day, eleven years of uptime.
+          </p>
+          <p className="mx-choice-links">
+            <a href={`mailto:${personal.email}`}>{personal.email}</a>
+            <span>{personal.phone}</span>
+            <a href={personal.linkedin} target="_blank" rel="noopener noreferrer">linkedin ↗</a>
+            <a href={personal.resumeUrl} target="_blank" rel="noopener noreferrer">résumé.pdf ↓</a>
+          </p>
+        </article>
+      </Sec>
+
       {/* ── the choice — end of Navy Pier ── */}
       <Sec x={160} z={-110} r={17}>
         <div className="mx-choice">

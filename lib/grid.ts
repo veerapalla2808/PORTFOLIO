@@ -4,22 +4,23 @@
 // Michigan to the east, Navy Pier runs into it, the Ferris wheel waits at
 // the end. No structures standing in the road.
 
-// ── Palette — darker jewel neons: deep blue / royal indigo / crimson ────────
+// ── Palette — jewel neons over a BRIGHT twilight-blue evening sky ───────────
 export const GX = {
-  bg: '#030308',
+  bg: '#101B38',        // blue hour, not a void
   blue: '#1E5FE0', blueBright: '#4D8DFF', blueDeep: '#081E5C',
   violet: '#4B3DF2', violetBright: '#7A6CFF', violetDeep: '#150E66',
   red: '#C8102E', redBright: '#FF3B52', redDeep: '#4A0814',
   white: '#F4F7FF',
   text: '#D8E3F8',
-  dim: '#76879F',
+  dim: '#99AFC4',
 } as const;
 
 export const NEONS = [GX.blue, GX.violet, GX.red] as const;
 
 // ── Street network — POLYLINES (curves welcome). Junctions only at street
-// endpoints, so every street runs node-to-node. ─────────────────────────────
-export interface Street { pts: [number, number][]; name: string; color: string }
+// endpoints, so every street runs node-to-node. `water` routes are boat
+// channels: no lamps, no podiums, buoys instead of curbs. ───────────────────
+export interface Street { pts: [number, number][]; name: string; color: string; water?: boolean }
 
 export const STREETS: Street[] = [
   // State St (N→S spine)
@@ -69,7 +70,12 @@ export const STREETS: Street[] = [
   { pts: [[-20, -110], [8, -110]], name: 'ANOMALY ALLEY', color: GX.redBright }, // anomalies (open air)
   { pts: [[8, -110], [20, -110]], name: 'ANOMALY ALLEY', color: GX.redBright },  // …meets Michigan Ave
   { pts: [[-100, -40], [-122, -40]], name: 'KINZIE ST', color: GX.blueBright },  // docks (the Mart's street)
-  { pts: [[-70, -176], [-96, -176]], name: 'DEARBORN ST', color: GX.violetBright }, // transmissions
+  { pts: [[-70, -176], [-96, -176]], name: 'DEARBORN ST', color: GX.violetBright }, // marina decoration
+  // ── HARBOR CRUISE — a boat loop on Lake Michigan, from the pier end around
+  // the lighthouse island and back ──
+  { pts: [[160, -110], [178, -120], [188, -98], [184, -70], [168, -52], [146, -44], [130, -50]], name: 'HARBOR CRUISE', color: '#3FA8C8', water: true },
+  { pts: [[130, -50], [112, -64], [106, -90], [120, -108], [142, -114], [160, -110]], name: 'HARBOR CRUISE', color: '#3FA8C8', water: true },
+  { pts: [[130, -50], [126, -41]], name: 'BEACON DOCK', color: '#3FA8C8', water: true },
 ];
 
 export const LANE_HALF = 2.4;
@@ -98,6 +104,7 @@ export const LANDMARKS: Landmark[] = [
   { id: 'observatory', name: 'THE WATCHTOWER', entrance: [20, -126], outDir: [0, 1], interiorLen: 40 },
   { id: 'docks', name: 'GRAND MART', entrance: [-122, -40], outDir: [1, 0], interiorLen: 44 },
   { id: 'transmissions', name: 'THE GRID THEATRE', entrance: [-26, -66], outDir: [1, 0], interiorLen: 34 },
+  { id: 'harbor', name: 'THE BEACON', entrance: [126, -41], outDir: [0.4, -0.92], interiorLen: 24 },
 ];
 
 export function landmarkById(id: string): Landmark | undefined {
@@ -122,17 +129,18 @@ export interface Zone {
 }
 
 export const ZONES: Zone[] = [
-  { idx: 0, id: 'gate', code: '00 / CITY GATES', line: 'Neon Chicago, operator. Drive the Drive — the lake is real, the code is realer.', x: -20, z: 40, fog: '#030308', accent: GX.violet },
-  { idx: 1, id: 'hub', code: 'HQ / BEAN PLAZA', line: 'The plaza. Check your reflection — then pick a tower.', x: -20, z: -150, fog: '#070512', accent: GX.white },
-  { idx: 2, id: 'identity', code: '01 / LAKESIDE HELIX', line: 'Identity lives lakeside: eleven years in production.', x: 92, z: -80, fog: '#04101F', accent: GX.blue },
-  { idx: 3, id: 'arsenal', code: '02 / CROSSBRACE TOWER', line: "The arsenal tower. X-braced, like everything he ships.", x: 88, z: -18, fog: '#160407', accent: GX.red },
-  { idx: 4, id: 'timeline', code: '03 / SPIRE OF ERAS', line: 'The tallest tower holds five floors of history. Take the elevator.', x: -92, z: -80, fog: '#0D0418', accent: GX.violet },
-  { idx: 5, id: 'anomalies', code: '04 / ANOMALY ALLEY', line: 'Two anomalies reached production. Click the billboards — watch them surrender.', x: 8, z: -110, fog: '#140409', accent: GX.redBright },
-  { idx: 6, id: 'creds', code: '05 / THE NEEDLE', line: 'Stamped, sealed, verified — filed at the top of the Needle.', x: 20, z: -16, fog: '#0A1430', accent: GX.blueBright },
-  { idx: 7, id: 'transmissions', code: '06 / GRID THEATRE', line: 'He also writes. Tonight only — every transmission, on the big stage.', x: -26, z: -66, fog: '#16040C', accent: GX.redBright },
-  { idx: 8, id: 'docks', code: '07 / GRAND MART', line: 'Kafka. Kinesis. Pub/Sub. The Mart never sleeps — every system is a stream.', x: -122, z: -40, fog: '#06122B', accent: GX.blueBright },
-  { idx: 9, id: 'observatory', code: '08 / WATCHTOWER', line: 'Prometheus watches. Grafana paints. MTTR fell 40% under this roof.', x: 20, z: -126, fog: '#0B0A22', accent: GX.violetBright },
-  { idx: 10, id: 'choice', code: '09 / THE WHEEL', line: 'End of the pier, operator. The wheel turns. Red or blue?', x: 160, z: -110, fog: '#0A0512', accent: GX.white },
+  { idx: 0, id: 'gate', code: '00 / CITY GATES', line: 'Neon Chicago, operator. Drive the Drive — the lake is real, the code is realer.', x: -20, z: 40, fog: '#101B38', accent: GX.violet },
+  { idx: 1, id: 'hub', code: 'HQ / BEAN PLAZA', line: 'The plaza. Check your reflection — then pick a tower.', x: -20, z: -150, fog: '#16183C', accent: GX.white },
+  { idx: 2, id: 'identity', code: '01 / LAKESIDE HELIX', line: 'Identity lives lakeside: eleven years in production.', x: 92, z: -80, fog: '#0F2444', accent: GX.blue },
+  { idx: 3, id: 'arsenal', code: '02 / CROSSBRACE TOWER', line: "The arsenal tower. X-braced, like everything he ships.", x: 88, z: -18, fog: '#2A1430', accent: GX.red },
+  { idx: 4, id: 'timeline', code: '03 / SPIRE OF ERAS', line: 'The tallest tower holds five floors of history. Take the elevator.', x: -92, z: -80, fog: '#1E1844', accent: GX.violet },
+  { idx: 5, id: 'anomalies', code: '04 / ANOMALY ALLEY', line: 'Two anomalies reached production. Click the billboards — watch them surrender.', x: 8, z: -110, fog: '#2A1228', accent: GX.redBright },
+  { idx: 6, id: 'creds', code: '05 / THE NEEDLE', line: 'Stamped, sealed, verified — filed at the top of the Needle.', x: 20, z: -16, fog: '#142A52', accent: GX.blueBright },
+  { idx: 7, id: 'transmissions', code: '06 / GRID THEATRE', line: 'He also writes. Tonight only — every transmission, on the big stage.', x: -26, z: -66, fog: '#2A142A', accent: GX.redBright },
+  { idx: 8, id: 'docks', code: '07 / GRAND MART', line: 'Kafka. Kinesis. Pub/Sub. The Mart never sleeps — every system is a stream.', x: -122, z: -40, fog: '#12264A', accent: GX.blueBright },
+  { idx: 9, id: 'observatory', code: '08 / WATCHTOWER', line: 'Prometheus watches. Grafana paints. MTTR fell 40% under this roof.', x: 20, z: -126, fog: '#1A1A48', accent: GX.violetBright },
+  { idx: 10, id: 'choice', code: '09 / THE WHEEL', line: 'End of the pier, operator. The wheel turns. Red or blue?', x: 160, z: -110, fog: '#181A40', accent: GX.white },
+  { idx: 11, id: 'harbor', code: '0A / THE BEACON', line: 'Mid-lake lighthouse. Distress signals answered within one business day.', x: 126, z: -41, fog: '#10284A', accent: '#3FA8C8' },
 ];
 
 export function zoneAt(x: number, z: number): Zone {

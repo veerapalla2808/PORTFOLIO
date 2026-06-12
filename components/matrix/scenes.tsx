@@ -21,6 +21,7 @@ interface Seg {
   ax: number; az: number; bx: number; bz: number;
   ux: number; uz: number; len: number; color: string;
   trimA: number; trimB: number; // junction clearance at each end
+  water: boolean;               // boat channel — no lamps/podiums/curbs
 }
 const SEGS: Seg[] = [];
 {
@@ -43,6 +44,7 @@ const SEGS: Seg[] = [];
         ax, az, bx, bz, ux: (bx - ax) / len, uz: (bz - az) / len, len, color: s.color,
         trimA: i === 0 && isJunction(ax, az) ? 5.6 : 0,
         trimB: i === s.pts.length - 2 && isJunction(bx, bz) ? 5.6 : 0,
+        water: !!s.water,
       });
     }
   }
@@ -198,7 +200,7 @@ varying float vSurge;
 float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
 
 void main() {
-  if (vNy > 0.5) { gl_FragColor = vec4(uBase * 0.6, 1.0); return; }
+  if (vNy > 0.5) { gl_FragColor = vec4(uBase * 0.85, 1.0); return; }
   float u = vWorld.x + vWorld.z + vSeed * 7.0;
   float v = vWorld.y;
   float colW = 1.05;
@@ -232,7 +234,7 @@ function getRainMat(): THREE.ShaderMaterial {
       uniforms: {
         uAtlas: { value: glyphAtlas() },
         uTime: { value: 17.3 },
-        uBase: { value: new THREE.Color('#04050C') },
+        uBase: { value: new THREE.Color('#101A36') },
         uBlue: { value: new THREE.Color(GX.blueBright) },
         uViolet: { value: new THREE.Color(GX.violetBright) },
         uRed: { value: new THREE.Color(GX.redBright) },
@@ -266,7 +268,7 @@ export function ZoneAmbience() {
     const zo = zoneAt(scrollBus.x, scrollBus.z);
     const fog = state.scene.fog as THREE.Fog | null;
     if (fog) {
-      tmp.set(scrollBus.interior ? '#05040D' : zo.fog);
+      tmp.set(scrollBus.interior ? '#12162E' : zo.fog);
       fog.color.lerp(tmp, Math.min(1, dt * 1.4));
       const farT = scrollBus.topView ? 460 : 170;
       const nearT = scrollBus.topView ? 120 : 24;
@@ -304,7 +306,7 @@ export function StreetLanes() {
       const cx = s.ax + s.ux * mid, cz = s.az + s.uz * mid;
       for (const side of [-1, 1]) {
         laneList.push({ x: cx + nx * side * 4.6, z: cz + nz * side * 4.6, rot, len: segLen, color: s.color });
-        curbList.push({ x: cx + nx * side * 6.1, z: cz + nz * side * 6.1, rot, len: segLen });
+        if (!s.water) curbList.push({ x: cx + nx * side * 6.1, z: cz + nz * side * 6.1, rot, len: segLen });
       }
       for (let d = start + 2; d < end - 3; d += DASH + GAP) {
         dashList.push({ x: s.ax + s.ux * (d + DASH / 2), z: s.az + s.uz * (d + DASH / 2), rot });
@@ -347,7 +349,7 @@ export function StreetLanes() {
       {/* asphalt stops at the shoreline — the lake owns everything east */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[-57, -0.05, -80]}>
         <planeGeometry args={[246, 360]} />
-        <meshBasicMaterial color={'#020207'} />
+        <meshBasicMaterial color={'#10182E'} />
       </mesh>
       {lanes.map((l, i) => (
         <mesh key={i} position={[l.x, 0.06, l.z]} rotation={[0, l.rot, 0]}>
@@ -375,6 +377,7 @@ export function Podiums() {
     SEGS.forEach((s, si) => {
       const nx = -s.uz, nz = s.ux;
       const rot = Math.atan2(s.ux, s.uz);
+      if (s.water) return;
       for (let d = s.trimA + 4; d < s.len - s.trimB - 6; d += 9) {
         for (const side of [-1, 1]) {
           const seed = si * 727 + d * 17 + side * 11;
@@ -460,7 +463,7 @@ export function DistantSkyline() {
     const q = new THREE.Quaternion();
     const mesh = new THREE.InstancedMesh(
       new THREE.BoxGeometry(1, 1, 1),
-      new THREE.MeshBasicMaterial({ color: '#06070F' }), slots.length);
+      new THREE.MeshBasicMaterial({ color: '#16203D' }), slots.length);
     slots.forEach((sl, i) => {
       m4.compose(new THREE.Vector3(sl.x, sl.h / 2, sl.z), q, new THREE.Vector3(sl.w, sl.h, sl.w));
       mesh.setMatrixAt(i, m4);
@@ -487,6 +490,7 @@ export function StreetLights() {
   const lamps = useMemo(() => {
     const out: { x: number; z: number }[] = [];
     for (const s of SEGS) {
+      if (s.water) continue; // no lampposts in the lake
       const nx = -s.uz, nz = s.ux;
       for (let d = 10; d < s.len - 6; d += 19) {
         for (const side of [-1, 1]) {
@@ -555,6 +559,7 @@ export function CityBlocks({ tier }: { tier: 'S' | 'M' | 'L' }) {
     const slots: { x: number; z: number; seed: number }[] = [];
     SEGS.forEach((s, si) => {
       const nx = -s.uz, nz = s.ux;
+      if (s.water) return;
       for (let d = 8; d < s.len - 4; d += step) {
         for (const side of [-1, 1]) {
           // two rings of towers: streetside + a taller back row behind it
@@ -695,7 +700,7 @@ export function Lake({ reduced }: { reduced: boolean }) {
     <group>
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[LAKE_X + 112, 0.02, -80]}>
         <planeGeometry args={[230, 380]} />
-        <meshBasicMaterial color={'#06182B'} />
+        <meshBasicMaterial color={'#10355C'} />
       </mesh>
       {/* glowing shoreline along the Drive */}
       <mesh position={[LAKE_X - 2, 0.1, -80]}>
@@ -762,12 +767,12 @@ export function River({ reduced }: { reduced: boolean }) {
       {/* south branch — Wolf Point down past the Loop */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[RIVER_X, 0.02, -89]}>
         <planeGeometry args={[12, 226]} />
-        <meshBasicMaterial color={'#051625'} />
+        <meshBasicMaterial color={'#0E2F50'} />
       </mesh>
       {/* main branch — through downtown, out to the lake */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[(RIVER_X + LAKE_X) / 2, 0.02, RIVER_MZ]}>
         <planeGeometry args={[LAKE_X - RIVER_X + 12, 12]} />
-        <meshBasicMaterial color={'#051625'} />
+        <meshBasicMaterial color={'#0E2F50'} />
       </mesh>
       {/* current glints, both branches */}
       {bits.map((b, i) => (
@@ -1262,6 +1267,188 @@ export function NavyPier({ reduced }: { reduced: boolean }) {
             <meshStandardMaterial color={'#0B0E18'} roughness={0.5} metalness={0.6} />
           </mesh>
         ))}
+      </group>
+    </group>
+  );
+}
+
+// ── THE HARBOR — cruise buoys, your boat, and the lighthouse island ─────────
+export function Harbor({ reduced }: { reduced: boolean }) {
+  const boat = useRef<THREE.Group>(null);
+  const beacon = useRef<THREE.Group>(null);
+  const wakeL = useRef<THREE.Mesh>(null);
+  const wakeR = useRef<THREE.Mesh>(null);
+
+  const buoys = useMemo(() => {
+    const out: { x: number; z: number; port: boolean }[] = [];
+    SEGS.filter(s => s.water).forEach((s) => {
+      const nx = -s.uz, nz = s.ux;
+      for (let d = 6; d < s.len - 3; d += 14) {
+        for (const side of [-1, 1]) {
+          out.push({
+            x: s.ax + s.ux * d + nx * side * 5,
+            z: s.az + s.uz * d + nz * side * 5,
+            port: side === -1,
+          });
+        }
+      }
+    });
+    return out;
+  }, []);
+
+  useFrame((state) => {
+    const t = state.clock.elapsedTime;
+    // are we on a water channel?
+    let onWater = false;
+    for (const s of SEGS) {
+      if (!s.water) continue;
+      const tt = Math.max(0, Math.min(s.len, (scrollBus.x - s.ax) * s.ux + (scrollBus.z - s.az) * s.uz));
+      const px = s.ax + s.ux * tt, pz = s.az + s.uz * tt;
+      if (Math.hypot(scrollBus.x - px, scrollBus.z - pz) < 5) { onWater = true; break; }
+    }
+    const g = boat.current;
+    if (g) {
+      g.visible = onWater && !scrollBus.interior;
+      if (g.visible) {
+        g.position.set(scrollBus.x, reduced ? 0 : Math.sin(t * 1.6) * 0.14 - 0.1, scrollBus.z);
+        g.rotation.y = Math.atan2(scrollBus.hx, scrollBus.hz);
+        g.rotation.z = reduced ? 0 : Math.sin(t * 1.1) * 0.025;
+        const wob = 0.35 + Math.min(1, scrollBus.speed / 18) * 0.65;
+        [wakeL.current, wakeR.current].forEach((w, i) => {
+          if (!w) return;
+          (w.material as THREE.MeshBasicMaterial).opacity = 0.16 * wob + Math.sin(t * 3 + i) * 0.03;
+        });
+      }
+    }
+    if (beacon.current && !reduced) beacon.current.rotation.y = t * 0.9;
+  });
+
+  // instanced buoys — two draw calls for the whole channel
+  const buoyMeshes = useMemo(() => {
+    const n = buoys.length;
+    const bodies = new THREE.InstancedMesh(
+      new THREE.ConeGeometry(0.34, 1.1, 8),
+      new THREE.MeshStandardMaterial({ roughness: 0.5, metalness: 0.4 }), n);
+    const lights = new THREE.InstancedMesh(
+      new THREE.SphereGeometry(0.1, 6, 6),
+      new THREE.MeshBasicMaterial({ toneMapped: false }), n);
+    const m = new THREE.Matrix4();
+    const q = new THREE.Quaternion();
+    const one = new THREE.Vector3(1, 1, 1);
+    const c = new THREE.Color();
+    buoys.forEach((b, i) => {
+      m.compose(new THREE.Vector3(b.x, 0.5, b.z), q, one);
+      bodies.setMatrixAt(i, m);
+      bodies.setColorAt(i, c.set(b.port ? '#8E1424' : '#16447E'));
+      m.compose(new THREE.Vector3(b.x, 1.18, b.z), q, one);
+      lights.setMatrixAt(i, m);
+      lights.setColorAt(i, c.copy(glow(b.port ? GX.redBright : GX.blueBright, 2)));
+    });
+    [bodies, lights].forEach(mm => {
+      mm.instanceMatrix.needsUpdate = true;
+      if (mm.instanceColor) mm.instanceColor.needsUpdate = true;
+    });
+    return [bodies, lights];
+  }, [buoys]);
+
+  const buoyGroup = useRef<THREE.Group>(null);
+  useEffect(() => {
+    const g = buoyGroup.current;
+    if (!g) return;
+    buoyMeshes.forEach(m => g.add(m));
+    return () => {
+      buoyMeshes.forEach(m => {
+        g.remove(m);
+        m.geometry.dispose();
+        (m.material as THREE.Material).dispose();
+      });
+    };
+  }, [buoyMeshes]);
+
+  return (
+    <group>
+      {/* channel buoys — crimson to port, blue to starboard */}
+      <group ref={buoyGroup} />
+
+      {/* your boat — materializes at the helm when you take to the water */}
+      <group ref={boat} visible={false}>
+        <mesh position={[0, 0.35, 0.6]}>
+          <boxGeometry args={[2.6, 0.85, 6.2]} />
+          <meshStandardMaterial color={'#10182E'} roughness={0.35} metalness={0.7} />
+        </mesh>
+        <mesh position={[0, 0.45, 4.05]} rotation={[Math.PI / 2, Math.PI / 4, 0]} scale={[1, 1, 0.5]}>
+          <coneGeometry args={[1.85, 1.8, 4]} />
+          <meshStandardMaterial color={'#10182E'} roughness={0.35} metalness={0.7} />
+        </mesh>
+        <mesh position={[0, 1.1, -1.4]}>
+          <boxGeometry args={[1.8, 0.85, 1.7]} />
+          <meshStandardMaterial color={'#182446'} roughness={0.4} metalness={0.6} />
+        </mesh>
+        <mesh position={[0, 0.82, 0.6]}>
+          <boxGeometry args={[2.66, 0.05, 6.26]} />
+          <meshBasicMaterial color={glow('#3FA8C8', 1.6)} toneMapped={false} />
+        </mesh>
+        <mesh position={[-1.25, 0.95, 2.6]}>
+          <sphereGeometry args={[0.09, 6, 6]} />
+          <meshBasicMaterial color={glow(GX.redBright, 2.2)} toneMapped={false} />
+        </mesh>
+        <mesh position={[1.25, 0.95, 2.6]}>
+          <sphereGeometry args={[0.09, 6, 6]} />
+          <meshBasicMaterial color={glow(GX.blueBright, 2.2)} toneMapped={false} />
+        </mesh>
+        <mesh ref={wakeL} position={[-1.6, 0.02, -2.6]} rotation={[-Math.PI / 2, 0, 0.22]}>
+          <planeGeometry args={[1.1, 7]} />
+          <meshBasicMaterial color={glow('#BFE0FF', 1.2)} transparent opacity={0.18} blending={THREE.AdditiveBlending} depthWrite={false} />
+        </mesh>
+        <mesh ref={wakeR} position={[1.6, 0.02, -2.6]} rotation={[-Math.PI / 2, 0, -0.22]}>
+          <planeGeometry args={[1.1, 7]} />
+          <meshBasicMaterial color={glow('#BFE0FF', 1.2)} transparent opacity={0.18} blending={THREE.AdditiveBlending} depthWrite={false} />
+        </mesh>
+      </group>
+
+      {/* LIGHTHOUSE ISLAND — the Beacon */}
+      <group position={[121, 0, -31]}>
+        <mesh position={[0, 0.25, 0]}>
+          <cylinderGeometry args={[10, 11.5, 0.9, 24]} />
+          <meshStandardMaterial color={'#1C2440'} roughness={0.6} metalness={0.4} />
+        </mesh>
+        {[0, 1, 2, 3].map(i => (
+          <mesh key={i} position={[0, 2.6 + i * 4.4, 0]}>
+            <cylinderGeometry args={[2.1 - i * 0.22, 2.32 - i * 0.22, 4.4, 16]} />
+            <meshStandardMaterial
+              color={i % 2 === 0 ? '#D8E0EE' : '#A8182E'}
+              roughness={0.45} metalness={0.25}
+              emissive={i % 2 === 0 ? '#5A6E96' : '#7E0E20'} emissiveIntensity={0.25}
+            />
+          </mesh>
+        ))}
+        <mesh position={[0, 19.4, 0]}>
+          <cylinderGeometry args={[1.9, 1.9, 0.4, 16]} />
+          <meshStandardMaterial color={'#10182E'} roughness={0.4} metalness={0.7} />
+        </mesh>
+        <mesh position={[0, 20.6, 0]}>
+          <cylinderGeometry args={[1.2, 1.2, 2, 10]} />
+          <meshBasicMaterial color={glow('#FFE8C0', 1.4)} toneMapped={false} transparent opacity={0.85} />
+        </mesh>
+        <mesh position={[0, 22.2, 0]}>
+          <coneGeometry args={[1.5, 1.6, 10]} />
+          <meshStandardMaterial color={'#10182E'} roughness={0.4} metalness={0.7} />
+        </mesh>
+        {/* sweeping double beam */}
+        <group ref={beacon} position={[0, 20.6, 0]}>
+          {[0, Math.PI].map(a => (
+            <mesh key={a} rotation={[0, a, Math.PI / 2]} position={[Math.cos(a) * 14, 0, 0]}>
+              <coneGeometry args={[1.4, 28, 12, 1, true]} />
+              <meshBasicMaterial color={glow('#FFE8C0', 1)} transparent opacity={0.1} blending={THREE.AdditiveBlending} side={THREE.DoubleSide} depthWrite={false} />
+            </mesh>
+          ))}
+        </group>
+        {/* dock to the cruise channel */}
+        <mesh position={[4.4, 0.18, -8.6]} rotation={[0, 0.42, 0]}>
+          <boxGeometry args={[3.2, 0.35, 9]} />
+          <meshStandardMaterial color={'#1A2138'} roughness={0.6} metalness={0.4} />
+        </mesh>
+        <Entrance x={5} z={-10} outDir={[0.4, -0.92]} color={'#3FA8C8'} label="THE BEACON" />
       </group>
     </group>
   );
@@ -1765,6 +1952,13 @@ export function Interiors({ reduced }: { reduced: boolean }) {
   const obsIdx = LANDMARKS.findIndex(l => l.id === 'observatory');
   const docksIdx = LANDMARKS.findIndex(l => l.id === 'docks');
   const transIdx = LANDMARKS.findIndex(l => l.id === 'transmissions');
+  const harborIdx = LANDMARKS.findIndex(l => l.id === 'harbor');
+
+  const harborTex = useMemo(() => textTexture([
+    { text: '⚓ BEACON LOG', size: 56, color: '#7FD4F0' },
+    { text: personal.email.toUpperCase(), size: 38, color: GX.white },
+    { text: 'SIGNALS ANSWERED · ALL CHANNELS OPEN', size: 30, color: '#3FA8C8' },
+  ], 980, 420, '#3FA8C8'), []);
 
   const signTexes = useMemo(() => skillCategories.map((c, i) =>
     textTexture([{ text: c.label.toUpperCase(), size: 60, color: NEONS[i % NEONS.length] }], 720, 130, NEONS[i % NEONS.length])), []);
@@ -1803,7 +1997,7 @@ export function Interiors({ reduced }: { reduced: boolean }) {
     <group>
       {LANDMARKS.map((lm, idx) => (
         <InteriorShell key={lm.id} idx={idx} len={lm.interiorLen} accent={
-          lm.id === 'arsenal' || lm.id === 'transmissions' ? GX.redBright : lm.id === 'timeline' ? GX.violetBright : GX.blueBright
+          lm.id === 'arsenal' || lm.id === 'transmissions' ? GX.redBright : lm.id === 'timeline' ? GX.violetBright : lm.id === 'harbor' ? '#3FA8C8' : GX.blueBright
         } />
       ))}
 
@@ -1930,6 +2124,22 @@ export function Interiors({ reduced }: { reduced: boolean }) {
           </mesh>
         ))}
         <pointLight position={[0, 7, -26]} intensity={60} color={'#FF6B7E'} />
+      </group>
+
+      {/* THE BEACON — harbor log + rotating light core */}
+      <group position={[INT_BASE(harborIdx), 0, 0]}>
+        <mesh position={[0, 4.4, -LANDMARKS[harborIdx].interiorLen + 6]}>
+          <planeGeometry args={[9.4, 4]} />
+          <meshBasicMaterial map={harborTex} transparent side={THREE.DoubleSide} />
+        </mesh>
+        <mesh ref={(m) => { orbits.current[3] = m; }} position={[0, 5.5, -12]}>
+          <torusGeometry args={[1.6, 0.07, 8, 40]} />
+          <meshBasicMaterial color={glow('#7FD4F0', 1.7)} toneMapped={false} transparent opacity={0.85} />
+        </mesh>
+        <mesh position={[0, 5.5, -12]}>
+          <icosahedronGeometry args={[0.7, 1]} />
+          <meshBasicMaterial color={glow('#FFE8C0', 1.7)} wireframe toneMapped={false} />
+        </mesh>
       </group>
     </group>
   );
