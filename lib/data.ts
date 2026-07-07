@@ -209,6 +209,93 @@ export const bosses: Boss[] = [
   },
 ];
 
+// the same work history, curated into the two sides of the seam
+export interface SplitEntry {
+  company: string;
+  role: string;
+  period: string;
+  location: string;
+  headline: string;      // one-line what-this-arc-was
+  current?: boolean;
+  front: string[];       // the interface side
+  back: string[];        // the system side
+  seam: string[];        // cross-cutting: leadership, testing, docs
+  tech: string[];
+}
+
+export const splitWork: SplitEntry[] = [
+  {
+    company: 'Walmart',
+    role: 'Full-Stack Developer',
+    period: 'Jul 2025 – Present',
+    location: 'United States',
+    headline: 'Inventory & order-fulfillment at peak-season scale.',
+    current: true,
+    front: [
+      'Internal operational dashboards in React + TypeScript + Redux Toolkit — 15+ reusable components adopted by shared libraries.',
+      'Bedrock LLM output surfaced in a team-facing React interface, raw model text parsed into structured JSON.',
+      'Frontend tests with React Testing Library and Jest toward the verified 80% coverage baseline.',
+    ],
+    back: [
+      'Java 17 / Spring Boot microservices behind inventory & order-fulfillment — API scaling resolved at 3,000 requests/second peaks.',
+      'Kafka consumers with idempotent handling and dead-letter queues; Redis + Spring Cache layers shielding PostgreSQL.',
+      'Docker images promoted to AWS EKS with Helm; feature flags and canary deployments for multiple weekly prod ships.',
+    ],
+    seam: [
+      'Feature lead for a sub-team of three during a catalog-service rewrite; onboarded two junior engineers.',
+      'Rotating on-call for the fulfillment domain — CloudWatch, Grafana, Splunk.',
+    ],
+    tech: ['React', 'TypeScript', 'Redux Toolkit', 'Java 17', 'Spring Boot', 'Kafka', 'Redis', 'PostgreSQL', 'GraphQL', 'Docker', 'Kubernetes', 'Helm', 'AWS EKS', 'Bedrock', 'Grafana'],
+  },
+  {
+    company: 'Southwest Airlines',
+    role: 'Software Developer II',
+    period: 'Dec 2023 – May 2025',
+    location: 'United States',
+    headline: 'Legacy booking, rebuilt mid-flight.',
+    front: [
+      'Legacy booking flows rewritten in React + TypeScript — async code-splitting and memoization dropped initial bundles, visibly faster interactions.',
+      'Passenger-management endpoints migrated to GraphQL for the mobile client — less over-fetching, fewer round trips on hot screens.',
+    ],
+    back: [
+      'Flight-booking and passenger workflows migrated into modular Java 17 microservices on AWS.',
+      'AWS API Gateway with OAuth 2.0 + JWT authorization; Resilience4j circuit breakers and Feign clients ending cascade timeouts.',
+      'RabbitMQ decoupled email/SMS fan-out from flight transactions; CloudWatch traces pinned latency spikes to Hibernate queries.',
+    ],
+    seam: [
+      'Standardized Swagger/OpenAPI docs as the bridge between backend engineering and external test squads.',
+      'On-call service health via Grafana + Prometheus dashboards.',
+    ],
+    tech: ['React', 'TypeScript', 'Java 17', 'Spring Boot', 'GraphQL', 'Feign', 'Resilience4j', 'RabbitMQ', 'Kafka', 'Redis', 'PostgreSQL', 'MongoDB', 'Docker', 'AWS', 'GCP', 'Cypress'],
+  },
+  {
+    company: 'Flipkart',
+    role: 'Software Engineer',
+    period: 'Feb 2021 – Jun 2022',
+    location: 'Bangalore, India',
+    headline: 'Seller portal + order management for high-traffic sale events.',
+    front: [
+      'Seller-portal dashboards built in React + Redux from raw layout designs; WCAG accessibility aligned with UX across desktop and mobile.',
+      'Lazy loading and image optimization cut home-page asset weight ~20% for low-bandwidth networks.',
+    ],
+    back: [
+      'Spring Boot endpoints for the core order-management domain, Hibernate persistence over PostgreSQL.',
+      'Kafka pipelines linking order entry, catalog validation and shipping; checkout race conditions debugged ahead of sale events.',
+    ],
+    seam: [
+      'Owned the critical-issue queue; Jenkins test automation on every incoming commit.',
+    ],
+    tech: ['React', 'Redux', 'Java', 'Spring Boot', 'Hibernate', 'Kafka', 'Redis', 'PostgreSQL', 'MongoDB', 'Docker', 'AWS EC2', 'Jenkins'],
+  },
+];
+
+// skills, sorted by which side of the seam they live on
+export const stackSides = {
+  front: skillCategories.filter(c => ['Frontend'].includes(c.label)),
+  back: skillCategories.filter(c => ['Backend', 'Databases', 'Messaging', 'Cloud', 'DevOps & Build', 'Monitoring'].includes(c.label)),
+  seam: skillCategories.filter(c => ['APIs & Security', 'Testing', 'Caching', 'AI Tools & IDEs'].includes(c.label)),
+};
+
 export const education = {
   institution: 'University of Illinois Chicago (UIC)',
   degree: 'Master of Science',

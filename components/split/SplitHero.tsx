@@ -158,7 +158,9 @@ export default function SplitHero() {
         <div className="seam-hint">DRAG THE SEAM — ONE DEVELOPER, BOTH SIDES</div>
       </div>
 
-      <span className="slice-note">HERO SLICE · CHAPTERS BELOW ARRIVE AFTER APPROVAL</span>
+      <a className="scroll-cue" href="#work" aria-label="Scroll to the work">
+        SCROLL <span>▾</span>
+      </a>
     </main>
   );
 }

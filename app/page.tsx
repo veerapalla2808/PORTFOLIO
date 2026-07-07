@@ -1,6 +1,6 @@
 // app/page.tsx
-import SplitHero from "@/components/split/SplitHero";
+import SplitSite from "@/components/split/SplitSite";
 
 export default function Home() {
-  return <SplitHero />;
+  return <SplitSite />;
 }
