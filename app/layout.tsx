@@ -1,36 +1,36 @@
 // app/layout.tsx
 import type { Metadata, Viewport } from "next";
-import { Inter, JetBrains_Mono, VT323, Shojumaru } from "next/font/google";
+import { Inter, JetBrains_Mono, Archivo_Black, Shojumaru } from "next/font/google";
 import "./globals.css";
 
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
-  themeColor: "#030308",
+  themeColor: "#F5F4EF",
 };
 
 const inter = Inter({ variable: "--font-inter", subsets: ["latin"], display: "swap" });
 const jetbrains = JetBrains_Mono({ variable: "--font-jetbrains", subsets: ["latin"], display: "swap" });
-const vt323 = VT323({ weight: "400", variable: "--font-vt", subsets: ["latin"], display: "swap" });
-// Latin glyphs drawn like katakana — the display face of the grid
-const zen = Shojumaru({ weight: "400", variable: "--font-zen", subsets: ["latin"], display: "swap" });
+// the loud one — neo-brutalist display
+const archivo = Archivo_Black({ weight: "400", variable: "--font-display", subsets: ["latin"], display: "swap" });
+// the brush one — Japanese-styled accents
+const shojumaru = Shojumaru({ weight: "400", variable: "--font-jp", subsets: ["latin"], display: "swap" });
 
 export const metadata: Metadata = {
-  title: "Veera Palla — follow the white rabbit",
+  title: "Veera Palla — Full-Stack Developer",
   description:
-    "Sr. React.js / Node.js Developer — 11+ years building scalable, high-performance systems across fintech, healthcare, retail and AI. Enter the construct.",
+    "Full-Stack Developer: React, TypeScript, Java 17, Spring Boot, AWS. ~4 years across retail, airline and e-commerce. Currently shipping at Walmart.",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html
       lang="en"
-      className={`${inter.variable} ${jetbrains.variable} ${vt323.variable} ${zen.variable}`}
-      style={{ background: '#101B38' }}
+      className={`${inter.variable} ${jetbrains.variable} ${archivo.variable} ${shojumaru.variable}`}
+      style={{ background: "#F5F4EF" }}
     >
-      {/* inline backgrounds guarantee a dark first paint — no white flash */}
-      <body style={{ background: '#101B38' }}>{children}</body>
+      <body style={{ background: "#F5F4EF" }}>{children}</body>
     </html>
   );
 }

@@ -1,6 +1,6 @@
 // app/page.tsx
-import MatrixApp from "@/components/matrix/MatrixApp";
+import Portfolio from "@/components/neo/Portfolio";
 
 export default function Home() {
-  return <MatrixApp />;
+  return <Portfolio />;
 }

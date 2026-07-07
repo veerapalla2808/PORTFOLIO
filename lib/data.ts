@@ -1,355 +1,211 @@
-// ─── Resume Data ────────────────────────────────────────────────────────────
-// Single source of truth — synced with VeeraVDP-ReactNode.pdf (updated resume)
+// lib/data.ts — single source of truth, synced from the resume PDF in /public.
+// (Veera_Palla_Resume_FSJ_upd5.pdf)
 
 export const personal = {
-  name: "Veera Palla",
-  title: "Sr. React.js / Node.js Developer",
+  name: 'Veera Palla',
+  nameJp: 'ヴィーラ・パッラ',
+  role: 'Full-Stack Developer',
+  roleJp: 'フルスタック開発者',
+  email: 'veerapalla8@gmail.com',
+  phone: '847-542-6690',
+  linkedin: 'https://www.linkedin.com/in/veera-palla',
+  location: 'United States',
+  resumeUrl: '/Veera_Palla_Resume_FSJ_upd5.pdf',
   tagline:
-    "11+ years building scalable, high-performance applications with React 18.3.2, Next.js 15, Node.js 19/21, TypeScript, Python, and GenAI/LLM integrations.",
-  email: "veerapalla.work28@gmail.com",
-  phone: "(989) 318-3683",
-  location: "Michigan, USA",
-  linkedin: "https://www.linkedin.com/in/veera-p-6097071b8/",
-  medium: "https://medium.com/@veera.palla919",
-  resumeUrl: "/resume.pdf",
-  availability: "Available",
+    'Around 4 years building scalable, high-performance applications with React, TypeScript, Java 17, Spring Boot and microservices — across retail, airline and e-commerce.',
 } as const;
 
-export const roles = [
-  "Sr. React.js / Node.js Developer",
-  "Full Stack Engineer",
-  "GenAI & LLM Integrations",
-  "Cloud-Native Microservices",
-];
-
-// Headline stats derived from the resume
-export const stats = [
-  { value: "11+", label: "Years in the machine" },
-  { value: "5", label: "Systems served" },
-  { value: "3", label: "Clouds mastered" },
-  { value: "2", label: "Certifications" },
+export const summary = [
+  'Full-stack developer focused on SPAs and event-driven systems: modular React front-ends on top of secure, fault-tolerant Spring Boot microservices.',
+  'Front-end: React, Redux Toolkit, React Query, TypeScript, Tailwind, Material UI and micro frontends — maintainable, accessible interfaces with measurably faster page loads.',
+  'Back-end: Java 17, Spring Boot, Spring Data JPA and Hibernate — RESTful and GraphQL services hardened with Feign, Resilience4j and gRPC over PostgreSQL, MySQL, Oracle and MongoDB.',
+  'Cloud: AWS first (EC2, EKS, Lambda, API Gateway, S3, RDS, SQS/SNS, CloudWatch, Bedrock) with working GCP exposure, plus Docker, Kubernetes, Helm and Terraform.',
 ] as const;
+
+export const stats = [
+  { value: '4+', label: 'years in production', jp: '経験年数' },
+  { value: '3,000', label: 'requests/sec handled at peak', jp: '秒間リクエスト' },
+  { value: '80%', label: 'verified test-coverage baseline', jp: 'テスト網羅率' },
+  { value: '3', label: 'domains: retail · airline · e-commerce', jp: '業界' },
+] as const;
+
+export interface SkillCategory { label: string; jp: string; skills: string[] }
+
+export const skillCategories: SkillCategory[] = [
+  {
+    label: 'Frontend', jp: 'フロント',
+    skills: ['React.js', 'Next.js', 'Redux Toolkit', 'Redux-Saga', 'React Query', 'React Router', 'Context API', 'TypeScript', 'JavaScript (ES6+)', 'HTML5', 'CSS3', 'SCSS', 'Tailwind CSS', 'Material UI', 'Bootstrap', 'Micro Frontends', 'Storybook', 'Formik', 'Axios'],
+  },
+  {
+    label: 'Backend', jp: 'バック',
+    skills: ['Java 8/11/17', 'Spring Boot', 'Spring MVC', 'Spring Data JPA', 'Spring Security', 'Hibernate', 'REST APIs', 'GraphQL', 'gRPC', 'Feign', 'Resilience4j', 'Microservices', 'Lombok', 'MapStruct', 'Actuator'],
+  },
+  {
+    label: 'Databases', jp: 'データ',
+    skills: ['PostgreSQL', 'MySQL', 'Oracle', 'SQL Server', 'MongoDB', 'DynamoDB', 'Elasticsearch'],
+  },
+  {
+    label: 'Caching', jp: 'キャッシュ',
+    skills: ['Redis', 'HTTP caching', 'React Query cache', 'Spring Cache'],
+  },
+  {
+    label: 'Messaging', jp: 'メッセージ',
+    skills: ['Apache Kafka', 'RabbitMQ', 'AWS SQS', 'AWS SNS'],
+  },
+  {
+    label: 'Cloud', jp: 'クラウド',
+    skills: ['AWS EC2', 'EKS', 'ECS', 'Lambda', 'API Gateway', 'S3', 'RDS', 'SQS', 'SNS', 'IAM', 'CloudWatch', 'CodePipeline', 'Bedrock', 'GCP GKE', 'Cloud Run', 'Pub/Sub', 'BigQuery'],
+  },
+  {
+    label: 'APIs & Security', jp: '安全',
+    skills: ['RESTful APIs', 'GraphQL', 'WebSockets', 'OAuth 2.0', 'JWT', 'SSO', 'Swagger/OpenAPI'],
+  },
+  {
+    label: 'Testing', jp: '試験',
+    skills: ['React Testing Library', 'Jest', 'Cypress', 'MSW', 'JUnit', 'Mockito', 'REST Assured', 'SonarQube', 'Postman'],
+  },
+  {
+    label: 'DevOps & Build', jp: '運用',
+    skills: ['Docker', 'Kubernetes', 'Helm', 'Terraform', 'Jenkins', 'GitHub Actions', 'GitLab CI/CD', 'Maven', 'Gradle', 'Nexus', 'Webpack', 'Vite'],
+  },
+  {
+    label: 'Monitoring', jp: '監視',
+    skills: ['Prometheus', 'Grafana', 'CloudWatch', 'Splunk'],
+  },
+  {
+    label: 'AI Tools & IDEs', jp: '道具',
+    skills: ['Claude Code', 'Codex', 'Cursor', 'GitHub Copilot', 'JIRA', 'Confluence', 'Git', 'IntelliJ IDEA', 'VS Code', 'Linux'],
+  },
+];
 
 export interface Experience {
   company: string;
   role: string;
   period: string;
   location: string;
+  arc: string;      // anime arc label
+  arcJp: string;
+  current?: boolean;
   bullets: string[];
   tech: string[];
 }
 
 export const experiences: Experience[] = [
   {
-    company: "Comerica Bank",
-    role: "Sr. React / Node Developer",
-    period: "Jun 2024 – Present",
-    location: "Auburn Hills, MI",
-    tech: [
-      "React 18.3.2", "TypeScript", "Next.js 15", "Node.js 21", "Nest.js",
-      "Express.js", "Python", "FastAPI", "Spring Boot", "Flutter", "Electron.js",
-      "PostgreSQL", "Neo4j", "Kafka", "RabbitMQ", "AWS", "GCP", "Docker",
-      "Kubernetes", "Helm", "Jenkins", "GitHub Actions", "Prometheus", "Grafana",
-    ],
+    company: 'Walmart',
+    role: 'Full-Stack Developer',
+    period: 'Jul 2025 – Present',
+    location: 'United States',
+    arc: 'THE CURRENT ARC',
+    arcJp: '現在編',
+    current: true,
     bullets: [
-      "Developed scalable, high-performance web, desktop, and mobile applications using React.js 18.3.2, TypeScript, Next.js 15, Node.js 21, Nest.js, Express.js, Restify, Hapi, Sails, Python, FastAPI, Spring Boot/MVC, Hibernate, .NET WebAPI, Flutter, and Electron.js — delivering CRUD-based SPAs, transaction systems, and micro-frontend architectures with optimized latency and lazy loading.",
-      "Built responsive, accessible, user-centric interfaces with TailwindCSS, Material-UI, Bootstrap, Foundation, Atomic Design, Figma, Balsamiq, and Storybook — implementing WCAG 2.1, Optimistic UI, and Core Web Vitals (LCP, CLS, INP) best practices across browsers and devices.",
-      "Managed advanced state and asynchronous workflows using Redux Toolkit, RTK Query, Context API, Fetch API, and Axios — integrating RESTful, GraphQL, Twitter API, and CMS platforms with Swagger UI, Postman, and JOI schema validation.",
-      "Designed enterprise-grade database and messaging architectures using PostgreSQL, MySQL, MongoDB/Mongoose, Neo4j, Prisma, DrizzleORM, SOLR, VectorDB, Redis/BullMQ, RabbitMQ, Kafka, and SQS — enabling DDD, event-driven workflows, retry logic, caching, and real-time WebSocket communication.",
-      "Integrated advanced GenAI and LLM capabilities using RAG, ChatGPT, Claude, Cursor, Vertex AI, Gemini AI, AWS Bedrock, and SageMaker — shipping conversational AI, intelligent search, and AI-assisted enterprise workflows across MERN and cloud-native applications.",
-      "Developed secure APIs and microservices with OAuth 2.0, JWT, OpenID Connect, and AWS IAM — implementing RBAC and enterprise security standards while supporting Nx monorepos, semantic versioning, Zero-Install workspace protocols, and NPM/Yarn 4.",
-      "Leveraged cloud-native DevOps, IaC, and CI/CD using Docker, Kubernetes, GKE, multi-stage builds, Jenkins, GitHub Actions, AWS (Lambda, DynamoDB, Kinesis, CloudWatch, Athena, Glue, Bedrock, SageMaker), GCP (Pub/Sub, BigQuery, Stackdriver), and Grafana for scalable deployment and observability.",
-      "Conducted BDD/TDD unit, integration, regression, and E2E testing with Jest, React Testing Library, Playwright, Cypress, Enzyme, Karma, Sinon, Supertest, and Istanbul within Agile/Scrum delivery.",
+      'Develop and maintain Java 17 / Spring Boot microservices powering core inventory and order-fulfillment platforms — resolving API scaling issues at peak windows of 3,000 requests/second.',
+      'Built internal operational dashboards in React + TypeScript + Redux Toolkit; authored 15+ reusable UI components adopted by shared libraries to cut UI duplication.',
+      'Integrated a fine-tuned internal LLM via AWS Bedrock into a Spring Boot service — async Bedrock Runtime client for long-running inference, parsing raw model output into structured JSON surfaced in a React interface.',
+      'Configured Kafka consumers for inventory events with idempotent handling and dead-letter queues, eliminating data inconsistencies in high-volume streams.',
+      'Feature lead for a sub-team of three during a major catalog-service rewrite; onboarded two junior engineers.',
+      'Multi-layer caching with Redis + Spring Cache to shield PostgreSQL from redundant reads; Docker → EKS with Helm through the dev-to-prod pipeline.',
+      'Rotating on-call for the fulfillment domain (CloudWatch, Grafana, Splunk); pushed coverage to a verifiable 80% baseline with JUnit, Mockito and RTL.',
+      'Introduced feature flags and canary deployments — safer progressive rollouts, multiple production ships per week with fast rollback.',
     ],
+    tech: ['React', 'Redux Toolkit', 'TypeScript', 'Java 17', 'Spring Boot', 'Kafka', 'Redis', 'PostgreSQL', 'GraphQL', 'OAuth 2.0', 'Docker', 'Kubernetes', 'Helm', 'AWS EKS', 'Bedrock', 'Jenkins', 'GitHub Actions', 'Grafana', 'Splunk'],
   },
   {
-    company: "UCLA Health",
-    role: "Sr. React / Node Developer",
-    period: "Sep 2021 – May 2024",
-    location: "Los Angeles, CA",
-    tech: [
-      "React 18", "Next.js 14", "Node.js 16", "Nest.js", "TypeScript", "Python",
-      "Flask API", "Flutter", "Spring Boot", "GraphQL", "MongoDB", "PostgreSQL",
-      "Neo4j", "VectorDB", "Kafka", "AWS", "Azure", "Docker", "Kubernetes",
-      "Helm", "Cypress", "Playwright",
-    ],
+    company: 'Southwest Airlines',
+    role: 'Software Developer II',
+    period: 'Dec 2023 – May 2025',
+    location: 'United States',
+    arc: 'THE FLIGHT ARC',
+    arcJp: '飛行編',
     bullets: [
-      "Developed scalable, high-performance web and mobile applications using React.js 18, Next.js 14, Node.js 16, Nest.js, TypeScript, Python, Flask API, Flutter, Spring Boot/MVC, Hibernate, and .NET WebAPI — supporting SPA, SSR, micro-frontends, CMS-driven applications, and transactional systems with optimized rendering strategies.",
-      "Built responsive and accessible UI/UX systems using TailwindCSS, Material UI, Bootstrap, CSS Architecture (BEM/Atomic Design), Figma, and Balsamiq — ensuring WCAG-compliant, mobile-first, cross-platform experiences.",
-      "Managed complex state and data workflows with Redux, RTK Query, and Zustand — implementing CRUD operations and integrating REST, GraphQL, Twitter API, WebSocket, and microservice-based APIs documented via Swagger UI and Postman.",
-      "Designed scalable data systems using PostgreSQL, MySQL, MongoDB (Mongoose), Neo4j, VectorDB, and Drizzle ORM — supporting high-volume transactional systems, graph-based modeling, real-time analytics pipelines, and GenAI-driven workflows.",
-      "Built real-time, event-driven architectures using Kafka, RabbitMQ, WebSocket, AWS Kinesis, and Azure Event Hub — enabling low-latency streaming and distributed messaging for time-sensitive healthcare applications.",
-      "Developed secure backend and enterprise APIs with Node.js, Nest.js, Express.js, Flask API, Spring Boot, and .NET Web API — implementing OAuth 2.0, JWT, RBAC, SSO, and HIPAA-compliant authentication with API gateway (APIM) integration.",
-      "Implemented cloud-native DevOps, CI/CD, and IaC using Docker, Kubernetes, Helm, Azure DevOps, AWS (IAM, CloudWatch, Lambda, DynamoDB, S3, Athena, Glue, SageMaker, Bedrock), Azure (ACR, ADF, CDN, Blob Storage, CosmosDB), and Linux/Unix shell scripting.",
-      "Performed end-to-end testing and Agile delivery using Jest, Mocha, Chai, Cypress, Playwright, and BDD/TDD — improving architecture, latency, and scalability with Nx monorepos and micro-frontend patterns.",
+      'Helped migrate legacy flight-booking and passenger-management workflows into modular Java 17 microservices on AWS EC2 and internal infra.',
+      'Exposed microservice endpoints through AWS API Gateway with OAuth 2.0 + JWT authorization for the customer-facing web client.',
+      'Rewrote legacy booking flows in React + TypeScript — async code-splitting and memoization dropped initial bundle sizes and visibly sped up interactions.',
+      'Wired Resilience4j circuit breakers and Feign clients across services, preventing cascading timeouts during flight-notification backlogs.',
+      'Standardized REST documentation with Swagger/OpenAPI as the bridge between backend engineering and external test squads.',
+      'Decoupled email/SMS notification fan-out from flight transactions with RabbitMQ.',
+      'Migrated parts of the passenger-management REST layer to GraphQL for mobile — less over-fetching, fewer round trips on hot screens.',
+      'Debugged distributed latency spikes with CloudWatch traces down to inefficient Hibernate queries; on-call with Grafana + Prometheus.',
     ],
+    tech: ['Java 17', 'Spring Boot', 'React', 'TypeScript', 'Feign', 'Resilience4j', 'RabbitMQ', 'Kafka', 'Redis', 'PostgreSQL', 'MongoDB', 'GraphQL', 'Docker', 'Kubernetes', 'AWS', 'GCP', 'Cypress', 'Grafana', 'Prometheus'],
   },
   {
-    company: "Dillard's",
-    role: "MERN Stack Developer",
-    period: "Nov 2018 – Aug 2021",
-    location: "Little Rock, AR",
-    tech: [
-      "MongoDB", "Express.js", "React.js", "Node.js", "TypeScript", "Next.js",
-      "React Native", "Redux", "Spring Boot", "Golang", "Python", "Flask API",
-      "GraphQL", "Kafka", "RabbitMQ", "Azure", "AWS", "Docker", "Jenkins",
-    ],
+    company: 'Flipkart',
+    role: 'Software Engineer',
+    period: 'Feb 2021 – Jun 2022',
+    location: 'Bangalore, India',
+    arc: 'THE ORIGIN ARC',
+    arcJp: '起源編',
     bullets: [
-      "Developed scalable, responsive web applications on the MERN stack (MongoDB, Express.js, React.js, Node.js) with TypeScript, JavaScript, and Next.js for server-side rendering, SEO optimization, and performance.",
-      "Built and maintained RESTful APIs using Node.js, Express.js, Spring Boot (Hibernate), Golang, Python, and Flask API — implementing GraphQL for efficient, optimized data fetching.",
-      "Designed reusable UI components with React.js, Redux, and React Hooks — improving UX across web and React Native (iOS & Android) applications.",
-      "Implemented event-driven architecture using Kafka and RabbitMQ, enabling asynchronous processing and high-throughput system communication.",
-      "Integrated third-party APIs including Twitter API, enhancing application functionality and external data integration.",
-      "Architected and deployed cloud infrastructure on Microsoft Azure (App Services, AKS, Blob Storage, AD, Key Vault, Data Lake, CDN) and AWS (Lambda, CloudWatch, IAM) with proper access control and identity management.",
-      "Developed backend microservices in Node.js, Spring Boot, Golang, and Python — JWT/OAuth authentication, Webpack/Vite optimization with lazy loading and code splitting, databases (MongoDB, PostgreSQL, Neo4j), and CI/CD with Jenkins, Docker, Jest, Mocha, Enzyme, and Selenium.",
+      'Built modular dashboards for the seller-facing management portal in React + Redux, turning layout designs into accessible screens.',
+      'Developed Spring Boot endpoints for the core order-management domain with Hibernate over PostgreSQL.',
+      'Owned the critical-issue queue — debugged race conditions in checkout transaction logic ahead of high-traffic sale events.',
+      'Maintained Kafka event pipelines linking order entry, catalog validation and downstream shipping.',
+      'Cut home-page asset weight ~20% with lazy loading and image optimizations for low-bandwidth networks.',
+      'Kept Jenkins build scripts honest — automated test runs on every incoming commit.',
+      'Partnered with UX to align the seller portal with WCAG across desktop and mobile.',
     ],
-  },
-  {
-    company: "KeyBank",
-    role: "Full Stack Developer",
-    period: "Dec 2016 – Sep 2018",
-    location: "Cleveland, OH",
-    tech: [
-      "Node.js", ".NET WebAPI", "Angular", "Vue.js", "Vue Router", "Nuxt.js",
-      "Express.js", "MongoDB", "PostgreSQL", "Mongoose", "RabbitMQ", "GraphQL",
-      "AWS EC2", "AWS S3", "AWS Lambda", "CloudFront", "Docker", "Jenkins",
-    ],
-    bullets: [
-      "Developed and optimized RESTful APIs using Node.js and .NET WebAPI — implementing CRUD operations and integrating RabbitMQ for asynchronous messaging between microservices.",
-      "Built dynamic, responsive front-end applications using Angular, Vue.js, Vue Router, and Nuxt.js — smooth navigation, real-time updates, and SEO-friendly server-side rendering.",
-      "Managed MongoDB and PostgreSQL databases — designing schemas, optimizing queries, and ensuring large-scale data handling for banking applications.",
-      "Automated front-end builds and workflows with Grunt and Gulp; validated APIs with Postman to improve endpoint reliability.",
-      "Implemented secure authentication and authorization using JWT and OAuth, protecting sensitive customer and transaction data.",
-      "Containerized microservices with Docker, deployed on AWS (S3, EC2, Lambda, CloudFront), and set up Jenkins CI/CD pipelines for scalable, rapid releases.",
-      "Ensured code quality through unit and integration testing (Mocha, Chai, Jest, Karma, Enzyme) within Agile sprint workflows.",
-    ],
-  },
-  {
-    company: "Foxconn",
-    role: "UI / UX Developer",
-    period: "Jun 2013 – Nov 2016",
-    location: "India",
-    tech: [
-      "AngularJS", "Angular", "JavaScript", "HTML", "CSS3", "Bootstrap",
-      "jQuery", "AJAX", "D3.js", "Sketch", "Figma", "Vue.js", "WCAG",
-    ],
-    bullets: [
-      "Designed and developed responsive web and mobile interfaces using AngularJS, Angular, JavaScript, HTML, CSS3, Bootstrap, jQuery, and AJAX — seamless experiences across devices.",
-      "Created wireframes, mockups, and prototypes with Sketch and Figma to validate user flows, collaborating closely with product managers, UX researchers, and engineers.",
-      "Developed dynamic, reusable Angular components and services with Angular Router navigation — optimizing performance via lazy loading, OnPush change detection, caching, and AOT compilation.",
-      "Integrated RESTful APIs and D3.js visualizations for efficient data handling and clear presentation of complex datasets.",
-      "Ensured accessibility and usability per WCAG standards, with cross-browser and cross-device testing for consistent performance.",
-      "Participated in Agile processes (standups, sprint planning, retrospectives) using Node.js, Git, Jira, VS Code, and Postman.",
-    ],
+    tech: ['Java', 'Spring Boot', 'Hibernate', 'React', 'Redux', 'Redis', 'Kafka', 'PostgreSQL', 'MongoDB', 'Docker', 'AWS EC2', 'S3', 'Jenkins', 'JUnit', 'Maven'],
   },
 ];
 
-export interface Project {
+// signature moves — the resume's biggest verifiable wins, styled as special attacks
+export interface Move {
   name: string;
-  description: string;
-  tech: string[];
-  live?: string;
-  highlights: string[];
+  nameJp: string;
+  kind: string;
+  desc: string;
+  stat: string;
+  statLabel: string;
+  color: 'blue' | 'red' | 'ink';
 }
 
-export const projects: Project[] = [
+export const moves: Move[] = [
   {
-    name: "AI-Powered Banking Assistant",
-    description:
-      "A production-grade conversational banking assistant built at Comerica Bank — RAG over internal financial data with ChatGPT, Claude, AWS Bedrock, and SageMaker, answering customer queries in real time.",
-    tech: [
-      "React 18.3.2", "Next.js 15", "Node.js 21", "FastAPI", "Python",
-      "MongoDB", "VectorDB", "AWS Bedrock", "SageMaker", "Kafka",
-      "WebSockets", "Docker", "K8s",
-    ],
-    highlights: [
-      "Built a RAG pipeline over vector embeddings (MongoDB/VectorDB) wiring ChatGPT, Claude, and Bedrock models for context-aware financial Q&A.",
-      "Implemented real-time streaming responses via WebSockets with Kafka as the message backbone.",
-      "Containerized the full stack with Docker and deployed on AWS EKS with Helm charts.",
-      "Monitored latency and error rates via Prometheus + Grafana, achieving p95 < 350 ms.",
-    ],
+    name: 'PEAK-TRAFFIC BREAKER',
+    nameJp: '限界突破',
+    kind: 'SCALING',
+    desc: 'Resolved API scaling issues on Walmart inventory & order-fulfillment services during peak traffic windows.',
+    stat: '3,000',
+    statLabel: 'requests / second',
+    color: 'blue',
   },
   {
-    name: "HIPAA-Compliant EMR Platform",
-    description:
-      "A healthcare Electronic Medical Records platform built for UCLA Health — FHIR-based workflows, secure patient data management, and real-time clinical dashboards.",
-    tech: [
-      "React 18", "Next.js 14", "Node.js 16", "Nest.js", "GraphQL",
-      "PostgreSQL", "Neo4j", "VectorDB", "Azure APIM", "OAuth 2.0",
-      "Cypress", "Playwright",
-    ],
-    highlights: [
-      "Designed HIPAA-compliant data schemas for EMR/FHIR workflows using PostgreSQL and Neo4j graph modeling.",
-      "Built a Nest.js GraphQL API layer reducing over-fetching by 50% versus prior REST endpoints.",
-      "Secured all API surfaces with OAuth 2.0, JWT, RBAC, and SSO via Azure APIM.",
-      "Achieved 90%+ E2E test coverage with Cypress and Playwright across critical patient workflows.",
-    ],
+    name: 'BEDROCK SUMMON',
+    nameJp: '召喚術',
+    kind: 'GEN-AI',
+    desc: 'Fine-tuned LLM summoned into a Spring Boot service via the AWS Bedrock async runtime — raw model text tamed into structured JSON.',
+    stat: 'LLM',
+    statLabel: 'in production',
+    color: 'red',
+  },
+  {
+    name: 'CANARY PROTOCOL',
+    nameJp: '安全確認',
+    kind: 'DELIVERY',
+    desc: 'Feature flags + canary deployments in CI/CD — progressive rollouts, instant rollback, multiple ships per week.',
+    stat: '×N',
+    statLabel: 'weekly prod deploys',
+    color: 'ink',
+  },
+  {
+    name: 'BUNDLE CUTTER',
+    nameJp: '軽量化',
+    kind: 'PERFORMANCE',
+    desc: 'Code-splitting and memoization on Southwest booking flows; lazy loading at Flipkart cut asset weight ~20%.',
+    stat: '−20%',
+    statLabel: 'asset weight',
+    color: 'blue',
   },
 ];
 
-// ─── Skills — mirrors the TECHNICAL SKILLS table on the resume, plus the
-// GenAI/LLM and messaging emphases from the professional summary. ────────────
+export const education = {
+  institution: 'University of Illinois Chicago (UIC)',
+  degree: 'Master of Science',
+  field: 'Management Information Systems',
+  period: 'Aug 2022 – May 2024',
+  location: 'Chicago, IL',
+} as const;
 
-export interface SkillCategory {
-  label: string;
-  icon: string;
-  skills: string[];
-}
-
-export const skillCategories: SkillCategory[] = [
-  {
-    label: "Full-Stack",
-    icon: "Layers",
-    skills: [
-      "React.js 18.3.2", "Vue.js", "Next.js 15/11", "Angular 2+", "AngularJS",
-      "HTML5", "CSS3", "JavaScript (ES6+/ES7)", "TypeScript", "React Native",
-      "Redux / Redux Toolkit", "React Query", "Zustand", "NgRx",
-      "Material-UI (MUI)", "Ant Design", "Chakra UI", "Bootstrap",
-      "Node.js 19/21", "Express.js", "Next.js APIs", "Nest.js", "FastAPI",
-      "Python", "Spring Boot", ".NET WebAPI", "Golang",
-    ],
-  },
-  {
-    label: "GenAI & LLMs",
-    icon: "Sparkles",
-    skills: [
-      "RAG Pipelines", "ChatGPT", "Claude", "AWS Bedrock", "SageMaker",
-      "Vertex AI", "Gemini AI", "TensorFlow.js", "VectorDB", "GitHub Copilot",
-    ],
-  },
-  {
-    label: "Databases",
-    icon: "Database",
-    skills: [
-      "MongoDB", "PostgreSQL", "Neo4j", "DynamoDB", "CosmosDB",
-      "Apache Cassandra", "Redis", "Memcached", "DrizzleORM", "Hibernate",
-    ],
-  },
-  {
-    label: "Cloud Services",
-    icon: "Cloud",
-    skills: [
-      "AWS (Lambda, EC2, EKS, Bedrock, Glue, Athena, SageMaker)",
-      "GCP (Vertex AI, Gemini AI, Pub/Sub, BigQuery, GKE, Stackdriver)",
-      "Azure (APIM, ACR, Event Hub, Azure DevOps, ADF, Synapse)",
-    ],
-  },
-  {
-    label: "APIs",
-    icon: "Plug",
-    skills: [
-      "RESTful APIs", "GraphQL", "gRPC", "WebSockets", "OAuth 2.0", "JWT",
-      "SSO", "Swagger UI",
-    ],
-  },
-  {
-    label: "Messaging & Streaming",
-    icon: "Zap",
-    skills: [
-      "Kafka", "RabbitMQ", "AWS Kinesis", "GCP Pub/Sub", "Azure Event Hub",
-      "SQS", "Redis / BullMQ",
-    ],
-  },
-  {
-    label: "Testing",
-    icon: "TestTube2",
-    skills: [
-      "Jest", "Mocha", "Chai", "Cypress", "Selenium", "Enzyme",
-      "React Testing Library", "Playwright", "Postman", "SoapUI", "JUnit",
-      "Jasmine", "Mockito",
-    ],
-  },
-  {
-    label: "UI/UX Tools",
-    icon: "PenTool",
-    skills: [
-      "Figma", "Adobe XD", "Sketch", "Storybook", "Atomic Design", "BEM",
-      "WCAG Compliance",
-    ],
-  },
-  {
-    label: "Build Tools",
-    icon: "Wrench",
-    skills: ["Webpack", "Babel", "Vite", "NPM", "Yarn", "PNPM", "Grunt", "Gulp"],
-  },
-  {
-    label: "Monitoring & Debugging",
-    icon: "Activity",
-    skills: [
-      "Prometheus", "Grafana", "CloudWatch", "Stackdriver", "LogRocket",
-      "Splunk", "Sentry", "Datadog",
-    ],
-  },
-  {
-    label: "Agile Tools",
-    icon: "Kanban",
-    skills: ["JIRA", "Confluence", "Trello"],
-  },
-];
-
-export interface Certification {
-  title: string;
-  issuer: string;
-  badge: string;
-}
-
-export const certifications: Certification[] = [
-  {
-    title: "OpenJS Node.js Services Developer",
-    issuer: "OpenJS Foundation",
-    badge: "NODE",
-  },
-  {
-    title: "React Developer Certified (Level 2)",
-    issuer: "Credly / React Training",
-    badge: "REACT",
-  },
-];
-
-export interface Education {
-  degree: string;
-  field: string;
-  institution: string;
-  location: string;
-  year: number;
-}
-
-export const education: Education = {
-  degree: "Bachelor of Technology",
-  field: "Computer Science & Engineering",
-  institution: "Lovely Professional University",
-  location: "Jalandhar, Punjab",
-  year: 2013,
-};
-
-export interface BlogPost {
-  title: string;
-  date: string;
-  readTime: string;
-  tags: string[];
-  url: string;
-}
-
-export const blogPosts: BlogPost[] = [
-  {
-    title: "Beyond the Queue: Why Apache Kafka is the Beating Heart of Modern Architecture",
-    date: "May 3, 2026",
-    readTime: "7 min read",
-    tags: ["Apache Kafka", "Architecture"],
-    url: "https://medium.com/@veera.palla919/beyond-the-queue-why-apache-kafka-is-the-beating-heart-of-modern-architecture-a6f113f9ea4e",
-  },
-  {
-    title: "DEVOPS and CI/CD Pipelines in a software development projects",
-    date: "Sep 25, 2024",
-    readTime: "4 min read",
-    tags: ["DevOps", "CI/CD"],
-    url: "https://medium.com/@veera.palla919/devops-and-ci-cd-pipelines-in-a-software-development-projects-b7e0bc995d77",
-  },
-  {
-    title: "Software Testing",
-    date: "Sep 25, 2024",
-    readTime: "3 min read",
-    tags: ["Testing", "Quality"],
-    url: "https://medium.com/@veera.palla919/software-testing-559ee94af028",
-  },
-];
+export const domains = ['RETAIL', 'AIRLINE', 'E-COMMERCE'] as const;
