@@ -83,8 +83,9 @@ export interface Experience {
   role: string;
   period: string;
   location: string;
-  arc: string;      // anime arc label
-  arcJp: string;
+  arc: string;        // manga arc title
+  narration: string;  // the caption box that opens the arc's page
+  sfx: string;        // the page's background sound effect
   current?: boolean;
   bullets: string[];
   tech: string[];
@@ -96,8 +97,9 @@ export const experiences: Experience[] = [
     role: 'Full-Stack Developer',
     period: 'Jul 2025 – Present',
     location: 'United States',
-    arc: 'THE CURRENT ARC',
-    arcJp: '現在編',
+    arc: 'ARC III — THE CURRENT ARC',
+    narration: 'PRESENT DAY. THE BIGGEST RETAILER ON THE PLANET. PEAK SEASON NEVER SLEEPS.',
+    sfx: 'RUSH',
     current: true,
     bullets: [
       'Develop and maintain Java 17 / Spring Boot microservices powering core inventory and order-fulfillment platforms — resolving API scaling issues at peak windows of 3,000 requests/second.',
@@ -116,8 +118,9 @@ export const experiences: Experience[] = [
     role: 'Software Developer II',
     period: 'Dec 2023 – May 2025',
     location: 'United States',
-    arc: 'THE FLIGHT ARC',
-    arcJp: '飛行編',
+    arc: 'ARC II — TAKING FLIGHT',
+    narration: 'DALLAS, 2023. THE LEGACY BOOKING SYSTEM CREAKS. SOMEONE HAS TO REWRITE IT MID-FLIGHT.',
+    sfx: 'WHOOSH',
     bullets: [
       'Helped migrate legacy flight-booking and passenger-management workflows into modular Java 17 microservices on AWS EC2 and internal infra.',
       'Exposed microservice endpoints through AWS API Gateway with OAuth 2.0 + JWT authorization for the customer-facing web client.',
@@ -135,8 +138,9 @@ export const experiences: Experience[] = [
     role: 'Software Engineer',
     period: 'Feb 2021 – Jun 2022',
     location: 'Bangalore, India',
-    arc: 'THE ORIGIN ARC',
-    arcJp: '起源編',
+    arc: 'ARC I — ORIGIN STORY',
+    narration: 'BANGALORE, 2021. EVERY HERO STARTS IN A CHECKOUT FLOW.',
+    sfx: 'CLACK',
     bullets: [
       'Built modular dashboards for the seller-facing management portal in React + Redux, turning layout designs into accessible screens.',
       'Developed Spring Boot endpoints for the core order-management domain with Hibernate over PostgreSQL.',
@@ -150,52 +154,57 @@ export const experiences: Experience[] = [
   },
 ];
 
-// signature moves — the resume's biggest verifiable wins, styled as special attacks
-export interface Move {
+// boss battles — the resume's biggest verifiable wins, told as defeated bosses
+export interface Boss {
+  no: string;
   name: string;
-  nameJp: string;
-  kind: string;
+  epithet: string;      // the boss's manga-style title
   desc: string;
   stat: string;
   statLabel: string;
+  sfx: string;          // the finishing-blow sound effect
   color: 'blue' | 'red' | 'ink';
 }
 
-export const moves: Move[] = [
+export const bosses: Boss[] = [
   {
-    name: 'PEAK-TRAFFIC BREAKER',
-    nameJp: '限界突破',
-    kind: 'SCALING',
-    desc: 'Resolved API scaling issues on Walmart inventory & order-fulfillment services during peak traffic windows.',
+    no: '01',
+    name: 'PEAK TRAFFIC',
+    epithet: 'THE 3,000-REQUEST STAMPEDE',
+    desc: 'Inventory & order-fulfillment APIs buckling in peak windows. Scaled the services until the stampede broke against them.',
     stat: '3,000',
-    statLabel: 'requests / second',
+    statLabel: 'requests / second, held',
+    sfx: 'RUMBLE',
     color: 'blue',
   },
   {
-    name: 'BEDROCK SUMMON',
-    nameJp: '召喚術',
-    kind: 'GEN-AI',
-    desc: 'Fine-tuned LLM summoned into a Spring Boot service via the AWS Bedrock async runtime — raw model text tamed into structured JSON.',
+    no: '02',
+    name: 'THE RAW MODEL',
+    epithet: 'UNTAMED LLM OF BEDROCK',
+    desc: 'A fine-tuned LLM speaking in raw text. Chained it to a Spring Boot service through the async Bedrock runtime — now it answers in structured JSON.',
     stat: 'LLM',
-    statLabel: 'in production',
+    statLabel: 'tamed, in production',
+    sfx: 'ROAR',
     color: 'red',
   },
   {
-    name: 'CANARY PROTOCOL',
-    nameJp: '安全確認',
-    kind: 'DELIVERY',
-    desc: 'Feature flags + canary deployments in CI/CD — progressive rollouts, instant rollback, multiple ships per week.',
+    no: '03',
+    name: 'THE RISKY RELEASE',
+    epithet: 'FRIDAY-DEPLOY PHANTOM',
+    desc: 'Fear of shipping. Slain with feature flags and canary deployments — progressive rollouts, instant rollback, multiple ships a week.',
     stat: '×N',
     statLabel: 'weekly prod deploys',
+    sfx: 'SLASH',
     color: 'ink',
   },
   {
-    name: 'BUNDLE CUTTER',
-    nameJp: '軽量化',
-    kind: 'PERFORMANCE',
-    desc: 'Code-splitting and memoization on Southwest booking flows; lazy loading at Flipkart cut asset weight ~20%.',
+    no: '04',
+    name: 'THE HEAVY BUNDLE',
+    epithet: 'DEVOURER OF LOAD TIMES',
+    desc: 'Bloated booking flows and heavy home pages. Cut down with code-splitting, memoization and lazy loading — assets dropped ~20%.',
     stat: '−20%',
     statLabel: 'asset weight',
+    sfx: 'SNIP',
     color: 'blue',
   },
 ];
