@@ -1,6 +1,6 @@
 // app/page.tsx
-import Portfolio from "@/components/neo/Portfolio";
+import SplitHero from "@/components/split/SplitHero";
 
 export default function Home() {
-  return <Portfolio />;
+  return <SplitHero />;
 }
