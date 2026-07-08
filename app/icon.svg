@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <rect width="64" height="64" rx="14" fill="#101318"/>
+  <rect x="31" y="8" width="2" height="48" fill="url(#seam)"/>
+  <text x="17" y="42" font-family="Georgia, serif" font-size="26" font-weight="700" fill="#FAF8F3" text-anchor="middle">V</text>
+  <text x="47" y="42" font-family="Georgia, serif" font-size="26" font-weight="700" fill="#8FA8FF" text-anchor="middle">P</text>
+  <defs>
+    <linearGradient id="seam" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#101318"/>
+      <stop offset="0.3" stop-color="#2F55D4"/>
+      <stop offset="0.7" stop-color="#8FA8FF"/>
+      <stop offset="1" stop-color="#101318"/>
+    </linearGradient>
+  </defs>
+</svg>

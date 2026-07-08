@@ -5,7 +5,29 @@
 // for everything that crosses it.
 import { useEffect } from 'react';
 import SplitHero from './SplitHero';
-import { personal, splitWork, stackSides, stats, education } from '@/lib/data';
+import {
+  personal, splitWork, stackSides, stats, education, note, now, marginNotes,
+} from '@/lib/data';
+
+/* the monogram — the seam runs through my initials */
+function Mark({ className = '' }: { className?: string }) {
+  return (
+    <span className={`mark ${className}`} aria-label="Veera Palla">
+      <span>V</span>
+      <span className="mark-seam" aria-hidden="true" />
+      <span>P</span>
+    </span>
+  );
+}
+
+/* a small hand-drawn pin for the margin notes */
+function Pin() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <path d="M2 14c3-6 6-9 12-11M14 3l-4 .3M14 3l-.4 4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+    </svg>
+  );
+}
 
 function useReveals() {
   useEffect(() => {
@@ -36,11 +58,11 @@ export default function SplitSite() {
     <>
       {/* minimal nav — blend-mode keeps it legible over both panes */}
       <nav className="nav" aria-label="Site">
-        <a className="nav-mark" href="#top">VP</a>
+        <a className="nav-mark" href="#top"><Mark /></a>
         <div className="nav-links">
           <a href="#work">Work</a>
           <a href="#stack">Stack</a>
-          <a href="#education">Education</a>
+          <a href="#note">About me</a>
           <a href="#contact">Contact</a>
         </div>
         <a className="nav-resume" href={personal.resumeUrl} download>Resume ↓</a>
@@ -54,8 +76,9 @@ export default function SplitSite() {
           <span className="sec-eyebrow">01 — THE WORK</span>
           <h2>Every role, told from<br />both sides of the wire.</h2>
           <p className="sec-sub">
-            Left column: what people saw. Right column: what the system did.
-            The seam between them is where I work.
+            On the left, what people saw. On the right, what the system did to
+            keep that promise. I have spent four years living in the gap between
+            those two columns.
           </p>
         </header>
 
@@ -83,6 +106,12 @@ export default function SplitSite() {
                   <ul>{w.back.map(b => <li key={b.slice(0, 24)}>{b}</li>)}</ul>
                 </div>
               </div>
+              {marginNotes[w.company] && (
+                <p className="margin-note">
+                  <Pin />
+                  {marginNotes[w.company]}
+                </p>
+              )}
               {w.seam.length > 0 && (
                 <div className="ledger-seam">
                   <span className="col-label">ACROSS THE SEAM</span>
@@ -149,10 +178,41 @@ export default function SplitSite() {
         </div>
       </section>
 
+      {/* ── A NOTE FROM ME ── */}
+      <section className="sec" id="note">
+        <header className="sec-head rv">
+          <span className="sec-eyebrow">03 — IN MY OWN WORDS</span>
+          <h2>{note.heading}</h2>
+        </header>
+        <div className="note-wrap">
+          <div className="note-body rv">
+            {note.paragraphs.map(p => <p key={p.slice(0, 26)}>{p}</p>)}
+            <div className="note-sign">
+              <span>{note.signoff}</span>
+              <span className="sig">Veera</span>
+            </div>
+          </div>
+          <aside className="note-facts rv">
+            <h3>SMALL PRINT</h3>
+            {note.facts.map(f => (
+              <div key={f.k} className="fact">
+                <b>{f.k}</b>
+                <span>{f.v}</span>
+              </div>
+            ))}
+            <div className="now-lines">
+              <p><b>Now</b>{now.line}</p>
+              <p><b>Reading</b>{now.reading}</p>
+              <p><b>Learning</b>{now.learning}</p>
+            </div>
+          </aside>
+        </div>
+      </section>
+
       {/* ── EDUCATION ── */}
       <section className="sec" id="education">
         <header className="sec-head rv">
-          <span className="sec-eyebrow">03 — EDUCATION</span>
+          <span className="sec-eyebrow">04 — EDUCATION</span>
           <h2>Chicago, between the arcs.</h2>
         </header>
         <div className="edu rv">
@@ -171,11 +231,11 @@ export default function SplitSite() {
       <section className="sec sec--contact" id="contact">
         <div className="contact-split" aria-hidden="true" />
         <div className="contact-inner rv">
-          <span className="sec-eyebrow">04 — CONTACT</span>
+          <span className="sec-eyebrow">05 — CONTACT</span>
           <h2>Both sides.<br />One inbox.</h2>
           <p className="sec-sub">
-            Full-stack roles, React-heavy or Java-heavy — either half of this
-            page is home. The inbox answers fastest.
+            React-heavy, Java-heavy, or the messy middle — either half of this
+            page is home for me. Email reaches me fastest; I answer everything.
           </p>
           <div className="contact-ctas">
             <a className="cta cta--invert" href={`mailto:${personal.email}`}>{personal.email}</a>
@@ -184,8 +244,11 @@ export default function SplitSite() {
             <a className="cta cta--line" href={`tel:${personal.phone.replace(/-/g, '')}`}>{personal.phone}</a>
           </div>
           <footer className="foot">
-            <span>© 2026 {personal.name}</span>
-            <span>React on one side · Java on the other · built with Next.js</span>
+            <span className="foot-mark">
+              <Mark />
+              <span>© 2026 {personal.name}</span>
+            </span>
+            <span className="hand">hand-built, no templates — Next.js, one long weekend</span>
           </footer>
         </div>
       </section>

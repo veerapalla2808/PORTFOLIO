@@ -1,6 +1,6 @@
 // app/layout.tsx
 import type { Metadata, Viewport } from "next";
-import { Inter, JetBrains_Mono, Fraunces } from "next/font/google";
+import { Inter, JetBrains_Mono, Fraunces, Caveat } from "next/font/google";
 import "./globals.css";
 
 export const viewport: Viewport = {
@@ -19,6 +19,8 @@ const fraunces = Fraunces({
   display: "swap",
   axes: ["opsz"],
 });
+// the human hand — margin notes, annotations, the signature
+const caveat = Caveat({ variable: "--font-hand", subsets: ["latin"], display: "swap" });
 
 export const metadata: Metadata = {
   title: "Veera Palla — Full-Stack Developer",
@@ -30,7 +32,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   return (
     <html
       lang="en"
-      className={`${inter.variable} ${jetbrains.variable} ${fraunces.variable}`}
+      className={`${inter.variable} ${jetbrains.variable} ${fraunces.variable} ${caveat.variable}`}
       style={{ background: "#101318" }}
     >
       <body style={{ background: "#101318" }}>{children}</body>

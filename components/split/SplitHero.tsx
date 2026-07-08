@@ -4,7 +4,19 @@
 // clipped at a draggable seam. The name is rendered in both layers at the
 // same position, so moving the seam "fills" it from either side.
 import { useEffect, useRef } from 'react';
-import { personal } from '@/lib/data';
+import { personal, now } from '@/lib/data';
+
+/* a hand-drawn arrow, curving down toward the seam knob */
+function Scrawl() {
+  return (
+    <span className="seam-scrawl" aria-hidden="true">
+      drag this — I work on both sides
+      <svg width="46" height="30" viewBox="0 0 46 30" fill="none">
+        <path d="M4 2c2 12 10 20 19 22M23 24l-6-4M23 24l1-7" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" fill="none" />
+      </svg>
+    </span>
+  );
+}
 
 function useSeam(stageRef: React.RefObject<HTMLElement | null>, seamRef: React.RefObject<HTMLDivElement | null>) {
   useEffect(() => {
@@ -97,18 +109,20 @@ function Pane({ side }: { side: 'front' | 'back' }) {
 
       <div className="pane-mid">
         <div className="wing wing--left">
-          <span className="wing-label">01 · WHAT PEOPLE SEE</span>
+          <span className="wing-label">01 · WHAT I BUILD FOR PEOPLE</span>
           <span className="num">15+ shared components</span>
-          interfaces that load visibly faster — code-split, memoized, accessible.
+          I write interfaces that load faster than the last ones — code-split,
+          memoized, accessible.
         </div>
         <div className="name-block">
           <h1>Veera Palla</h1>
-          <p className="role">Full-Stack Developer · Both Sides of the Wire</p>
+          <p className="role">Full-Stack Developer · I work both sides of the wire</p>
         </div>
         <div className="wing wing--right">
-          <span className="wing-label">02 · WHAT THE SYSTEM DOES</span>
+          <span className="wing-label">02 · WHAT I BUILD FOR THE SYSTEM</span>
           <span className="num">3,000 req/s held</span>
-          microservices with circuit breakers, Kafka streams and canary deploys.
+          I keep the promise the interface makes — circuit breakers, Kafka
+          streams, canary deploys.
         </div>
       </div>
 
@@ -119,11 +133,14 @@ function Pane({ side }: { side: 'front' | 'back' }) {
           ))}
         </div>
         <div className="deck">
-          <span className="deck-note">
-            4 YEARS · WALMART / SOUTHWEST AIRLINES / FLIPKART · {personal.location.toUpperCase()}
-          </span>
+          <div className="deck-left">
+            <span className="status">{now.status}</span>
+            <span className="deck-note">
+              4 YEARS · WALMART / SOUTHWEST AIRLINES / FLIPKART · {personal.location.toUpperCase()}
+            </span>
+          </div>
           <div className="deck-ctas">
-            <a className="cta cta--solid" href={`mailto:${personal.email}`}>Say hello</a>
+            <a className="cta cta--solid" href={`mailto:${personal.email}`}>Email me</a>
             <a className="cta cta--ghost" href={personal.resumeUrl} download>Resume</a>
           </div>
         </div>
@@ -154,8 +171,8 @@ export default function SplitHero() {
         tabIndex={0}
       >
         <div className="seam-hit" />
+        <Scrawl />
         <div className="seam-knob">↔</div>
-        <div className="seam-hint">DRAG THE SEAM — ONE DEVELOPER, BOTH SIDES</div>
       </div>
 
       <a className="scroll-cue" href="#work" aria-label="Scroll to the work">

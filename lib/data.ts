@@ -305,3 +305,38 @@ export const education = {
 } as const;
 
 export const domains = ['RETAIL', 'AIRLINE', 'E-COMMERCE'] as const;
+
+// ── the human layer ─────────────────────────────────────────────────────────
+// First-person voice, margin notes, and the things a template can't know.
+
+export const now = {
+  status: 'Open to full-stack roles',
+  line: 'Shipping inventory and fulfillment services at Walmart. On-call this week.',
+  reading: 'Designing Data-Intensive Applications (again — the Kafka chapters)',
+  learning: 'Terraform, properly this time. And keeping my Java 21 notes current.',
+} as const;
+
+export const note = {
+  heading: 'A note from me',
+  paragraphs: [
+    'I started in Bangalore in 2021, fixing race conditions in a checkout flow the night before a sale event. That taught me something I still believe: the interface is a promise, and the system is whether you keep it.',
+    'Two years later I moved to Chicago for my master’s, and spent the whole degree writing flight-booking code at night. The training arc and the job overlapped — I do not recommend it, and I would do it again.',
+    'Now I work on inventory and fulfillment at Walmart, where a bad deploy is measured in shelves. I like the weight of that. I like that the front-end I write is judged by whether a store associate can move faster, and the back-end I write is judged by whether it holds at 3,000 requests a second.',
+    'I am equally comfortable arguing about React re-renders and about JPA fetch strategies. Most people pick a side. I never wanted to.',
+  ],
+  facts: [
+    { k: 'Based in', v: 'United States (open to relocation)' },
+    { k: 'First language of choice', v: 'Java — but TypeScript is where I think fastest' },
+    { k: 'Tooling opinion', v: 'Feature flags before heroics. Always.' },
+    { k: 'Debugging ritual', v: 'Read the deploy log before blaming the code' },
+    { k: 'Non-negotiable', v: '80% coverage before the release pipeline runs' },
+  ],
+  signoff: 'Thanks for reading this far,',
+} as const;
+
+// handwritten annotations pinned to each role card
+export const marginNotes: Record<string, string> = {
+  Walmart: 'this one keeps me up at night — in a good way',
+  'Southwest Airlines': 'rewriting a booking system while it’s flying — my favourite kind of hard',
+  Flipkart: 'where I learned that race conditions don’t care about your deadline',
+};
