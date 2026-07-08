@@ -1,6 +1,6 @@
 // app/page.tsx
-import SplitSite from "@/components/split/SplitSite";
+import Experience from "@/components/split/Experience";
 
 export default function Home() {
-  return <SplitSite />;
+  return <Experience />;
 }

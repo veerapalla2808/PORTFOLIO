@@ -320,7 +320,6 @@ export const note = {
   heading: 'A note from me',
   paragraphs: [
     'I started in Bangalore in 2021, fixing race conditions in a checkout flow the night before a sale event. That taught me something I still believe: the interface is a promise, and the system is whether you keep it.',
-    'Two years later I moved to Chicago for my master’s, and spent the whole degree writing flight-booking code at night. The training arc and the job overlapped — I do not recommend it, and I would do it again.',
     'Now I work on inventory and fulfillment at Walmart, where a bad deploy is measured in shelves. I like the weight of that. I like that the front-end I write is judged by whether a store associate can move faster, and the back-end I write is judged by whether it holds at 3,000 requests a second.',
     'I am equally comfortable arguing about React re-renders and about JPA fetch strategies. Most people pick a side. I never wanted to.',
   ],
@@ -340,3 +339,50 @@ export const marginNotes: Record<string, string> = {
   'Southwest Airlines': 'rewriting a booking system while it’s flying — my favourite kind of hard',
   Flipkart: 'where I learned that race conditions don’t care about your deadline',
 };
+
+// ── the two-side router ─────────────────────────────────────────────────────
+// Front-end lives in a light theme; back-end in a dark theme. The landing
+// lets a visitor pick a discipline to walk through first.
+export interface SideConfig {
+  key: 'front' | 'back';
+  theme: 'light' | 'dark';
+  label: string;
+  kicker: string;
+  title: string;
+  blurb: string;
+  categories: string[];   // skillCategory labels to show on this side
+  isDefault?: boolean;
+}
+
+export const sideConfig: Record<'front' | 'back', SideConfig> = {
+  front: {
+    key: 'front',
+    theme: 'light',
+    label: 'Front-End',
+    kicker: 'The Interface',
+    title: 'I build the half people touch.',
+    blurb:
+      'Interfaces that load fast, stay accessible and get out of the way — React and TypeScript, componentised so the whole team ships quicker.',
+    categories: ['Frontend', 'Testing', 'APIs & Security'],
+  },
+  back: {
+    key: 'back',
+    theme: 'dark',
+    label: 'Back-End',
+    kicker: 'The System',
+    title: 'I build the half that has to hold.',
+    blurb:
+      'Fault-tolerant services under real load — Java 17, Spring Boot, event streams, and the caching and deploy discipline that keeps them standing.',
+    categories: ['Backend', 'Databases', 'Messaging', 'Caching', 'Cloud', 'DevOps & Build', 'Monitoring', 'APIs & Security'],
+    isDefault: true,
+  },
+};
+
+export const landing = {
+  name: 'Veera Palla',
+  role: 'Full-Stack Developer',
+  line: 'I work both ends of the stack. Choose a side to walk through first.',
+  frontTeaser: 'React · TypeScript · the pixels people actually touch',
+  backTeaser: 'Java 17 · Spring Boot · the services that hold it up',
+  hint: 'Back-end opens by default — press Enter or pick a door',
+} as const;

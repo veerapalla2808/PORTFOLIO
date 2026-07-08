@@ -1,41 +1,48 @@
 // app/layout.tsx
 import type { Metadata, Viewport } from "next";
-import { Inter, JetBrains_Mono, Fraunces, Caveat } from "next/font/google";
+import { Bricolage_Grotesque, Hanken_Grotesk, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
-  themeColor: "#101318",
+  themeColor: "#0B0E14",
 };
 
-const inter = Inter({ variable: "--font-inter", subsets: ["latin"], display: "swap" });
-const jetbrains = JetBrains_Mono({ variable: "--font-jetbrains", subsets: ["latin"], display: "swap" });
-// editorial display face — carries the personality on both panes
-const fraunces = Fraunces({
-  variable: "--font-fraunces",
+// display — opinionated, high-personality grotesque for the name and headings
+const bricolage = Bricolage_Grotesque({
+  variable: "--font-display",
   subsets: ["latin"],
   display: "swap",
-  axes: ["opsz"],
 });
-// the human hand — margin notes, annotations, the signature
-const caveat = Caveat({ variable: "--font-hand", subsets: ["latin"], display: "swap" });
+// body — warm, readable grotesque (not Inter)
+const hanken = Hanken_Grotesk({
+  variable: "--font-body",
+  subsets: ["latin"],
+  display: "swap",
+});
+// technical labels
+const jetbrains = JetBrains_Mono({
+  variable: "--font-mono",
+  subsets: ["latin"],
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: "Veera Palla — Full-Stack Developer",
   description:
-    "Full-Stack Developer: React + TypeScript on one side, Java 17 + Spring Boot + AWS on the other. ~4 years across retail, airline and e-commerce. Currently at Walmart.",
+    "Full-stack developer. Front-end and back-end as two interfaces — pick a side. React + TypeScript on the light side, Java 17 + Spring Boot + AWS on the dark side.",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html
       lang="en"
-      className={`${inter.variable} ${jetbrains.variable} ${fraunces.variable} ${caveat.variable}`}
-      style={{ background: "#101318" }}
+      className={`${bricolage.variable} ${hanken.variable} ${jetbrains.variable}`}
+      style={{ background: "#0B0E14" }}
     >
-      <body style={{ background: "#101318" }}>{children}</body>
+      <body style={{ background: "#0B0E14" }}>{children}</body>
     </html>
   );
 }
