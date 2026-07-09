@@ -378,6 +378,15 @@ export const sideConfig: Record<'front' | 'back', SideConfig> = {
   },
 };
 
+// count-up metrics — `fill` (0..1) drives the light-theme score dials
+export interface Metric { value: number; format?: 'comma'; prefix?: string; suffix?: string; label: string; fill: number }
+export const metrics: Metric[] = [
+  { value: 4, suffix: '+', label: 'years in production', fill: 0.55 },
+  { value: 3000, format: 'comma', suffix: ' req/s', label: 'held at peak', fill: 0.92 },
+  { value: 80, suffix: '%', label: 'coverage baseline', fill: 0.8 },
+  { value: 3, label: 'domains shipped', fill: 0.5 },
+];
+
 export const landing = {
   name: 'Veera Palla',
   role: 'Full-Stack Developer',

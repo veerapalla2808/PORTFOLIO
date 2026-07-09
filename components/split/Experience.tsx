@@ -4,6 +4,8 @@
 // hash so the browser back button and shared links both work.
 import { useCallback, useEffect, useRef, useState } from 'react';
 import ParticleField from './ParticleField';
+import ThemeBackdrop from './ThemeBackdrop';
+import Cursor from './Cursor';
 import Landing from './Landing';
 import SideView from './SideView';
 
@@ -52,7 +54,9 @@ export default function Experience() {
 
   return (
     <div className="app" data-theme={theme} data-view={view}>
+      <ThemeBackdrop theme={view === 'front' ? 'light' : 'dark'} />
       <ParticleField theme={theme} tint={view === 'landing' ? tint : null} />
+      <Cursor theme={theme} />
       {view === 'landing' ? (
         <Landing onChoose={go} onHover={setTint} />
       ) : (

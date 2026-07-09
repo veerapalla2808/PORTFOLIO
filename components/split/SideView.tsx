@@ -7,6 +7,21 @@ import {
   personal, splitWork, skillCategories, sideConfig, note, now,
   education, marginNotes,
 } from '@/lib/data';
+import Metrics from './Metrics';
+
+/* back-end: a request travelling client → gateway → service → db, revealed on
+   hover. A pure-SVG/CSS motif — no JS. */
+function Pipeline() {
+  const nodes = ['client', 'gateway', 'service', 'db'];
+  return (
+    <div className="pipe" aria-hidden="true">
+      <div className="pipe-wire"><span className="pipe-dot" /></div>
+      <div className="pipe-nodes">
+        {nodes.map(n => <span key={n} className="pipe-node">{n}</span>)}
+      </div>
+    </div>
+  );
+}
 
 function Mark() {
   return (
@@ -98,6 +113,11 @@ export default function SideView({
         <span className="scroll-cue">SCROLL <span aria-hidden="true">▾</span></span>
       </section>
 
+      {/* metrics — count up on scroll; status strip (dark) / dials (light) */}
+      <section className="side-sec side-metrics-sec">
+        <Metrics side={side} />
+      </section>
+
       {/* work — this side's story per role */}
       <section className="side-sec" id="work">
         <header className="side-head rv">
@@ -106,7 +126,8 @@ export default function SideView({
         </header>
         <div className="roles">
           {splitWork.map((w, i) => (
-            <article key={w.company} className={`role rv ${w.current ? 'role--current' : ''}`} style={{ transitionDelay: `${i * 0.05}s` }}>
+            <article key={w.company} className={`role role--${side} rv ${w.current ? 'role--current' : ''}`} style={{ transitionDelay: `${i * 0.05}s` }}>
+              {side === 'front' && <span className="role-shimmer" aria-hidden="true" />}
               <div className="role-head">
                 <h3>{w.company}</h3>
                 <span className="role-role">{w.role}</span>
@@ -114,6 +135,7 @@ export default function SideView({
                 {w.current && <span className="role-now">CURRENT</span>}
               </div>
               <p className="role-headline">{w.headline}</p>
+              {side === 'back' && <Pipeline />}
               <ul className="role-list">
                 {(side === 'front' ? w.front : w.back).map(b => <li key={b.slice(0, 24)}>{b}</li>)}
               </ul>

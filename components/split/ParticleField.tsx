@@ -56,6 +56,16 @@ export default function ParticleField({ theme, tint }: { theme: Theme; tint?: Th
     window.addEventListener('pointermove', onMove, { passive: true });
     window.addEventListener('pointerleave', onLeave);
 
+    // scroll velocity feeds a ripple into the wave amplitude
+    let scrollV = 0;
+    let lastY = window.scrollY;
+    const onScroll = () => {
+      const y = window.scrollY;
+      scrollV = Math.min(1.4, scrollV + Math.abs(y - lastY) / 90);
+      lastY = y;
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+
     const R = 165; // magnetic radius
 
     const frame = (now: number) => {
@@ -68,6 +78,9 @@ export default function ParticleField({ theme, tint }: { theme: Theme; tint?: Th
       const b = Math.round(COLOR.dark[2] + (COLOR.light[2] - COLOR.dark[2]) * mix);
       const glow = 1 - mix * 0.45; // dark side glows a touch stronger
 
+      scrollV *= 0.92; // decay the scroll ripple
+      const amp = 1 + scrollV * 1.4;
+
       ctx.clearRect(0, 0, w, h);
       const cx = w * 0.5, cy = h * 0.42;
 
@@ -76,12 +89,13 @@ export default function ParticleField({ theme, tint }: { theme: Theme; tint?: Th
           let px = i * spacing;
           let py = j * spacing;
 
-          // pulsating wave: a ring rippling out from center + a drifting swell
+          // pulsating wave: a ring rippling out from center + a drifting swell,
+          // amplified briefly by scroll velocity
           const dx = px - cx, dy = py - cy;
           const dC = Math.sqrt(dx * dx + dy * dy);
-          const wave = Math.sin(dC * 0.016 - t * 1.9) * 0.6
+          const wave = (Math.sin(dC * 0.016 - t * 1.9) * 0.6
             + Math.sin(px * 0.010 + t * 0.7) * 0.25
-            + Math.sin(py * 0.013 - t * 0.5) * 0.15;
+            + Math.sin(py * 0.013 - t * 0.5) * 0.15) * amp;
           const wn = wave * 0.5 + 0.5;
 
           let size = 0.9 + wn * 1.5;
@@ -102,9 +116,12 @@ export default function ParticleField({ theme, tint }: { theme: Theme; tint?: Th
             }
           }
 
+          // clamp: the scroll-amplified wave can drive these out of range
+          size = Math.max(0.1, size);
+          alpha = Math.max(0, Math.min(alpha, 1));
           ctx.beginPath();
           ctx.arc(px, py, size, 0, Math.PI * 2);
-          ctx.fillStyle = `rgba(${r},${g},${b},${Math.min(alpha, 1)})`;
+          ctx.fillStyle = `rgba(${r},${g},${b},${alpha})`;
           ctx.fill();
         }
       }
@@ -118,6 +135,7 @@ export default function ParticleField({ theme, tint }: { theme: Theme; tint?: Th
       window.removeEventListener('resize', resize);
       window.removeEventListener('pointermove', onMove);
       window.removeEventListener('pointerleave', onLeave);
+      window.removeEventListener('scroll', onScroll);
     };
   }, []);
 
