@@ -40,21 +40,41 @@ button { font-family: inherit; cursor: pointer; background: none; border: none; 
   transition: background-color 0.6s ease, color 0.6s ease;
 }
 .app[data-theme="light"] {
-  /* front-end — warm sand + vivid blue with a coral pop */
-  --bg: #F0E5D2;
-  --surface: #FFFDF7;
-  --surface-2: #EADDC5;
-  --text: #1E1A14;
-  --muted: rgba(30, 26, 20, 0.66);
-  --faint: rgba(30, 26, 20, 0.46);
-  --line: rgba(30, 26, 20, 0.14);
+  /* front-end — cool bluish white page with BLACK cards (white text) */
+  --bg: #EAEEF6;
+  --surface: #0E0F13;          /* cards are black */
+  --surface-2: #16181F;
+  --text: #14161D;             /* page text is dark */
+  --muted: rgba(20, 22, 29, 0.64);
+  --faint: rgba(20, 22, 29, 0.44);
+  --line: rgba(20, 22, 29, 0.12);
   --accent: #1D4ED8;
-  --accent-2: #F26A3D;
+  --accent-2: #F2603A;
   --accent-soft: rgba(29, 78, 216, 0.1);
   --accent-ink: #FFFFFF;
-  --chip-bg: rgba(29, 78, 216, 0.05);
-  --shadow: 0 20px 46px rgba(120, 90, 40, 0.16);
+  --chip-bg: rgba(20, 22, 29, 0.04);
+  --shadow: 0 22px 50px rgba(30, 50, 90, 0.16);
 }
+/* inside a card the palette flips to white-on-black (light theme only) */
+.app[data-theme="light"] .role,
+.app[data-theme="light"] .stack-card,
+.app[data-theme="light"] .about-facts,
+.app[data-theme="light"] .cform,
+.app[data-theme="light"] .cform--done {
+  --bg: #16181F;               /* dark fields inside black cards */
+  --text: #F5F7FB;
+  --muted: rgba(245, 247, 251, 0.66);
+  --faint: rgba(245, 247, 251, 0.42);
+  --line: rgba(245, 247, 251, 0.15);
+  --accent: #7AA2FF;           /* brighter blue reads on black */
+  --accent-soft: rgba(122, 162, 255, 0.16);
+  --accent-ink: #0E0F13;
+  --chip-bg: rgba(245, 247, 251, 0.06);
+  color: var(--text);
+}
+/* highlights go black on the page; the in-card Send button flips white */
+.app[data-theme="light"] .btn--solid { background: #0E0F13; color: #fff; }
+.app[data-theme="light"] .cform .btn--solid { background: #fff; color: #0E0F13; }
 ::selection { background: var(--accent); color: var(--accent-ink); }
 
 /* ── particle field ─────────────────────────────────────────────────────── */
@@ -148,10 +168,10 @@ button { font-family: inherit; cursor: pointer; background: none; border: none; 
   transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
   min-height: 12rem;
 }
-.door--front { background: rgba(240, 229, 210, 0.96); color: #1E1A14; }
+.door--front { background: rgba(234, 238, 246, 0.96); color: #14161D; }
 .door--back { background: rgba(13, 20, 29, 0.72); color: #E8F1F8; border-color: rgba(34, 211, 238, 0.4); }
 .door:hover { transform: translateY(-5px); box-shadow: 0 22px 46px rgba(0, 0, 0, 0.45); }
-.door--front:hover { border-color: #1D4ED8; box-shadow: 0 22px 46px rgba(120, 90, 40, 0.32); }
+.door--front:hover { border-color: #1D4ED8; box-shadow: 0 22px 46px rgba(30, 50, 90, 0.32); }
 .door--back:hover { border-color: #22D3EE; box-shadow: 0 22px 50px rgba(34, 211, 238, 0.28); }
 .door-tag {
   position: absolute; top: 1rem; right: 1rem;
