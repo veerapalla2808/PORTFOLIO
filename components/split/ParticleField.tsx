@@ -7,10 +7,10 @@ import { useEffect, useRef } from 'react';
 
 type Theme = 'light' | 'dark';
 
-// dot color per theme, as [r,g,b]
+// dot color per theme, as [r,g,b] — cyan on the dark side, deep blue on sand
 const COLOR: Record<Theme, [number, number, number]> = {
-  dark: [128, 152, 255],
-  light: [34, 58, 140],
+  dark: [34, 211, 238],
+  light: [29, 78, 216],
 };
 
 export default function ParticleField({ theme, tint }: { theme: Theme; tint?: Theme | null }) {

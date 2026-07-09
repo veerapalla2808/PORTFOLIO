@@ -8,6 +8,7 @@ import {
   education, marginNotes,
 } from '@/lib/data';
 import Metrics from './Metrics';
+import ContactForm from './ContactForm';
 
 /* back-end: a request travelling client → gateway → service → db, revealed on
    hover. A pure-SVG/CSS motif — no JS. */
@@ -194,27 +195,34 @@ export default function SideView({
         </div>
       </section>
 
-      {/* contact */}
+      {/* contact — form + direct links */}
       <section className="side-sec side-contact" id="contact">
-        <div className="rv">
-          <span className="side-eyebrow">04 — CONTACT</span>
-          <h2>{side === 'front' ? 'Like the interface? There’s a system behind it.' : 'Like the system? There’s an interface on top.'}</h2>
-          <p className="side-blurb">
-            React-heavy, Java-heavy, or the messy middle — I’m at home on either
-            side of this page. Email reaches me fastest.
-          </p>
-          <div className="contact-ctas">
-            <MailLink className="btn btn--solid" label={personal.email} />
-            <a className="btn btn--ghost" href={personal.linkedin} target="_blank" rel="noopener noreferrer">LinkedIn ↗</a>
-            <a className="btn btn--ghost" href={personal.resumeUrl} download>Resume ↓</a>
-            <a className="btn btn--ghost" href={`tel:${personal.phone.replace(/-/g, '')}`}>{personal.phone}</a>
-            <button className="btn btn--ghost" onClick={onSwitch}>Walk the {other.label.toLowerCase()} →</button>
+        <div className="contact-grid">
+          <div className="contact-intro rv">
+            <span className="side-eyebrow">04 — CONTACT</span>
+            <h2>{side === 'front' ? 'Like the interface?\nThere’s a system behind it.' : 'Like the system?\nThere’s an interface on top.'}</h2>
+            <p className="side-blurb">
+              React-heavy, Java-heavy, or the messy middle — I’m at home on either
+              side of this page. Send a note and I’ll reply fast.
+            </p>
+            <div className="contact-links">
+              <MailLink className="clink" label={personal.email} />
+              <a className="clink" href={personal.linkedin} target="_blank" rel="noopener noreferrer">LinkedIn ↗</a>
+              <a className="clink" href={personal.resumeUrl} download>Resume ↓</a>
+              <a className="clink" href={`tel:${personal.phone.replace(/-/g, '')}`}>{personal.phone}</a>
+            </div>
+            <button className="btn btn--ghost contact-swap" onClick={onSwitch}>
+              Walk the {other.label.toLowerCase()} →
+            </button>
           </div>
-          <footer className="side-foot">
-            <span className="foot-mark"><Mark /> © 2026 {personal.name}</span>
-            <span>Hand-built with Next.js · two themes, one engineer</span>
-          </footer>
+          <div className="contact-form-wrap rv">
+            <ContactForm />
+          </div>
         </div>
+        <footer className="side-foot">
+          <span className="foot-mark"><Mark /> © 2026 {personal.name}</span>
+          <span>Hand-built with Next.js · two themes, one engineer</span>
+        </footer>
       </section>
     </div>
   );

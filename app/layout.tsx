@@ -7,7 +7,7 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
-  themeColor: "#0B0E14",
+  themeColor: "#090D13",
 };
 
 // display — opinionated, high-personality grotesque for the name and headings
@@ -40,9 +40,9 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
     <html
       lang="en"
       className={`${bricolage.variable} ${hanken.variable} ${jetbrains.variable}`}
-      style={{ background: "#0B0E14" }}
+      style={{ background: "#090D13" }}
     >
-      <body style={{ background: "#0B0E14" }}>{children}</body>
+      <body style={{ background: "#090D13" }}>{children}</body>
     </html>
   );
 }
