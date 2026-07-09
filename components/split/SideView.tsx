@@ -2,7 +2,7 @@
 // One discipline, full page. Light for front-end, dark for back-end.
 // The hero sits over the particle field; sections below use a solid themed
 // surface. A persistent bar lets you swap sides or return to the chooser.
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import {
   personal, splitWork, skillCategories, sideConfig, note, now,
   education, marginNotes,
@@ -13,6 +13,30 @@ function Mark() {
     <span className="mark" aria-label="Veera Palla">
       <span>V</span><span className="mark-seam" aria-hidden="true" /><span>P</span>
     </span>
+  );
+}
+
+/* A mail link that always does something: it opens the visitor's mail client
+   (via mailto) AND copies the address, with visible confirmation — so it
+   never silently no-ops when no desktop mail app is configured. */
+function MailLink({ className, label }: { className?: string; label: string }) {
+  const [copied, setCopied] = useState(false);
+  const onClick = () => {
+    if (navigator.clipboard?.writeText) {
+      navigator.clipboard.writeText(personal.email)
+        .then(() => { setCopied(true); setTimeout(() => setCopied(false), 2200); })
+        .catch(() => {});
+    }
+  };
+  return (
+    <a
+      className={className}
+      href={`mailto:${personal.email}?subject=${encodeURIComponent('Hello Veera — let’s talk')}`}
+      onClick={onClick}
+      aria-label={`Email ${personal.email} (also copies it to your clipboard)`}
+    >
+      {copied ? 'Copied ✓' : label}
+    </a>
   );
 }
 
@@ -67,7 +91,7 @@ export default function SideView({
         <h1 className="side-title">{cfg.title}</h1>
         <p className="side-blurb">{cfg.blurb}</p>
         <div className="side-cta">
-          <a className="btn btn--solid" href={`mailto:${personal.email}`}>Email me</a>
+          <MailLink className="btn btn--solid" label="Email me" />
           <a className="btn btn--ghost" href={personal.resumeUrl} download>Resume</a>
           <button className="btn btn--ghost" onClick={onSwitch}>See the {other.label.toLowerCase()} →</button>
         </div>
@@ -158,7 +182,7 @@ export default function SideView({
             side of this page. Email reaches me fastest.
           </p>
           <div className="contact-ctas">
-            <a className="btn btn--solid" href={`mailto:${personal.email}`}>{personal.email}</a>
+            <MailLink className="btn btn--solid" label={personal.email} />
             <a className="btn btn--ghost" href={personal.linkedin} target="_blank" rel="noopener noreferrer">LinkedIn ↗</a>
             <a className="btn btn--ghost" href={personal.resumeUrl} download>Resume ↓</a>
             <a className="btn btn--ghost" href={`tel:${personal.phone.replace(/-/g, '')}`}>{personal.phone}</a>

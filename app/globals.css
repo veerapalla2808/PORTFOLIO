@@ -173,7 +173,7 @@ button { font-family: inherit; cursor: pointer; background: none; border: none; 
   position: fixed; top: 0; left: 0; right: 0; z-index: 20;
   display: flex; align-items: center; gap: 1rem;
   padding: 0.7rem clamp(1.2rem, 4vw, 3rem);
-  background: color-mix(in srgb, var(--bg) 82%, transparent);
+  background: color-mix(in srgb, var(--bg) 76%, transparent);
   backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
   border-bottom: 1px solid var(--line);
 }
@@ -202,18 +202,19 @@ button { font-family: inherit; cursor: pointer; background: none; border: none; 
 .side-cta { display: flex; flex-wrap: wrap; gap: 0.7rem; margin-top: 0.6rem; }
 .side-hero .scroll-cue { margin-top: 1.6rem; }
 
-/* sections below the hero sit on the solid themed surface */
+/* sections below the hero: a translucent veil so the particle field shows
+   through the whole page while text stays readable (content cards stay solid) */
 .side-sec {
   position: relative; z-index: 2;
-  background: var(--bg);
+  background: color-mix(in srgb, var(--bg) 76%, transparent);
   padding: clamp(3.6rem, 9vh, 6rem) clamp(1.2rem, 5vw, 4rem);
   max-width: 74rem; margin: 0 auto;
 }
 .side-sec:first-of-type { border-top: 1px solid var(--line); }
-/* full-bleed surface behind the max-width content */
+/* full-bleed veil behind the max-width content */
 .side-sec::before {
   content: ""; position: absolute; inset: 0 calc(50% - 50vw);
-  background: var(--bg); z-index: -1;
+  background: color-mix(in srgb, var(--bg) 76%, transparent); z-index: -1;
 }
 .side-head { max-width: 44rem; margin-bottom: clamp(2rem, 5vh, 3.2rem); }
 .side-eyebrow { font-family: var(--mono); font-size: 0.64rem; font-weight: 700; letter-spacing: 0.26em; color: var(--accent); }
