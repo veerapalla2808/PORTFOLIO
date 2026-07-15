@@ -333,6 +333,48 @@ export const note = {
   signoff: 'Thanks for reading this far,',
 } as const;
 
+// personalized "note from me" — a different voice on each side of the stack
+export const notesBySide = {
+  front: {
+    heading: 'A note from me',
+    paragraphs: [
+      'On the interface, my job is to make the complexity disappear. A store associate at Walmart shouldn’t feel the 3,000 requests a second underneath — they should just feel that it’s fast.',
+      'So I sweat the first paint, the accessible label, the one component fifteen other engineers reuse without thinking. It’s craft a recruiter never sees directly, but every user feels it.',
+      'React and TypeScript are where I think fastest — yet I read the network tab like a back-end engineer, because an interface is only ever as honest as the system behind it.',
+    ],
+    signoff: 'The user is my judge —',
+  },
+  back: {
+    heading: 'A note from me',
+    paragraphs: [
+      'On the system side, my job is to keep the promise the interface makes. When traffic spikes to 3,000 requests a second, nobody should notice — that silence is the entire point.',
+      'I started in Bangalore in 2021, fixing race conditions in a checkout flow the night before a sale event. That night set the discipline: idempotency, dead-letter queues, canary deploys — and read the log before you blame the code.',
+      'Java 17 and Spring Boot are home, but I ship the React on top of them too. Most engineers pick a side. I never wanted to.',
+    ],
+    signoff: 'Uptime is my judge —',
+  },
+} as const;
+
+// recruiter-facing "Signature Wins" — the biggest verifiable outcomes, at a glance
+export interface Highlight { icon: string; stat: string; title: string; detail: string }
+export const highlights: Highlight[] = [
+  { icon: 'speed', stat: '3,000 req/s', title: 'Held the peak', detail: 'Resolved API scaling on Walmart inventory & order-fulfillment services through peak-season windows.' },
+  { icon: 'smart_toy', stat: 'LLM in prod', title: 'Shipped GenAI', detail: 'Integrated a fine-tuned model via AWS Bedrock into a Spring Boot service — raw output parsed into structured JSON for a React UI.' },
+  { icon: 'rocket_launch', stat: 'Ships / week', title: 'Safer releases', detail: 'Introduced feature flags and canary deploys — multiple production ships a week with instant rollback.' },
+  { icon: 'verified', stat: '80% coverage', title: 'Quality gate', detail: 'Drove unit + integration coverage to a verified 80% baseline before the release pipeline runs.' },
+  { icon: 'bolt', stat: '−20% weight', title: 'Faster loads', detail: 'Code-splitting + memoization on Southwest booking; lazy loading at Flipkart cut home-page assets ~20%.' },
+  { icon: 'widgets', stat: '15+ components', title: 'Reused by teams', detail: 'Authored reusable React components adopted by shared libraries to cut UI duplication.' },
+];
+
+// "How I work" — short principles that differentiate
+export interface Principle { icon: string; title: string; body: string }
+export const principles: Principle[] = [
+  { icon: 'flag', title: 'Flags before heroics', body: 'A progressive rollout with instant rollback beats a brave Friday deploy, every time.' },
+  { icon: 'handshake', title: 'The interface is a promise', body: 'And the system is whether you keep it — so I refuse to own only one half.' },
+  { icon: 'travel_explore', title: 'Read the log first', body: 'On-call taught me to trust traces over hunches. The evidence is usually already there.' },
+  { icon: 'groups', title: 'Ship for the next dev', body: 'Reusable components, honest docs, and coverage that lets the next person move fast.' },
+];
+
 // handwritten annotations pinned to each role card
 export const marginNotes: Record<string, string> = {
   Walmart: 'this one keeps me up at night — in a good way',

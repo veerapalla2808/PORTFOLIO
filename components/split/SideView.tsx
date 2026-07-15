@@ -5,12 +5,13 @@
 // bottom; accents parallax. Light for front-end, dark for back-end.
 import { useEffect } from 'react';
 import {
-  personal, splitWork, skillCategories, sideConfig, note, now,
-  education, marginNotes,
+  personal, splitWork, skillCategories, sideConfig, note, notesBySide, now,
+  education, marginNotes, highlights, principles,
 } from '@/lib/data';
 import Metrics from './Metrics';
 import ContactForm from './ContactForm';
 import { Typed, Icon, useParallax, CATEGORY_ICON } from './ui';
+import { Motif } from './motifs';
 
 function Mark() {
   return (
@@ -110,8 +111,8 @@ export default function SideView({
               ? 'Every role, told from the interface I shipped to the people using it.'
               : 'Every role, told from the system that kept the promise under load.'}
           </p>
-          <span className="fsec-glyph" data-parallax="0.08" aria-hidden="true">
-            <Icon name={side === 'front' ? 'devices' : 'lan'} />
+          <span className="fsec-motif" data-parallax="0.06" aria-hidden="true">
+            <Motif name={side === 'front' ? 'browser' : 'server'} />
           </span>
         </aside>
         <div className="fsec-body">
@@ -140,19 +141,37 @@ export default function SideView({
         </div>
       </section>
 
-      {/* 02 — stack (sticky split) */}
+      {/* 02 — signature wins (recruiter impact) */}
+      <section className="fsec" id="wins">
+        <aside className="fsec-head">
+          <span className="fsec-eyebrow"><em>02</em> Signature Wins</span>
+          <Typed as="h2" className="fsec-title" text="Proof, not adjectives." />
+          <p className="fsec-note rv">The outcomes a recruiter can verify — measured, shipped, and still running in production.</p>
+          <span className="fsec-motif" data-parallax="0.06" aria-hidden="true"><Motif name="chart" /></span>
+        </aside>
+        <div className="fsec-body wins">
+          {highlights.map((h, i) => (
+            <article key={h.title} className="win rv" style={{ transitionDelay: `${i * 0.05}s` }}>
+              <span className="win-ico"><Icon name={h.icon} /></span>
+              <span className="win-stat">{h.stat}</span>
+              <h3>{h.title}</h3>
+              <p>{h.detail}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      {/* 03 — stack (sticky split) */}
       <section className="fsec" id="stack">
         <aside className="fsec-head">
-          <span className="fsec-eyebrow"><em>02</em> The Stack</span>
+          <span className="fsec-eyebrow"><em>03</em> The Stack</span>
           <Typed as="h2" className="fsec-title" text={side === 'front' ? 'For the interface.' : 'For the load.'} />
           <p className="fsec-note rv">
             {side === 'front'
               ? 'The tools I reach for when the pixels have to feel instant.'
               : 'The tools I reach for when the traffic doesn’t stop.'}
           </p>
-          <span className="fsec-glyph" data-parallax="0.08" aria-hidden="true">
-            <Icon name={side === 'front' ? 'category' : 'stacks'} />
-          </span>
+          <span className="fsec-motif" data-parallax="0.06" aria-hidden="true"><Motif name="grid" /></span>
         </aside>
         <div className="fsec-body stack">
           {cats.map(c => (
@@ -168,17 +187,38 @@ export default function SideView({
         </div>
       </section>
 
-      {/* 03 — about (sticky split) */}
+      {/* 04 — how I work */}
+      <section className="fsec" id="principles">
+        <aside className="fsec-head">
+          <span className="fsec-eyebrow"><em>04</em> How I Work</span>
+          <Typed as="h2" className="fsec-title" text={side === 'front' ? 'Craft, on purpose.' : 'Discipline, on purpose.'} />
+          <p className="fsec-note rv">Four habits I bring to every team — the reasons the work above held up.</p>
+          <span className="fsec-motif" data-parallax="0.06" aria-hidden="true"><Motif name="compass" /></span>
+        </aside>
+        <div className="fsec-body principles">
+          {principles.map((p, i) => (
+            <article key={p.title} className="principle rv" style={{ transitionDelay: `${i * 0.05}s` }}>
+              <span className="principle-ico"><Icon name={p.icon} /></span>
+              <div>
+                <h3>{p.title}</h3>
+                <p>{p.body}</p>
+              </div>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      {/* 05 — about (sticky split, personalized per side) */}
       <section className="fsec" id="about">
         <aside className="fsec-head">
-          <span className="fsec-eyebrow"><em>03</em> In My Own Words</span>
-          <Typed as="h2" className="fsec-title" text="A note from me." />
-          <span className="fsec-glyph" data-parallax="0.08" aria-hidden="true"><Icon name="waving_hand" /></span>
+          <span className="fsec-eyebrow"><em>05</em> In My Own Words</span>
+          <Typed as="h2" className="fsec-title" text={notesBySide[side].heading + '.'} />
+          <span className="fsec-motif" data-parallax="0.06" aria-hidden="true"><Motif name="signature" /></span>
         </aside>
         <div className="fsec-body about">
           <div className="about-body rv">
-            {note.paragraphs.map(p => <p key={p.slice(0, 24)}>{p}</p>)}
-            <p className="about-sign">{note.signoff} <b>Veera</b></p>
+            {notesBySide[side].paragraphs.map(p => <p key={p.slice(0, 24)}>{p}</p>)}
+            <p className="about-sign">{notesBySide[side].signoff} <b>Veera</b></p>
           </div>
           <aside className="about-facts rv">
             <h3><Icon name="info" /> SMALL PRINT</h3>
@@ -201,7 +241,7 @@ export default function SideView({
       <section className="fcontact" id="contact">
         <div className="fcontact-grid">
           <div className="contact-intro rv">
-            <span className="fsec-eyebrow"><em>04</em> Contact</span>
+            <span className="fsec-eyebrow"><em>06</em> Contact</span>
             <Typed
               as="h2"
               className="fcontact-title"
